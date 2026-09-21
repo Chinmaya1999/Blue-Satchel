@@ -170,8 +170,22 @@ const ScanCapture = () => {
   // Camera
   useEffect(() => {
     let active = true;
+
+    // getUserMedia only exists in "secure contexts" (HTTPS, or localhost).
+    // On a plain-HTTP origin, navigator.mediaDevices is undefined and the
+    // optional-chained call below would otherwise short-circuit silently —
+    // no error, no ready state, just an infinite "Starting camera…".
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError(
+        window.isSecureContext === false
+          ? "Camera requires a secure (HTTPS) connection — upload a photo instead."
+          : "Camera access unavailable in this browser — upload a photo instead."
+      );
+      return;
+    }
+
     navigator.mediaDevices
-      ?.getUserMedia({ video: { facingMode: "user", width: 640, height: 640 } })
+      .getUserMedia({ video: { facingMode: "user", width: 640, height: 640 } })
       .then((stream) => {
         // If cleanup already ran by the time this resolves (e.g. React
         // StrictMode's dev-only double-invoke of effects), release this
@@ -604,39 +618,51 @@ const ScanCapture = () => {
           </div>
         )}
 
-        {/* Intro overlay */}
-        {flowStage === "intro" && !cameraError && (
+        {/* Intro overlay — shown even if the camera failed, so "Upload a
+            photo instead" is always reachable rather than a dead end. */}
+        {flowStage === "intro" && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-950/55 p-6 backdrop-blur-sm">
             <div className="w-full max-w-sm rounded-3xl bg-white/95 p-6 text-center shadow-2xl backdrop-blur">
               <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
                 <ScanFace size={22} />
               </span>
               <h2 className="font-display text-lg font-bold text-slate-900">Guided AI Skin Scan</h2>
-              <p className="mt-1.5 text-sm text-slate-500">
-                I'll talk you through it — front, then a slow turn left and right — and capture each angle automatically.
-              </p>
-              <div className="mt-5 flex justify-center gap-4">
-                {STEP_ORDER.map((s, i) => (
-                  <div key={s} className="flex flex-col items-center gap-1.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">
-                      {i + 1}
-                    </span>
-                    <span className="text-[11px] text-slate-500">{STEPS[s].label}</span>
+
+              {cameraError ? (
+                <div className="mt-3 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-left text-sm text-rose-700">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  {cameraError}
+                </div>
+              ) : (
+                <>
+                  <p className="mt-1.5 text-sm text-slate-500">
+                    I'll talk you through it — front, then a slow turn left and right — and capture each angle automatically.
+                  </p>
+                  <div className="mt-5 flex justify-center gap-4">
+                    {STEP_ORDER.map((s, i) => (
+                      <div key={s} className="flex flex-col items-center gap-1.5">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">
+                          {i + 1}
+                        </span>
+                        <span className="text-[11px] text-slate-500">{STEPS[s].label}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <button
-                onClick={startGuidedScan}
-                disabled={!cameraReady || !modelsReady}
-                className="btn-primary mt-6 w-full"
-              >
-                {!cameraReady ? "Starting camera…" : !modelsReady ? "Loading face detector…" : "Start guided scan"}
-              </button>
+                  <button
+                    onClick={startGuidedScan}
+                    disabled={!cameraReady || !modelsReady}
+                    className="btn-primary mt-6 w-full"
+                  >
+                    {!cameraReady ? "Starting camera…" : !modelsReady ? "Loading face detector…" : "Start guided scan"}
+                  </button>
+                </>
+              )}
+
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="mt-2 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600"
+                className={cameraError ? "btn-primary mt-4 w-full" : "mt-2 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600"}
               >
-                <Upload size={13} /> Upload a photo instead
+                <Upload size={cameraError ? 15 : 13} /> Upload a photo instead
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileSelect} />
             </div>
