@@ -42,3 +42,9 @@ jobs:
         with:
           context: server
           push: false
+
+      - name: Build client Docker image (build-only, not pushed)
+        uses: docker/build-push-action@v5
+        with:
+          context: client
+          push: false

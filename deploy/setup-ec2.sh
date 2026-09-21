@@ -2,10 +2,12 @@
 # Blue Satchel — one-time EC2 bootstrap.
 #
 # Run this ONCE per server (safe to re-run — every step checks whether it's
-# already done and skips it). It installs Docker + Nginx, creates the
-# release directory layout, and wires up the blue/green Nginx upstream
-# config. It does NOT deploy the app — that's deploy-server.sh /
-# deploy-client.sh, run by the regular CI/CD pipeline on every push.
+# already done and skips it). It installs Docker + Nginx and wires up the
+# blue/green Nginx upstream config (covering both the client and server
+# containers). It does NOT deploy the app — that's deploy-app.sh, run by
+# the regular CI/CD pipeline on every push. Until the first real deploy
+# runs, Nginx will 502 on every path — that's expected, not a bootstrap
+# failure (there's nothing listening on the upstream ports yet).
 #
 # Usage (on the EC2 box, as ec2-user): bash setup-ec2.sh
 set -euo pipefail
@@ -85,7 +87,7 @@ sudo "$PKG" install -y git rsync >/dev/null 2>&1 || true
 
 # --- App directory layout -----------------------------------------------------
 echo "==> Preparing $APP_DIR"
-sudo mkdir -p "$APP_DIR/releases" "$NGINX_TEMPLATES"
+sudo mkdir -p "$NGINX_TEMPLATES" "$APP_DIR/uploads"
 sudo chown -R "$USER":"$USER" "$APP_DIR"
 
 # Copy this repo's nginx templates onto the box (this script lives inside
@@ -96,24 +98,12 @@ cp "$SCRIPT_DIR/nginx/upstream-blue.conf" "$NGINX_TEMPLATES/upstream-blue.conf"
 cp "$SCRIPT_DIR/nginx/upstream-green.conf" "$NGINX_TEMPLATES/upstream-green.conf"
 sudo mv /tmp/blue-satchel-site.conf /etc/nginx/conf.d/blue-satchel.conf
 
-# First deploy ever: point at "blue" until deploy-server.sh runs for real.
+# First deploy ever: point at "blue" until deploy-app.sh runs for real.
 if [ ! -f /etc/nginx/conf.d/active-upstream.conf ]; then
   sudo cp "$NGINX_TEMPLATES/upstream-blue.conf" /etc/nginx/conf.d/active-upstream.conf
   # Plain write, not `sudo tee` — this file is owned and updated by
-  # deploy-server.sh running as this same non-root user on every deploy.
+  # deploy-app.sh running as this same non-root user on every deploy.
   echo blue > "$APP_DIR/active-color"
-fi
-
-# Placeholder page so Nginx has something valid to serve before the first
-# real client deploy runs.
-if [ ! -e "$APP_DIR/client-current" ]; then
-  mkdir -p "$APP_DIR/releases/placeholder"
-  cat > "$APP_DIR/releases/placeholder/index.html" <<'HTML'
-<!doctype html><html><body style="font-family:sans-serif;padding:4rem;text-align:center">
-<h1>Blue Satchel</h1><p>Server is set up — waiting for the first deploy.</p>
-</body></html>
-HTML
-  ln -sfn "$APP_DIR/releases/placeholder" "$APP_DIR/client-current"
 fi
 
 # --- Production secrets template (never overwrite an existing real one) ------
