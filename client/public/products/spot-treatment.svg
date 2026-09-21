@@ -1,0 +1,31 @@
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#99f6e4" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#99f6e4"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="50%" cy="34%" r="50%">
+      <stop offset="0%" stop-color="#99f6e4" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#99f6e4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <ellipse cx="300" cy="270" rx="230" ry="230" fill="url(#spot)"/>
+  <ellipse cx="300" cy="522" rx="140" ry="16" fill="#0f2064" opacity="0.09"/>
+  
+  <rect x="225" y="196" width="150" height="16" rx="6" fill="#0f766e"/>
+  <polygon points="225,210 375,210 348,420 252,420" fill="url(#body)"/>
+  
+  <rect x="250" y="298" width="100" height="44" rx="8" fill="#ffffff" opacity="0.92"/>
+  <rect x="260" y="314" width="80" height="4" rx="2" fill="#0f766e" opacity="0.35"/>
+  <rect x="260" y="324" width="62" height="4" rx="2" fill="#0f766e" opacity="0.2"/>
+
+  <rect x="266" y="410" width="68" height="40" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <text x="300" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="2" fill="#0f766e">BLUE SATCHEL</text>
+  <text x="300" y="583" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" letter-spacing="3" fill="#94a3b8">TREATMENT</text>
+</svg>
