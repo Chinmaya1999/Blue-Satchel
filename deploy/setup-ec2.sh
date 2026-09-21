@@ -99,7 +99,9 @@ sudo mv /tmp/blue-satchel-site.conf /etc/nginx/conf.d/blue-satchel.conf
 # First deploy ever: point at "blue" until deploy-server.sh runs for real.
 if [ ! -f /etc/nginx/conf.d/active-upstream.conf ]; then
   sudo cp "$NGINX_TEMPLATES/upstream-blue.conf" /etc/nginx/conf.d/active-upstream.conf
-  echo blue | sudo tee "$APP_DIR/active-color" >/dev/null
+  # Plain write, not `sudo tee` — this file is owned and updated by
+  # deploy-server.sh running as this same non-root user on every deploy.
+  echo blue > "$APP_DIR/active-color"
 fi
 
 # Placeholder page so Nginx has something valid to serve before the first
