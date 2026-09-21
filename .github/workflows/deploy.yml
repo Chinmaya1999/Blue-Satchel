@@ -1,0 +1,118 @@
+name: Deploy
+
+# Runs on every push to main. Assumes setup-server.yml has already been run
+# once for this server — this workflow never installs system packages, it
+# only ships new code: build once here, then blue/green-swap it in on the
+# box with a health check gate, so a broken build never takes the site down.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-server-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image ref (GHCR requires lowercase)
+        id: image
+        run: |
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/${REPO_LC}-server:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: server
+          push: true
+          tags: ${{ steps.image.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - working-directory: client
+        run: |
+          npm ci
+          npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-dist
+          path: client/dist
+
+  deploy:
+    needs: [build-server-image, build-client]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: client-dist
+          path: client-dist
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+      - name: Ensure release directory exists
+        run: |
+          ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "mkdir -p /opt/blue-satchel/releases/${{ github.sha }}/client-dist /opt/blue-satchel/deploy"
+
+      - name: Sync deploy scripts (in case they changed) and client build
+        run: |
+          rsync -az -e "ssh -i /tmp/deploy_key" deploy/ \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/blue-satchel/deploy/"
+          rsync -az -e "ssh -i /tmp/deploy_key" client-dist/ \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/blue-satchel/releases/${{ github.sha }}/client-dist/"
+
+      - name: Deploy client (atomic symlink swap)
+        run: |
+          ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "bash /opt/blue-satchel/deploy/deploy-client.sh ${{ github.sha }}"
+
+      - name: Log in to GHCR on the server
+        run: |
+          ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+
+      - name: Deploy server (blue/green swap with health-check gate)
+        run: |
+          ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "bash /opt/blue-satchel/deploy/deploy-server.sh ${{ needs.build-server-image.outputs.image }}"
+
+      - name: Smoke test the live site
+        run: |
+          curl -sf "http://${{ secrets.EC2_HOST }}/api/health"
+          curl -sf "http://${{ secrets.EC2_HOST }}/" > /dev/null
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f /tmp/deploy_key

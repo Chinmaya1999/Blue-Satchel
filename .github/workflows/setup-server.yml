@@ -1,0 +1,40 @@
+name: Setup EC2 Server (one-time)
+
+# Manual trigger only. Run this exactly once per server (it's idempotent —
+# safe to re-run if you ever need to, e.g. after replacing the instance —
+# but the regular deploy.yml pipeline never calls this itself, so routine
+# deploys never re-install Docker/Nginx/etc).
+on:
+  workflow_dispatch: {}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+      - name: Prepare /opt/blue-satchel
+        run: |
+          ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "sudo mkdir -p /opt/blue-satchel/deploy && sudo chown -R \$USER:\$USER /opt/blue-satchel"
+
+      - name: Copy deploy scripts to server
+        run: |
+          rsync -az -e "ssh -i /tmp/deploy_key" deploy/ \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/blue-satchel/deploy/"
+
+      - name: Run bootstrap
+        run: |
+          ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "bash /opt/blue-satchel/deploy/setup-ec2.sh"
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f /tmp/deploy_key
