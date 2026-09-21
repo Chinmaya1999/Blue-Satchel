@@ -51,6 +51,35 @@ else
   sudo systemctl enable nginx
 fi
 
+# The nginx RPM's shipped /etc/nginx/nginx.conf bundles its own inline
+# `server { listen 80; server_name _; root /usr/share/nginx/html; ... }`
+# block. Since conf.d/*.conf is included before that block, our
+# blue-satchel.conf (which explicitly marks itself default_server) already
+# wins in practice — but the duplicate causes a noisy
+# "conflicting server name" warning on every reload. Strip it once,
+# idempotently.
+if grep -q 'root         /usr/share/nginx/html;' /etc/nginx/nginx.conf 2>/dev/null; then
+  echo "==> Removing nginx.conf's bundled default server block (superseded by blue-satchel.conf)"
+  sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+  python3 - <<'PYEOF'
+import re
+path = "/etc/nginx/nginx.conf"
+with open(path) as f:
+    content = f.read()
+pattern = re.compile(r"\n    server \{\n        listen       80;.*?\n    \}\n", re.DOTALL)
+new_content, n = pattern.subn("\n", content, count=1)
+if n:
+    with open("/tmp/nginx.conf.cleaned", "w") as f:
+        f.write(new_content)
+PYEOF
+  if [ -f /tmp/nginx.conf.cleaned ]; then
+    sudo cp /tmp/nginx.conf.cleaned /etc/nginx/nginx.conf
+    rm -f /tmp/nginx.conf.cleaned
+  fi
+else
+  echo "==> nginx.conf already clean of the bundled default server block"
+fi
+
 # --- git / rsync (usually present on the AMI, but make sure) -----------------
 sudo "$PKG" install -y git rsync >/dev/null 2>&1 || true
 
