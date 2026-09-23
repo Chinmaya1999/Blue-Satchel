@@ -371,14 +371,14 @@ const FRIENDLY_TASK_ERRORS = {
   error_below_min_image_size: "That photo's resolution was too low — please try again with better lighting or a different camera.",
 };
 
-const runSkinAnalysisTask = async (fileId, accessToken) => {
+const runSkinAnalysisTask = async (fileId, accessToken, dstActions) => {
   const createRes = await pcFetch(
     "/s2s/v2.0/task/skin-analysis",
     {
       method: "POST",
       body: JSON.stringify({
         src_file_id: fileId,
-        dst_actions: [...PERFECTCORP_CONCERN_DEFS.map((def) => def.action).filter(Boolean), "hd_wrinkle"],
+        dst_actions: dstActions,
         format: "json",
       }),
     },
@@ -412,7 +412,17 @@ const runSkinAnalysisTask = async (fileId, accessToken) => {
 const analyzeWithPerfectCorp = async ({ front }) => {
   const accessToken = await getAccessToken();
   const fileId = await uploadImage(front, accessToken);
-  const output = await runSkinAnalysisTask(fileId, accessToken);
+
+  // Perfect Corp rejects a dst_actions list that mixes HD and SD actions in
+  // one task ("can't mix HD and SD actions in the same request") — hd_wrinkle
+  // is HD-tier, everything else here is SD-tier, so they need two separate
+  // task calls (uploading the file once, reusing the same file_id for both).
+  const sdActions = PERFECTCORP_CONCERN_DEFS.map((def) => def.action).filter(Boolean);
+  const [sdOutput, hdOutput] = await Promise.all([
+    runSkinAnalysisTask(fileId, accessToken, sdActions),
+    runSkinAnalysisTask(fileId, accessToken, ["hd_wrinkle"]),
+  ]);
+  const output = [...sdOutput, ...hdOutput];
 
   const scoreByAction = Object.fromEntries(output.map((o) => [o.type, o.ui_score]));
   const hdWrinkle = output.find((o) => o.type === "hd_wrinkle");
