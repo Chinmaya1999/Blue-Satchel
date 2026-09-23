@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ChevronLeft, Mail, Phone } from "lucide-react";
+import { ChevronLeft, Mail, Phone, Trash2 } from "lucide-react";
 import api from "../../api/axios.js";
 import Loader from "../../components/Loader.jsx";
 
 const AdminCustomerDetail = () => {
   const { id } = useParams();
   const [data, setData] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     api.get(`/admin/customers/${id}`).then(({ data }) => setData(data));
@@ -14,6 +15,19 @@ const AdminCustomerDetail = () => {
 
   if (!data) return <Loader label="Loading customer…" />;
   const { customer, scans, orders } = data;
+
+  const handleDeleteScan = async (scanId) => {
+    if (!window.confirm("Delete this scan permanently? This can't be undone.")) return;
+    setDeletingId(scanId);
+    try {
+      await api.delete(`/admin/scans/${scanId}`);
+      setData((prev) => ({ ...prev, scans: prev.scans.filter((s) => s._id !== scanId) }));
+    } catch {
+      window.alert("Couldn't delete that scan. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -46,6 +60,13 @@ const AdminCustomerDetail = () => {
                   <p className="font-semibold text-slate-800">{s.overallScore}/100 · {s.overallLabel}</p>
                   <p className="text-xs text-slate-400">{new Date(s.createdAt).toLocaleString()}</p>
                 </div>
+                <button
+                  onClick={() => handleDeleteScan(s._id)}
+                  disabled={deletingId === s._id}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                >
+                  <Trash2 size={14} />
+                </button>
               </li>
             ))}
             {scans.length === 0 && <p className="text-sm text-slate-400">No scans recorded.</p>}

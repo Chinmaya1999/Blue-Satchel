@@ -1,8 +1,20 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import User from "../models/User.js";
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import ScanHistory from "../models/ScanHistory.js";
 import CRMSyncLog from "../models/CRMSyncLog.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, "..", "..", "uploads");
+
+const deleteUploadedFile = (imageUrl) => {
+  if (!imageUrl) return;
+  const filePath = path.join(uploadsDir, path.basename(imageUrl));
+  fs.unlink(filePath, () => {}); // best-effort — a missing file is not an error here
+};
 
 // --- Dashboard ---
 export const getOverview = async (req, res, next) => {
@@ -89,6 +101,19 @@ export const listAllScans = async (req, res, next) => {
       ScanHistory.countDocuments(),
     ]);
     res.json({ items, total, page: pageNum, pages: Math.ceil(total / limitNum) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteScan = async (req, res, next) => {
+  try {
+    const scan = await ScanHistory.findByIdAndDelete(req.params.id);
+    if (!scan) return res.status(404).json({ message: "Scan not found." });
+    deleteUploadedFile(scan.imageUrl);
+    deleteUploadedFile(scan.leftImageUrl);
+    deleteUploadedFile(scan.rightImageUrl);
+    res.json({ message: "Scan deleted." });
   } catch (err) {
     next(err);
   }

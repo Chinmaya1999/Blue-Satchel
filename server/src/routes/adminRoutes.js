@@ -5,6 +5,7 @@ import {
   listCustomers,
   getCustomer,
   listAllScans,
+  deleteScan,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -24,6 +25,7 @@ router.get("/customers", listCustomers);
 router.get("/customers/:id", getCustomer);
 
 router.get("/scans", listAllScans);
+router.delete("/scans/:id", deleteScan);
 
 router.get("/products", listProductsAdmin);
 router.post("/products", createProduct);
