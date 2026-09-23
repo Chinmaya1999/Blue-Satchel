@@ -29,6 +29,7 @@ import Loader from "../components/Loader.jsx";
 import ScoreRing from "../components/ScoreRing.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import ScanReport from "../components/ScanReport.jsx";
+import ApiAnalysisPanel from "../components/ApiAnalysisPanel.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const CONCERN_ICONS = {
@@ -319,6 +320,8 @@ const ScanResult = () => {
           </div>
         </div>
       </section>
+
+      <ApiAnalysisPanel scan={scan} />
 
       {/* Recommended products */}
       <section className="container-app py-14">
