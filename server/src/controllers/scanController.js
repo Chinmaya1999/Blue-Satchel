@@ -45,6 +45,7 @@ export const createScan = async (req, res, next) => {
       overallScore: analysis.overallScore,
       overallLabel: analysis.overallLabel,
       concerns: analysis.concerns,
+      faceRegions: analysis.faceRegions || [],
       recommendedProducts: recommended.map((p) => p._id),
       rawMetrics: analysis.rawMetrics,
     });

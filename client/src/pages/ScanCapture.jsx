@@ -63,6 +63,11 @@ const EAR_CLOSED = 0.19;
 const EAR_OPEN = 0.24;
 const LEFT_YAW_MIN = 0.66;
 const RIGHT_YAW_MAX = 0.34;
+// The front shot is the one sent to the live AI provider, which requires the
+// face to fill most of the frame — much closer than side angles need to be.
+const FRONT_MIN_WIDTH_RATIO = 0.5;
+const SIDE_MIN_WIDTH_RATIO = 0.12;
+const MAX_WIDTH_RATIO = 0.85;
 
 const STEP_ORDER = ["front", "left", "right"];
 const STEPS = {
@@ -158,6 +163,7 @@ const ScanCapture = () => {
 
   const shotsRef = useRef({ front: null, left: null, right: null });
   const prevBoxCenterRef = useRef(null);
+  const lastFaceBoxRef = useRef(null);
   const eyeStateRef = useRef("open");
   const blinkDetectedRef = useRef(false);
   const holdStartRef = useRef(null);
@@ -185,7 +191,7 @@ const ScanCapture = () => {
     }
 
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "user", width: 640, height: 640 } })
+      .getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } } })
       .then((stream) => {
         // If cleanup already ran by the time this resolves (e.g. React
         // StrictMode's dev-only double-invoke of effects), release this
@@ -290,23 +296,37 @@ const ScanCapture = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       if (!video || !canvas) return;
-      const size = Math.min(video.videoWidth, video.videoHeight);
-      canvas.width = size;
-      canvas.height = size;
+      const maxSize = Math.min(video.videoWidth, video.videoHeight);
+
+      // The front shot is the one sent to the live AI provider, which
+      // requires the face to fill most of the frame (much stricter than
+      // this app's own capture-guide threshold) — crop tightly around the
+      // already-detected face box instead of the full centered frame so
+      // that requirement is met regardless of how close the user physically
+      // sits. FACE_CROP_RATIO leaves a comfortable margin above the
+      // provider's ~60%-of-width minimum.
+      const FACE_CROP_RATIO = 0.78;
+      const box = stage === "front" ? lastFaceBoxRef.current : null;
+      let size = maxSize;
+      let sx = (video.videoWidth - size) / 2;
+      let sy = (video.videoHeight - size) / 2;
+      if (box) {
+        size = Math.min(maxSize, Math.round(box.width / FACE_CROP_RATIO));
+        sx = Math.max(0, Math.min(Math.round(box.x + box.width / 2 - size / 2), video.videoWidth - size));
+        sy = Math.max(0, Math.min(Math.round(box.y + box.height / 2 - size / 2), video.videoHeight - size));
+      }
+
+      // Output canvas is always a fixed size — a tight face crop can shrink
+      // the *source* pixel region well below the AI provider's minimum
+      // resolution requirement, so the crop is upscaled into this canvas
+      // rather than sized to match it 1:1.
+      const OUTPUT_SIZE = 640;
+      canvas.width = OUTPUT_SIZE;
+      canvas.height = OUTPUT_SIZE;
       const ctx = canvas.getContext("2d");
-      ctx.translate(size, 0);
+      ctx.translate(OUTPUT_SIZE, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(
-        video,
-        (video.videoWidth - size) / 2,
-        (video.videoHeight - size) / 2,
-        size,
-        size,
-        0,
-        0,
-        size,
-        size
-      );
+      ctx.drawImage(video, sx, sy, size, size, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
       canvas.toBlob(
         (blob) => {
           const previewUrl = URL.createObjectURL(blob);
@@ -330,6 +350,7 @@ const ScanCapture = () => {
     let cancelled = false;
     let timeoutId;
     prevBoxCenterRef.current = null;
+    lastFaceBoxRef.current = null;
     if (flowStage === "front") {
       eyeStateRef.current = "open";
       blinkDetectedRef.current = false;
@@ -362,11 +383,13 @@ const ScanCapture = () => {
           if (!result) {
             blinkDetectedRef.current = false;
             prevBoxCenterRef.current = null;
+            lastFaceBoxRef.current = null;
             resetHold("searching", POSTURE_TEXT.searching);
           } else {
             const vw = video.videoWidth;
             const vh = video.videoHeight;
             const box = result.detection.box;
+            lastFaceBoxRef.current = { x: box.x, y: box.y, width: box.width, height: box.height };
             const cx = (vw - (box.x + box.width / 2)) / vw;
             const cy = (box.y + box.height / 2) / vh;
             const widthRatio = box.width / vw;
@@ -398,7 +421,8 @@ const ScanCapture = () => {
               blinkDetectedRef.current = true;
             }
 
-            const sizeOk = widthRatio > 0.12 && widthRatio < 0.65;
+            const minWidthRatio = flowStage === "front" ? FRONT_MIN_WIDTH_RATIO : SIDE_MIN_WIDTH_RATIO;
+            const sizeOk = widthRatio > minWidthRatio && widthRatio < MAX_WIDTH_RATIO;
             const verticalOk = cy > 0.1 && cy < 0.9;
 
             let positioned = false;
@@ -608,7 +632,14 @@ const ScanCapture = () => {
 
         {isCaptureStage && !currentShot && !cameraError && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="relative h-[64%] w-[42%] min-w-[220px]">
+            {/* Sized so "fill this oval" roughly matches FRONT_MIN_WIDTH_RATIO
+                for the front step — the live AI provider needs a much
+                closer, larger face than the side angles do. */}
+            <div
+              className={`relative min-w-[220px] ${
+                flowStage === "front" ? "h-[85%] w-[56%]" : "h-[64%] w-[42%]"
+              }`}
+            >
               <div className={`h-full w-full rounded-[50%] border-2 border-dashed transition-colors duration-300 ${postureColor}`} />
               {corner("-top-1 -left-1", "tl")}
               {corner("-top-1 -right-1", "tr")}

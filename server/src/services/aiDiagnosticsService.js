@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import crypto from "crypto";
 
 /**
  * AI Skin Diagnostics Service
@@ -199,13 +200,276 @@ const analyzeWithMockProvider = async ({ front, left, right }) => {
 };
 
 /**
+ * Perfect Corp / YouCam Enterprise (YCE) live provider.
+ * ---------------------------------------------------------------------------
+ * Flow per https://docs.makeupar.com/reference/ai_skin_analysis :
+ *   1. RSA-encrypt "client_id=<key>&timestamp=<ms>" with the console-issued
+ *      public key -> id_token; POST it with client_id to /s2s/v1.0/client/auth
+ *      for a short-lived bearer access_token (cached until it's near expiry).
+ *   2. POST /s2s/v2.0/file to register the image, PUT the bytes to the
+ *      returned presigned URL, then POST /s2s/v2.0/task/skin-analysis with
+ *      the resulting file_id and poll GET .../task/skin-analysis/{task_id}
+ *      until it reports success.
+ * Perfect Corp's response envelopes vary a little by account/tier, so each
+ * field lookup below falls back across the shapes their docs show; if none
+ * match, the raw response is included in the thrown error to make a field
+ * mismatch obvious immediately rather than silently mis-scoring a scan.
+ */
+const PERFECTCORP_BASE_URL = process.env.PERFECTCORP_API_BASE || "https://yce-api-01.makeupar.com";
+// Every numeric "SD" skin concern Perfect Corp's API can score (per
+// docs.makeupar.com/reference/ai_skin_analysis). `skin_type` is excluded —
+// it comes back as a category, not a 0-100 score, so it doesn't fit this
+// severity/level shape. Weighted equally since there's no dermatological
+// basis here to weight one above another.
+const PERFECTCORP_CONCERN_DEFS = [
+  { key: "spots", label: "Spots", action: "age_spot" },
+  { key: "pores", label: "Pores", action: "pore" },
+  { key: "texture", label: "Texture", action: "texture" },
+  { key: "redness", label: "Redness", action: "redness" },
+  { key: "dark-circles", label: "Dark Circles", action: "dark_circle_v2" },
+  // Sourced from hd_wrinkle.whole below rather than the plain SD "wrinkle"
+  // action, since we're already requesting the HD breakdown for the face
+  // overlay — no reason to also pay for the coarser SD version.
+  { key: "wrinkles", label: "Wrinkles", action: null },
+  { key: "acne", label: "Acne", action: "acne" },
+  { key: "oiliness", label: "Oiliness", action: "oiliness" },
+  { key: "moisture", label: "Moisture", action: "moisture" },
+  { key: "firmness", label: "Firmness", action: "firmness" },
+  { key: "radiance", label: "Radiance", action: "radiance" },
+  { key: "eye-bags", label: "Eye Bags", action: "eye_bag" },
+  { key: "droopy-upper-eyelid", label: "Upper Eyelid Droopiness", action: "droopy_upper_eyelid" },
+  { key: "droopy-lower-eyelid", label: "Lower Eyelid Droopiness", action: "droopy_lower_eyelid" },
+  { key: "tear-trough", label: "Under-Eye Hollows", action: "tear_trough" },
+].map((def) => ({ ...def, weight: 1 / 15 }));
+
+// hd_wrinkle returns a per-region breakdown in one nested object rather than
+// a flat ui_score, unlike every other action above — handled separately in
+// analyzeWithPerfectCorp. "whole" (overall wrinkle severity) feeds the
+// "wrinkles" entry in PERFECTCORP_CONCERN_DEFS above; the rest drive the
+// face-region overlay on the results page.
+const HD_WRINKLE_REGIONS = [
+  { key: "forehead", label: "Forehead" },
+  { key: "glabellar", label: "Glabellar" },
+  { key: "crowfeet", label: "Crow's Feet" },
+  { key: "periocular", label: "Periocular" },
+  { key: "nasolabial", label: "Nasolabial" },
+  { key: "marionette", label: "Marionette" },
+];
+
+const TASK_POLL_INTERVAL_MS = 1500;
+const TASK_POLL_TIMEOUT_MS = 30000;
+
+let cachedToken = null; // { accessToken, expiresAt }
+
+const toPem = (key) =>
+  key.includes("BEGIN PUBLIC KEY")
+    ? key
+    : `-----BEGIN PUBLIC KEY-----\n${key.match(/.{1,64}/g).join("\n")}\n-----END PUBLIC KEY-----\n`;
+
+const getAccessToken = async () => {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 5000) return cachedToken.accessToken;
+
+  const apiKey = process.env.PERFECTCORP_API_KEY;
+  const publicKey = process.env.PERFECTCORP_API_SECRET;
+  if (!apiKey || !publicKey) {
+    throw new Error("PERFECTCORP_API_KEY / PERFECTCORP_API_SECRET are not configured.");
+  }
+
+  const payload = `client_id=${apiKey}&timestamp=${Date.now()}`;
+  const idToken = crypto
+    .publicEncrypt(
+      { key: toPem(publicKey), padding: crypto.constants.RSA_PKCS1_PADDING },
+      Buffer.from(payload, "utf8")
+    )
+    .toString("base64");
+
+  const res = await fetch(`${PERFECTCORP_BASE_URL}/s2s/v1.0/client/auth`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ client_id: apiKey, id_token: idToken }),
+  });
+  const json = await res.json().catch(() => null);
+  const accessToken = json?.result?.access_token ?? json?.access_token;
+  const expiresIn = json?.result?.expires_in ?? json?.expires_in ?? 3600;
+  if (!res.ok || !accessToken) {
+    throw new Error(`Perfect Corp auth failed (${res.status}): ${JSON.stringify(json)}`);
+  }
+
+  cachedToken = { accessToken, expiresAt: Date.now() + expiresIn * 1000 };
+  return accessToken;
+};
+
+// Account-level failures (billing/quota, not anything about the user's
+// photo) — these aren't the customer's problem to solve, so they get a
+// generic, non-technical message and a 503 instead of the raw vendor error.
+// The real detail is still logged server-side for whoever runs this app.
+const ACCOUNT_LEVEL_ERROR_MESSAGES = {
+  CreditInsufficiency: "Skin analysis is temporarily unavailable — please try again later.",
+};
+
+const pcFetch = async (path, options, accessToken) => {
+  const res = await fetch(`${PERFECTCORP_BASE_URL}${path}`, {
+    ...options,
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", ...options?.headers },
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    const friendly = ACCOUNT_LEVEL_ERROR_MESSAGES[json?.error_code];
+    if (friendly) {
+      console.error(`[perfectcorp] ${json.error_code} on ${path}:`, json);
+      const err = new Error(friendly);
+      err.status = 503;
+      throw err;
+    }
+    throw new Error(`Perfect Corp API error on ${path} (${res.status}): ${JSON.stringify(json)}`);
+  }
+  return json;
+};
+
+const uploadImage = async (buffer, accessToken) => {
+  const initRes = await pcFetch(
+    "/s2s/v2.0/file",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        files: [{ content_type: "image/jpeg", file_name: `scan-${Date.now()}.jpg`, file_size: buffer.length }],
+      }),
+    },
+    accessToken
+  );
+  const fileEntry = initRes?.result?.files?.[0] ?? initRes?.data?.files?.[0] ?? initRes?.files?.[0];
+  const uploadRequest = fileEntry?.requests?.[0];
+  if (!fileEntry?.file_id || !uploadRequest?.url) {
+    throw new Error(`Perfect Corp file init returned an unexpected shape: ${JSON.stringify(initRes)}`);
+  }
+
+  const putRes = await fetch(uploadRequest.url, {
+    method: uploadRequest.method || "PUT",
+    headers: uploadRequest.headers || { "Content-Type": "image/jpeg" },
+    body: buffer,
+  });
+  if (!putRes.ok) throw new Error(`Perfect Corp file upload failed (${putRes.status}).`);
+
+  return fileEntry.file_id;
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Perfect Corp's face detector is much stricter about framing than this
+// app's own client-side capture guide (it requires the face to fill most of
+// the shot) — surfaced live in testing as "error_src_face_too_small" on
+// otherwise normal front-facing selfies. Map the input-quality codes we know
+// about to a message the user can act on, with a 422 so the client shows it
+// inline instead of a generic "Analysis failed."
+const FRIENDLY_TASK_ERRORS = {
+  error_src_face_too_small: "Your face needs to fill more of the frame — move closer to the camera and try again.",
+  error_src_no_face: "We couldn't detect a face in that photo — please retake with a clear, front-facing selfie.",
+  error_src_face_not_found: "We couldn't detect a face in that photo — please retake with a clear, front-facing selfie.",
+  error_src_multi_face: "More than one face was detected — please retake the photo alone.",
+  error_large_face_angle: "Please face the camera directly for this photo — try again looking straight ahead.",
+  error_src_face_out_of_bound: "Your face wasn't fully inside the frame — please center your face and try again.",
+  error_below_min_image_size: "That photo's resolution was too low — please try again with better lighting or a different camera.",
+};
+
+const runSkinAnalysisTask = async (fileId, accessToken) => {
+  const createRes = await pcFetch(
+    "/s2s/v2.0/task/skin-analysis",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        src_file_id: fileId,
+        dst_actions: [...PERFECTCORP_CONCERN_DEFS.map((def) => def.action).filter(Boolean), "hd_wrinkle"],
+        format: "json",
+      }),
+    },
+    accessToken
+  );
+  const taskId = createRes?.result?.task_id ?? createRes?.data?.task_id ?? createRes?.task_id;
+  if (!taskId) throw new Error(`Perfect Corp task creation returned no task_id: ${JSON.stringify(createRes)}`);
+
+  const deadline = Date.now() + TASK_POLL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const statusRes = await pcFetch(`/s2s/v2.0/task/skin-analysis/${taskId}`, { method: "GET" }, accessToken);
+    const status = statusRes?.data?.task_status ?? statusRes?.result?.task_status ?? statusRes?.task_status;
+    if (status === "success") {
+      return statusRes?.data?.results?.output ?? statusRes?.result?.results?.output ?? [];
+    }
+    if (status === "error") {
+      const code = statusRes?.data?.error ?? statusRes?.result?.error;
+      const friendly = FRIENDLY_TASK_ERRORS[code];
+      if (friendly) {
+        const err = new Error(friendly);
+        err.status = 422;
+        throw err;
+      }
+      throw new Error(`Perfect Corp skin analysis task failed: ${JSON.stringify(statusRes)}`);
+    }
+    await sleep(TASK_POLL_INTERVAL_MS);
+  }
+  throw new Error("Perfect Corp skin analysis task timed out.");
+};
+
+const analyzeWithPerfectCorp = async ({ front }) => {
+  const accessToken = await getAccessToken();
+  const fileId = await uploadImage(front, accessToken);
+  const output = await runSkinAnalysisTask(fileId, accessToken);
+
+  const scoreByAction = Object.fromEntries(output.map((o) => [o.type, o.ui_score]));
+  const hdWrinkle = output.find((o) => o.type === "hd_wrinkle");
+
+  // Perfect Corp's ui_score runs 0-100 where higher = healthier; this app's
+  // "severity" runs the opposite way (higher = worse), hence the inversion.
+  const rawSeverities = Object.fromEntries(
+    PERFECTCORP_CONCERN_DEFS.map((def) => {
+      const uiScore = def.action ? scoreByAction[def.action] : hdWrinkle?.whole?.ui_score;
+      return [def.key, clamp(100 - (uiScore ?? 50))];
+    })
+  );
+
+  const concerns = PERFECTCORP_CONCERN_DEFS.map((def) => {
+    const severity = Math.round(rawSeverities[def.key]);
+    return { key: def.key, label: def.label, severity, level: levelFor(severity) };
+  });
+
+  // Per-region wrinkle breakdown for the face-overlay UI on the results
+  // page — only present when hd_wrinkle came back in the response.
+  const faceRegions = hdWrinkle
+    ? HD_WRINKLE_REGIONS.map((def) => {
+        const severity = Math.round(clamp(100 - (hdWrinkle[def.key]?.ui_score ?? 50)));
+        return { key: def.key, label: def.label, severity, level: levelFor(severity) };
+      })
+    : [];
+
+  // Perfect Corp also returns its own dermatologist-calibrated composite
+  // score (type "all") and an estimated skin age (type "skin_age") — prefer
+  // their composite over our own weighted average when it's present, since
+  // it's authoritative for their scoring model rather than an approximation
+  // of it.
+  const providerOverall = output.find((o) => o.type === "all")?.score;
+  const skinAge = output.find((o) => o.type === "skin_age")?.score;
+  const weightedPenalty = PERFECTCORP_CONCERN_DEFS.reduce((acc, def) => acc + rawSeverities[def.key] * def.weight, 0);
+  const overallScore =
+    providerOverall != null ? Math.round(clamp(providerOverall)) : Math.round(clamp(100 - weightedPenalty));
+  const overallLabel =
+    overallScore >= 85 ? "Excellent" : overallScore >= 70 ? "Good" : overallScore >= 50 ? "Fair" : "Needs Care";
+
+  return {
+    provider: "perfectcorp",
+    overallScore,
+    overallLabel,
+    concerns,
+    faceRegions,
+    rawMetrics: { anglesUsed: ["front"], skinAge, perfectCorpOutput: output },
+  };
+};
+
+/**
  * @param {{ front: Buffer, left?: Buffer, right?: Buffer }} buffers
  */
 export const analyzeSkin = async (buffers) => {
   const provider = process.env.AI_PROVIDER || "mock";
   if (provider === "mock") return analyzeWithMockProvider(buffers);
-  // Future real-vendor branches would be added here, e.g.:
-  // if (provider === "perfectcorp") return analyzeWithPerfectCorp(buffers);
+  if (provider === "perfectcorp") return analyzeWithPerfectCorp(buffers);
   throw new Error(`Unsupported AI_PROVIDER "${provider}"`);
 };
 

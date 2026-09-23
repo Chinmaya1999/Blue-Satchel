@@ -1,6 +1,24 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ScanFace, Clock, RotateCcw, History, Target, CircleDot, Layers, Flame, Moon } from "lucide-react";
+import {
+  ScanFace,
+  Clock,
+  RotateCcw,
+  History,
+  Target,
+  CircleDot,
+  Layers,
+  Flame,
+  Moon,
+  Waves,
+  Zap,
+  Droplet,
+  Sparkles,
+  Gem,
+  Sun,
+  Eye,
+  Frown,
+} from "lucide-react";
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
 import ScoreRing from "../components/ScoreRing.jsx";
@@ -12,6 +30,35 @@ const CONCERN_ICONS = {
   texture: Layers,
   redness: Flame,
   "dark-circles": Moon,
+  wrinkles: Waves,
+  acne: Zap,
+  oiliness: Droplet,
+  moisture: Sparkles,
+  firmness: Gem,
+  radiance: Sun,
+  "eye-bags": Eye,
+  "droopy-upper-eyelid": Frown,
+  "droopy-lower-eyelid": Frown,
+  "tear-trough": Eye,
+};
+
+// Approximate anatomical placement for the hd_wrinkle per-region overlay, as
+// percentages of the hero photo box — the front capture is cropped tightly
+// to a centered face (see ScanCapture.jsx), so these are stable enough for
+// a front-facing shot without needing per-photo landmark detection.
+const FACE_REGION_POSITIONS = {
+  forehead: { top: "20%", left: "32%" },
+  glabellar: { top: "34%", left: "50%" },
+  crowfeet: { top: "42%", left: "20%" },
+  periocular: { top: "46%", left: "68%" },
+  nasolabial: { top: "66%", left: "30%" },
+  marionette: { top: "78%", left: "66%" },
+};
+
+const REGION_RING_STYLE = {
+  Low: "border-emerald-400 text-emerald-700",
+  Medium: "border-amber-400 text-amber-700",
+  High: "border-rose-400 text-rose-700",
 };
 
 const LEVEL_STYLE = {
@@ -52,6 +99,30 @@ const ScanResult = () => {
           <img src={scan.imageUrl} alt="Your scan" className="h-full w-full object-cover opacity-90" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/10" />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-transparent to-transparent" />
+
+          {/* Per-region wrinkle breakdown (Perfect Corp's hd_wrinkle), when available */}
+          {scan.faceRegions?.map((r) => {
+            const pos = FACE_REGION_POSITIONS[r.key];
+            if (!pos) return null;
+            const healthScore = ((100 - r.severity) / 10).toFixed(1);
+            const ring = REGION_RING_STYLE[r.level] || REGION_RING_STYLE.Low;
+            return (
+              <div
+                key={r.key}
+                className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
+                style={{ top: pos.top, left: pos.left }}
+              >
+                <span
+                  className={`flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white/95 font-display text-sm font-bold shadow-lg backdrop-blur-sm ${ring}`}
+                >
+                  {healthScore}
+                </span>
+                <span className="rounded-full bg-slate-950/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                  {r.label}
+                </span>
+              </div>
+            );
+          })}
 
           <div className="absolute inset-x-0 top-0 flex items-start justify-between p-6 sm:p-8">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm ring-1 ring-white/15">

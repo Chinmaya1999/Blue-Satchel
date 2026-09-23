@@ -20,6 +20,9 @@ const scanHistorySchema = new mongoose.Schema(
     overallScore: { type: Number, required: true, min: 0, max: 100 },
     overallLabel: { type: String, required: true },
     concerns: { type: [concernSchema], default: [] },
+    // Per-region wrinkle breakdown (forehead/glabellar/etc.) for the face
+    // overlay on the results page — empty for providers that don't support it.
+    faceRegions: { type: [concernSchema], default: [] },
     recommendedProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     rawMetrics: { type: mongoose.Schema.Types.Mixed },
   },
