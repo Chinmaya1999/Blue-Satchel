@@ -299,14 +299,6 @@ const getAccessToken = async () => {
   return accessToken;
 };
 
-// Account-level failures (billing/quota, not anything about the user's
-// photo) — these aren't the customer's problem to solve, so they get a
-// generic, non-technical message and a 503 instead of the raw vendor error.
-// The real detail is still logged server-side for whoever runs this app.
-const ACCOUNT_LEVEL_ERROR_MESSAGES = {
-  CreditInsufficiency: "Skin analysis is temporarily unavailable — please try again later.",
-};
-
 const pcFetch = async (path, options, accessToken) => {
   const res = await fetch(`${PERFECTCORP_BASE_URL}${path}`, {
     ...options,
@@ -314,14 +306,15 @@ const pcFetch = async (path, options, accessToken) => {
   });
   const json = await res.json().catch(() => null);
   if (!res.ok) {
-    const friendly = ACCOUNT_LEVEL_ERROR_MESSAGES[json?.error_code];
-    if (friendly) {
-      console.error(`[perfectcorp] ${json.error_code} on ${path}:`, json);
-      const err = new Error(friendly);
-      err.status = 503;
-      throw err;
-    }
-    throw new Error(`Perfect Corp API error on ${path} (${res.status}): ${JSON.stringify(json)}`);
+    console.error(`[perfectcorp] ${json?.error_code || res.status} on ${path}:`, json);
+    // Surface the vendor's actual error text on the page rather than a
+    // generic message — this app isn't at the stage where hiding
+    // account/billing detail from whoever's testing it is worth the
+    // confusion of a vague error. Revisit before opening this up to real
+    // paying customers.
+    const err = new Error(json?.error || `Perfect Corp API error on ${path} (${res.status}).`);
+    err.status = res.status >= 400 && res.status < 500 ? 422 : 503;
+    throw err;
   }
   return json;
 };
