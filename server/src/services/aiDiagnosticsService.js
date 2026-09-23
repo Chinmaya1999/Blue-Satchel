@@ -418,7 +418,22 @@ const analyzeWithPerfectCorp = async ({ front }) => {
   const output = [...sdOutput, ...hdOutput];
 
   const scoreByAction = Object.fromEntries(output.map((o) => [o.type, o.ui_score]));
-  const hdWrinkle = output.find((o) => o.type === "hd_wrinkle");
+  // hd_wrinkle comes back as one output entry per face region, each tagged
+  // with `region` ("forehead", "glabellar", …, and "whole" when present),
+  // rather than one entry with the regions nested inside it.
+  const hdWrinkleEntries = output.filter((o) => o.type === "hd_wrinkle" && o.region);
+  const hdWrinkleByRegion = Object.fromEntries(hdWrinkleEntries.map((o) => [o.region, o.ui_score]));
+  const regionScores = HD_WRINKLE_REGIONS.map((def) => hdWrinkleByRegion[def.key]).filter((s) => s != null);
+  const hdWrinkle = hdWrinkleEntries.length
+    ? {
+        whole: {
+          ui_score:
+            hdWrinkleByRegion.whole ??
+            (regionScores.length ? regionScores.reduce((a, b) => a + b, 0) / regionScores.length : undefined),
+        },
+        ...Object.fromEntries(Object.entries(hdWrinkleByRegion).map(([region, ui_score]) => [region, { ui_score }])),
+      }
+    : null;
 
   // Perfect Corp's ui_score runs 0-100 where higher = healthier; this app's
   // "severity" runs the opposite way (higher = worse), hence the inversion.

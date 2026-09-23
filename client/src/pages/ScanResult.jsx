@@ -18,11 +18,17 @@ import {
   Sun,
   Eye,
   Frown,
+  FileDown,
+  Braces,
+  BadgeCheck,
+  FlaskConical,
 } from "lucide-react";
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
 import ScoreRing from "../components/ScoreRing.jsx";
 import ProductCard from "../components/ProductCard.jsx";
+import ScanReport from "../components/ScanReport.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const CONCERN_ICONS = {
   spots: Target,
@@ -74,8 +80,43 @@ const INSIGHT = {
   "Needs Care": "Your skin needs some extra attention right now. We've matched products to your top concerns below.",
 };
 
+const reportFileName = (scan, ext) =>
+  `blue-satchel-skin-report-${new Date(scan.createdAt).toISOString().slice(0, 10)}-${scan._id.slice(-6)}.${ext}`;
+
+// Saves the scan as JSON, including Perfect Corp's raw API output
+// (rawMetrics.perfectCorpOutput) exactly as the API returned it.
+const downloadJson = (scan) => {
+  const data = {
+    reportId: scan._id,
+    createdAt: scan.createdAt,
+    provider: scan.provider,
+    overallScore: scan.overallScore,
+    overallLabel: scan.overallLabel,
+    skinAge: scan.rawMetrics?.skinAge ?? null,
+    concerns: scan.concerns,
+    faceRegions: scan.faceRegions,
+    apiResponse: scan.rawMetrics?.perfectCorpOutput ?? null,
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = reportFileName(scan, "json");
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// The browser's print dialog offers both "Save as PDF" and a real printer.
+// The document title becomes the suggested PDF file name.
+const printReport = (scan) => {
+  const previousTitle = document.title;
+  document.title = reportFileName(scan, "pdf").replace(/\.pdf$/, "");
+  window.addEventListener("afterprint", () => (document.title = previousTitle), { once: true });
+  window.print();
+};
+
 const ScanResult = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -127,6 +168,15 @@ const ScanResult = () => {
           <div className="absolute inset-x-0 top-0 flex items-start justify-between p-6 sm:p-8">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm ring-1 ring-white/15">
               <ScanFace size={13} /> Skin Analysis Report
+              {scan.provider === "perfectcorp" ? (
+                <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] text-emerald-200">
+                  <BadgeCheck size={11} /> Live AI
+                </span>
+              ) : (
+                <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] text-amber-200">
+                  <FlaskConical size={11} /> Demo data
+                </span>
+              )}
             </span>
             <div className="flex flex-col items-end gap-2">
               <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/80 backdrop-blur-sm ring-1 ring-white/15 sm:flex">
@@ -160,6 +210,14 @@ const ScanResult = () => {
                   <Link to="/scan/history" className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20">
                     <History size={15} /> History
                   </Link>
+                  <button type="button" onClick={() => printReport(scan)} className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20">
+                    <FileDown size={15} /> Download report
+                  </button>
+                  {scan.rawMetrics?.perfectCorpOutput && (
+                    <button type="button" onClick={() => downloadJson(scan)} className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20">
+                      <Braces size={15} /> API data (JSON)
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -214,6 +272,8 @@ const ScanResult = () => {
           <p className="text-slate-400">No recommendations available yet.</p>
         )}
       </section>
+
+      <ScanReport scan={scan} user={user} insight={INSIGHT[scan.overallLabel] || INSIGHT.Fair} />
     </div>
   );
 };

@@ -68,6 +68,10 @@ const RIGHT_YAW_MAX = 0.34;
 const FRONT_MIN_WIDTH_RATIO = 0.5;
 const SIDE_MIN_WIDTH_RATIO = 0.12;
 const MAX_WIDTH_RATIO = 0.85;
+// Every photo sent to the AI provider is drawn into a square canvas this
+// size. Perfect Corp's HD actions (hd_wrinkle) reject images whose short
+// side is under 1080px with error_below_min_image_size, so stay above that.
+const OUTPUT_SIZE = 1280;
 
 const STEP_ORDER = ["front", "left", "right"];
 const STEPS = {
@@ -134,7 +138,6 @@ const sampleBrightness = (video, canvas) => {
 // the provider the same guaranteed-adequate resolution.
 const normalizeUploadedImage = (file) =>
   new Promise((resolve, reject) => {
-    const OUTPUT_SIZE = 640;
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
@@ -222,7 +225,7 @@ const ScanCapture = () => {
     }
 
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } } })
+      .getUserMedia({ video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } } })
       .then((stream) => {
         // If cleanup already ran by the time this resolves (e.g. React
         // StrictMode's dev-only double-invoke of effects), release this
@@ -351,7 +354,6 @@ const ScanCapture = () => {
       // the *source* pixel region well below the AI provider's minimum
       // resolution requirement, so the crop is upscaled into this canvas
       // rather than sized to match it 1:1.
-      const OUTPUT_SIZE = 640;
       canvas.width = OUTPUT_SIZE;
       canvas.height = OUTPUT_SIZE;
       const ctx = canvas.getContext("2d");

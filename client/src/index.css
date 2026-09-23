@@ -70,3 +70,26 @@ body {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 }
+
+/* Scan report (components/ScanReport.jsx): hidden on screen; when printing,
+   hide the app and print only the report on A4. */
+.print-report {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body:has(.print-report) > #root {
+    display: none;
+  }
+  .print-report {
+    display: block;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .report-block {
+    break-inside: avoid;
+  }
+}
