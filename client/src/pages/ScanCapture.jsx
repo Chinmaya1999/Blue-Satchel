@@ -647,6 +647,14 @@ const ScanCapture = () => {
           )}
 
           <div className="pointer-events-auto flex items-center gap-2">
+            {flowStage !== "intro" && (
+              <button
+                onClick={startOver}
+                className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-white/80 backdrop-blur-sm transition hover:bg-white/20"
+              >
+                <RotateCw size={13} />
+              </button>
+            )}
             <button
               onClick={() => setVoiceEnabled((v) => !v)}
               className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-white/80 backdrop-blur-sm transition hover:bg-white/20"
@@ -665,6 +673,23 @@ const ScanCapture = () => {
             )}
           </div>
         </div>
+
+        {/* Error banners live here (not just the desktop info pane) so
+            they're reachable on mobile, where that pane is hidden. */}
+        {(error || detectorError) && (
+          <div className="pointer-events-none absolute inset-x-0 top-16 z-10 flex flex-col gap-2 px-4 sm:top-20">
+            {error && (
+              <div className="pointer-events-auto flex items-center gap-2 rounded-xl bg-rose-50/95 px-3 py-2.5 text-sm text-rose-700 shadow-lg backdrop-blur-sm">
+                <AlertCircle size={15} className="shrink-0" /> {error}
+              </div>
+            )}
+            {detectorError && (
+              <div className="pointer-events-auto flex items-center gap-2 rounded-xl bg-amber-50/95 px-3 py-2.5 text-sm text-amber-700 shadow-lg backdrop-blur-sm">
+                <AlertCircle size={15} className="shrink-0" /> {detectorError}
+              </div>
+            )}
+          </div>
+        )}
 
         {isCaptureStage && !currentShot && !cameraError && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -785,8 +810,12 @@ const ScanCapture = () => {
         <canvas ref={analysisCanvasRef} className="hidden" />
       </div>
 
-      {/* Info pane — full-height sidebar */}
-      <div className="flex w-full flex-col overflow-y-auto border-t border-slate-100 bg-white p-6 lg:w-[400px] lg:border-l lg:border-t-0 lg:p-8 xl:w-[440px]">
+      {/* Info pane — desktop-only sidebar. On mobile the camera pane above
+          is the whole experience (see the top-bar Start over / error
+          banners added there for parity), rather than splitting a short
+          viewport between a cramped video and this pane's full content
+          height. */}
+      <div className="hidden lg:flex lg:w-[400px] lg:flex-col lg:overflow-y-auto lg:border-l lg:border-slate-100 lg:p-8 xl:w-[440px]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-xl font-bold text-slate-900 sm:text-2xl">Let's scan your skin</h1>
@@ -803,17 +832,6 @@ const ScanCapture = () => {
             </button>
           )}
         </div>
-
-        {error && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
-            <AlertCircle size={15} /> {error}
-          </div>
-        )}
-        {detectorError && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-700">
-            <AlertCircle size={15} /> {detectorError}
-          </div>
-        )}
 
         <div className="mt-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
