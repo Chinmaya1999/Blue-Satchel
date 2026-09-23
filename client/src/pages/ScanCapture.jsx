@@ -127,6 +127,37 @@ const sampleBrightness = (video, canvas) => {
   return sum / (data.length / 4);
 };
 
+// The "Upload a photo instead" fallback bypasses the guided camera's
+// fixed-size canvas capture entirely, so a small source photo (thumbnail,
+// screenshot, etc.) would otherwise be sent to the live AI provider as-is —
+// this mirrors capturePhoto's fixed OUTPUT_SIZE canvas so both paths give
+// the provider the same guaranteed-adequate resolution.
+const normalizeUploadedImage = (file) =>
+  new Promise((resolve, reject) => {
+    const OUTPUT_SIZE = 640;
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = OUTPUT_SIZE;
+      canvas.height = OUTPUT_SIZE;
+      const ctx = canvas.getContext("2d");
+      const scale = Math.max(OUTPUT_SIZE / img.width, OUTPUT_SIZE / img.height);
+      const sw = OUTPUT_SIZE / scale;
+      const sh = OUTPUT_SIZE / scale;
+      const sx = (img.width - sw) / 2;
+      const sy = (img.height - sh) / 2;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+      URL.revokeObjectURL(objectUrl);
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not process that image."))), "image/jpeg", 0.92);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not read that image file."));
+    };
+    img.src = objectUrl;
+  });
+
 const speakText = (text) => {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
@@ -498,12 +529,17 @@ const ScanCapture = () => {
     window.speechSynthesis?.cancel();
   };
 
-  const onFileSelect = (e) => {
+  const onFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    shotsRef.current = { ...shotsRef.current, front: { blob: file, previewUrl: URL.createObjectURL(file) } };
-    setShots(shotsRef.current);
-    submitAllShots();
+    try {
+      const blob = await normalizeUploadedImage(file);
+      shotsRef.current = { ...shotsRef.current, front: { blob, previewUrl: URL.createObjectURL(blob) } };
+      setShots(shotsRef.current);
+      submitAllShots();
+    } catch {
+      setError("That file couldn't be used — please try a different photo.");
+    }
   };
 
   const progressPct = submitting ? ((stepIndex + 1) / ANALYSIS_STEPS.length) * 100 : 0;
