@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ScanFace,
@@ -22,6 +22,7 @@ import {
   Braces,
   BadgeCheck,
   FlaskConical,
+  ChevronDown,
 } from "lucide-react";
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
@@ -112,6 +113,77 @@ const printReport = (scan) => {
   document.title = reportFileName(scan, "pdf").replace(/\.pdf$/, "");
   window.addEventListener("afterprint", () => (document.title = previousTitle), { once: true });
   window.print();
+};
+
+// One "Download" button with two choices. Opens upward because it sits at
+// the bottom of the hero, whose overflow-hidden would clip a downward menu.
+const DownloadMenu = ({ scan }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const hasApiData = Boolean(scan.rawMetrics?.perfectCorpOutput);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (e.type === "keydown" ? e.key === "Escape" : !ref.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
+  const choose = (action) => {
+    setOpen(false);
+    action(scan);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20"
+      >
+        <FileDown size={15} /> Download <ChevronDown size={14} className={`transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div role="menu" className="absolute bottom-full left-0 z-20 mb-2 w-64 overflow-hidden rounded-xl bg-white p-1.5 shadow-soft ring-1 ring-slate-200">
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => choose(printReport)}
+            className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-50"
+          >
+            <FileDown size={16} className="mt-0.5 shrink-0 text-brand-600" />
+            <span>
+              <span className="block text-sm font-semibold text-slate-800">PDF report</span>
+              <span className="block text-xs text-slate-500">A4 report to save as PDF or print</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={!hasApiData}
+            onClick={() => choose(downloadJson)}
+            className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+          >
+            <Braces size={16} className="mt-0.5 shrink-0 text-brand-600" />
+            <span>
+              <span className="block text-sm font-semibold text-slate-800">API data (JSON)</span>
+              <span className="block text-xs text-slate-500">
+                {hasApiData ? "Raw Perfect Corp response for this scan" : "Not available for demo scans"}
+              </span>
+            </span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
 };
 
 const ScanResult = () => {
@@ -210,14 +282,7 @@ const ScanResult = () => {
                   <Link to="/scan/history" className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20">
                     <History size={15} /> History
                   </Link>
-                  <button type="button" onClick={() => printReport(scan)} className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20">
-                    <FileDown size={15} /> Download report
-                  </button>
-                  {scan.rawMetrics?.perfectCorpOutput && (
-                    <button type="button" onClick={() => downloadJson(scan)} className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20">
-                      <Braces size={15} /> API data (JSON)
-                    </button>
-                  )}
+                  <DownloadMenu scan={scan} />
                 </div>
               </div>
             </div>
