@@ -20,23 +20,23 @@ export const FACE_POINTS = {
   browR: [0.16, 0.55],
   eyeL: [-0.15, 0.46],
   eyeR: [0.15, 0.46],
-  underEyeL: [-0.15, 0.37],
-  underEyeR: [0.15, 0.37],
+  underEyeL: [-0.15, 0.38],
+  underEyeR: [0.15, 0.38],
   noseBridge: [0, 0.47],
   noseTip: [0, 0.31],
-  nostrilL: [-0.07, 0.22],
-  nostrilR: [0.07, 0.22],
-  cheekL: [-0.27, 0.27],
-  cheekR: [0.27, 0.27],
-  mouthL: [-0.1, 0.08],
-  mouthR: [0.1, 0.08],
-  lipTop: [0, 0.13],
-  lipBottom: [0, 0.02],
-  chin: [0, -0.08],
-  jawL: [-0.3, 0.05],
-  jawR: [0.3, 0.05],
-  templeL: [-0.33, 0.6],
-  templeR: [0.33, 0.6],
+  nostrilL: [-0.06, 0.24],
+  nostrilR: [0.06, 0.24],
+  cheekL: [-0.22, 0.28],
+  cheekR: [0.22, 0.28],
+  mouthL: [-0.1, 0.155],
+  mouthR: [0.1, 0.155],
+  lipTop: [0, 0.18],
+  lipBottom: [0, 0.12],
+  chin: [0, 0.03],
+  jawL: [-0.19, 0.08],
+  jawR: [0.19, 0.08],
+  templeL: [-0.27, 0.6],
+  templeR: [0.27, 0.6],
 };
 
 const CYAN = new THREE.Color("#5ee7ff");
@@ -65,9 +65,9 @@ const patchSkin = (material, uniforms) => {
 
         // Concern heat-map: T-zone oil, cheek redness, under-eye darkness, chin blemishes.
         float oil = gauss(p, vec2(0.0, 0.69), vec2(0.27, 0.075)) + gauss(p, vec2(0.0, 0.36), vec2(0.06, 0.14));
-        float red = gauss(p, vec2(-0.26, 0.26), vec2(0.1, 0.085)) + gauss(p, vec2(0.26, 0.26), vec2(0.1, 0.085));
+        float red = gauss(p, vec2(-0.22, 0.27), vec2(0.085, 0.08)) + gauss(p, vec2(0.22, 0.27), vec2(0.085, 0.08));
         float dark = gauss(p, vec2(-0.15, 0.365), vec2(0.075, 0.026)) + gauss(p, vec2(0.15, 0.365), vec2(0.075, 0.026));
-        float spot = gauss(p, vec2(0.0, -0.07), vec2(0.1, 0.055)) + gauss(p, vec2(-0.2, 0.62), vec2(0.035, 0.03)) + gauss(p, vec2(0.19, 0.16), vec2(0.03, 0.03));
+        float spot = gauss(p, vec2(0.0, 0.03), vec2(0.085, 0.045)) + gauss(p, vec2(-0.2, 0.62), vec2(0.035, 0.03)) + gauss(p, vec2(0.16, 0.19), vec2(0.03, 0.03));
         vec3 heat = vec3(1.0, 0.72, 0.18) * oil + vec3(1.0, 0.23, 0.33) * red + vec3(0.58, 0.4, 1.0) * dark + vec3(0.2, 1.0, 0.75) * spot;
         float amt = clamp(oil + red + dark + spot, 0.0, 1.0);
         float pulse = 0.82 + 0.18 * sin(uTime * 2.4);
@@ -84,8 +84,25 @@ const patchSkin = (material, uniforms) => {
         float trail = smoothstep(uScanY, uScanY + 0.02, vObj.y) * exp(-(vObj.y - uScanY) * 7.0);
         col += uCyan * (band * 1.4 + halo * 0.14 + grid * trail * 0.22) * uScan * front;
 
-        float neck = smoothstep(-0.62, -0.18, vObj.y);
+        float neck = smoothstep(-0.62, -0.18, vObj.y) * (1.0 - smoothstep(0.45, 0.78, abs(vObj.x)));
         gl_FragColor = vec4(col * neck, gl_FragColor.a * neck);`
+      );
+  };
+};
+
+const patchExtra = (material, uniforms) => {
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying float vObjY;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObjY = position.y;");
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nvarying float vObjY;\nuniform float uDim;")
+      .replace(
+        "#include <dithering_fragment>",
+        `#include <dithering_fragment>
+        float neck = smoothstep(-0.62, -0.18, vObjY);
+        gl_FragColor = vec4(gl_FragColor.rgb * (1.0 - uDim * 0.82) * neck, gl_FragColor.a * neck);`
       );
   };
 };
@@ -178,25 +195,41 @@ const FaceScan3D = ({ preset = "hero", callouts = [], className = "", autoRotate
     resize();
 
     loadHead()
-      .then(({ geometry, map, normalMap, specMap }) => {
+      .then(({ geometry, scanGeometry, map, extras }) => {
         if (disposed) return;
         const skin = new THREE.MeshPhysicalMaterial({
           map,
-          normalMap,
-          normalScale: new THREE.Vector2(0.9, 0.9),
-          roughness: 0.52,
-          specularIntensity: 0.7,
-          specularColorMap: specMap,
-          sheen: 0.35,
-          sheenRoughness: 0.6,
-          sheenColor: new THREE.Color("#ff9b85"),
-          clearcoat: 0.08,
-          clearcoatRoughness: 0.4,
+          roughness: 0.5,
+          specularIntensity: 0.55,
+          sheen: 0.4,
+          sheenRoughness: 0.55,
+          sheenColor: new THREE.Color("#ffab96"),
+          clearcoat: 0.1,
+          clearcoatRoughness: 0.35,
           transparent: true,
         });
         patchSkin(skin, uniforms);
         const mesh = new THREE.Mesh(geometry, skin);
         head.add(mesh);
+
+        // Eyes, brows, lashes and hair: dim with the skin and fade out at the neck like it does.
+        const extraMats = extras.map(({ name, geometry: g, material: src }) => {
+          const hairLike = name !== "eyes";
+          const mat = new THREE.MeshStandardMaterial({
+            map: src.map,
+            roughness: name === "eyes" ? 0.12 : name === "hair" ? 0.55 : 0.8,
+            metalness: 0,
+            transparent: true,
+            alphaTest: name === "hair" ? 0.35 : hairLike ? 0.05 : 0,
+            depthWrite: name === "hair" || name === "eyes",
+            side: hairLike ? THREE.DoubleSide : THREE.FrontSide,
+          });
+          patchExtra(mat, uniforms);
+          const part = new THREE.Mesh(g, mat);
+          part.renderOrder = hairLike ? 1 : 0;
+          head.add(part);
+          return mat;
+        });
 
         // Dense surface sampling — reads as the landmark / depth point cloud.
         const pointsMat = new THREE.ShaderMaterial({
@@ -227,7 +260,7 @@ const FaceScan3D = ({ preset = "hero", callouts = [], className = "", autoRotate
               gl_FragColor = vec4(uCyan, vA * smoothstep(0.5, 0.1, d));
             }`,
         });
-        const pts = new THREE.Points(geometry, pointsMat);
+        const pts = new THREE.Points(scanGeometry, pointsMat);
         head.add(pts);
 
         wireMat = new THREE.ShaderMaterial({
@@ -249,7 +282,7 @@ const FaceScan3D = ({ preset = "hero", callouts = [], className = "", autoRotate
             varying float vFade;
             void main() { gl_FragColor = vec4(uCyan, uWire * vFade); }`,
         });
-        const wire = new THREE.Mesh(geometry, wireMat);
+        const wire = new THREE.Mesh(scanGeometry, wireMat);
         wire.scale.setScalar(1.003);
         head.add(wire);
 
@@ -282,6 +315,7 @@ const FaceScan3D = ({ preset = "hero", callouts = [], className = "", autoRotate
 
         cleanups.push(() => {
           skin.dispose();
+          extraMats.forEach((m) => m.dispose());
           pointsMat.dispose();
           wireMat.dispose();
           dotGeo.dispose();

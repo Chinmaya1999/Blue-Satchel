@@ -652,7 +652,7 @@ const Landing = () => {
           </div>
         </motion.div>
         <p className="mt-6 text-center text-[11px] text-slate-600">
-          3D head scan by Lee Perry-Smith / Infinite-Realities (CC BY 3.0). Photos via Unsplash.
+          3D head built from MakeHuman assets (CC0). Photos via Unsplash.
         </p>
       </section>
     </div>
