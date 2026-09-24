@@ -13,25 +13,30 @@ const OrderConfirmation = () => {
     api.get(`/orders/${id}`).then(({ data }) => setOrder(data.order)).finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <Loader full />;
-  if (!order) return <div className="container-app py-20 text-center text-slate-400">Order not found.</div>;
+  if (loading) return <div className="fs-page fs-page-bg"><Loader full /></div>;
+  if (!order) return <div className="fs-page fs-page-bg"><div className="container-app py-20 text-center text-slate-400">Order not found.</div></div>;
 
   return (
-    <div className="container-app max-w-2xl py-14 text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
-        <CheckCircle2 size={32} />
+    <div className="fs-page fs-page-bg">
+    <div className="container-app max-w-2xl py-16 text-center">
+      <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+        <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/20" />
+        <span className="relative flex h-24 w-24 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-300/40 shadow-[0_0_60px_-10px_rgba(52,211,153,0.7)]">
+          <CheckCircle2 size={40} />
+        </span>
       </div>
-      <h1 className="mt-5 font-display text-2xl font-bold text-slate-900 sm:text-3xl">Order confirmed!</h1>
+      <p className="fs-eyebrow mt-8">Order placed</p>
+      <h1 className="fs-page-title mt-3">Order <span className="fs-gradient-text">confirmed!</span></h1>
       <p className="mt-2 text-slate-500">Thank you — your order <span className="font-semibold text-slate-700">{order.orderNumber}</span> has been placed.</p>
 
-      <div className="card mt-8 p-6 text-left">
-        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+      <div className="card mt-10 rounded-3xl p-6 text-left sm:p-8">
+        <div className="fs-eyebrow mb-5 flex items-center gap-2 text-[11px]">
           <Package size={16} /> Order details
         </div>
         <ul className="space-y-3">
           {order.items.map((item, idx) => (
             <li key={idx} className="flex items-center gap-3">
-              <img src={item.imageUrl} className="h-12 w-12 rounded-lg object-cover" />
+              <img src={item.imageUrl} className="fs-product-tile h-14 w-14 rounded-xl object-cover" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-slate-800">{item.name}</p>
                 <p className="text-xs text-slate-400">Qty {item.quantity}</p>
@@ -44,7 +49,7 @@ const OrderConfirmation = () => {
           <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>₹{order.subtotal}</span></div>
           <div className="flex justify-between text-slate-500"><span>Shipping</span><span>{order.shippingFee === 0 ? "Free" : `₹${order.shippingFee}`}</span></div>
           <div className="flex justify-between text-slate-500"><span>Tax</span><span>₹{order.tax}</span></div>
-          <div className="flex justify-between border-t border-slate-100 pt-2 font-display text-base font-bold text-slate-900"><span>Total</span><span>₹{order.total}</span></div>
+          <div className="flex justify-between border-t border-slate-100 pt-3 font-display text-lg font-bold text-white"><span>Total</span><span className="fs-gradient-text">₹{order.total}</span></div>
         </div>
         <p className="mt-4 text-xs text-slate-400">
           Shipping to: {order.shippingAddress.line1}, {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}
@@ -52,9 +57,10 @@ const OrderConfirmation = () => {
       </div>
 
       <div className="mt-8 flex justify-center gap-3">
-        <Link to="/orders" className="btn-secondary">View orders</Link>
-        <Link to="/shop" className="btn-primary">Continue shopping</Link>
+        <Link to="/orders" className="btn-secondary rounded-full">View orders</Link>
+        <Link to="/shop" className="btn-primary rounded-full">Continue shopping</Link>
       </div>
+    </div>
     </div>
   );
 };

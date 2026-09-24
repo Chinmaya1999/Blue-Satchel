@@ -39,7 +39,7 @@ const MASK_TTL_MS = 2 * 60 * 60 * 1000;
 
 // ui_score is 0-100, higher = healthier. Same cut-offs as the server's
 // levelFor(), which works on severity = 100 - ui_score.
-const tone = (uiScore) =>
+export const tone = (uiScore) =>
   uiScore > 66
     ? { label: "Good", ring: "#10b981", text: "text-emerald-700", bg: "bg-emerald-50" }
     : uiScore > 33
@@ -121,7 +121,7 @@ const ScoreDial = ({ value, size = 56, light = false }) => {
 };
 
 const Stat = ({ label, value, hint }) => (
-  <div className="rounded-2xl border border-slate-100 bg-white p-4">
+  <div className="card rounded-2xl border border-slate-100 p-4">
     <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
     <p className="mt-1 font-display text-2xl font-bold text-slate-900">{value ?? "—"}</p>
     {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
@@ -130,45 +130,66 @@ const Stat = ({ label, value, hint }) => (
 
 // A face photo with one concern's overlay on top. Masks are transparent
 // PNGs the same size as the analysed photo, so they line up exactly.
-const OverlayImage = ({ base, mask, alt, showMask = true, className = "" }) => (
+// `lazy` is off for the print report, whose hidden images must be loaded
+// before the print dialog opens.
+export const OverlayImage = ({ base, mask, alt, showMask = true, lazy = true, className = "" }) => (
   <div className={`relative overflow-hidden bg-slate-900 ${className}`}>
-    {base && <img src={base} alt={alt} loading="lazy" className="h-full w-full object-cover" />}
+    {base && <img src={base} alt={alt} loading={lazy ? "lazy" : "eager"} className="h-full w-full object-cover" />}
     {mask && showMask && (
-      <img src={mask} alt="" loading="lazy" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+      <img
+        src={mask}
+        alt=""
+        loading={lazy ? "lazy" : "eager"}
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+      />
     )}
   </div>
 );
 
-const ApiAnalysisPanel = ({ scan }) => {
+// Everything needed to draw a scan's AI analysis: the tasks, every metric,
+// the photo to draw on, and the overlay for each metric. Prefers the copies
+// the server saved at scan time (they don't expire); otherwise uses Perfect
+// Corp's signed links while they're still valid.
+export const buildAiAnalysis = (scan) => {
   const output = scan.rawMetrics?.perfectCorpOutput;
   const saved = scan.rawMetrics?.savedImages;
-  const tasks = useMemo(() => (output ? splitTasks(output) : []), [output]);
+  const tasks = output?.length ? splitTasks(output) : [];
   const allMetrics = tasks.flatMap((t) => t.metrics.map((m) => ({ ...m, task: t })));
-  const [selectedId, setSelectedId] = useState(allMetrics[0]?.id);
-  const [showMask, setShowMask] = useState(true);
-
-  if (!output?.length) return null;
-
-  // Prefer the copies the server saved at scan time (they don't expire);
-  // otherwise use Perfect Corp's signed links while they're still valid.
   const linksValid = Date.now() - new Date(scan.createdAt).getTime() < MASK_TTL_MS;
   const savedMask = (m) => saved?.masks?.find((s) => s.type === m.type && (s.region ?? null) === (m.region ?? null))?.url;
   const maskFor = (m) => savedMask(m) || (linksValid ? m.maskUrl : null);
   const baseImage = saved?.resizeImageUrl || (linksValid ? tasks.find((t) => t.imageUrl)?.imageUrl : null) || scan.imageUrl;
-  const overlaysAvailable = allMetrics.some((m) => maskFor(m));
+  return {
+    tasks,
+    allMetrics,
+    maskFor,
+    baseImage,
+    overlaysAvailable: allMetrics.some((m) => maskFor(m)),
+    standard: tasks.find((t) => t.title.startsWith("Standard")),
+    hd: tasks.find((t) => t.title.startsWith("HD")),
+  };
+};
+
+const ApiAnalysisPanel = ({ scan }) => {
+  const { tasks, allMetrics, maskFor, baseImage, overlaysAvailable, standard, hd } = useMemo(
+    () => buildAiAnalysis(scan),
+    [scan]
+  );
+  const [selectedId, setSelectedId] = useState(allMetrics[0]?.id);
+  const [showMask, setShowMask] = useState(true);
+
+  if (!tasks.length) return null;
 
   const selected = allMetrics.find((m) => m.id === selectedId) || allMetrics[0];
-  const standard = tasks.find((t) => t.title.startsWith("Standard"));
-  const hd = tasks.find((t) => t.title.startsWith("HD"));
 
   return (
-    <section className="border-t border-slate-100 bg-white">
-      <div className="container-app py-14">
+    <section className="border-t border-slate-100">
+      <div className="container-app py-16">
         <div>
-          <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <p className="fs-eyebrow inline-flex items-center gap-1.5">
             <Cpu size={13} /> Perfect Corp YouCam AI
           </p>
-          <h2 className="mt-1 font-display text-xl font-bold text-slate-900">Full AI analysis</h2>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Full AI analysis</h2>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
             Every measurement the AI returned, each shown on your photo with the area it detected. Scores run 0–100,
             where higher means healthier skin. Tap any photo to see it larger.
@@ -201,7 +222,7 @@ const ApiAnalysisPanel = ({ scan }) => {
                   mask={maskFor(selected)}
                   showMask={showMask}
                   alt={`${selected.label} analysis`}
-                  className="aspect-square rounded-3xl"
+                  className="aspect-square rounded-3xl ring-1 ring-white/10 shadow-[0_40px_120px_-40px_rgba(56,189,248,0.45)]"
                 />
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 rounded-b-3xl bg-gradient-to-t from-slate-950/85 to-transparent p-5">
                   <div>
@@ -272,7 +293,7 @@ const ApiAnalysisPanel = ({ scan }) => {
                         <div className="relative">
                           <OverlayImage base={baseImage} mask={maskFor(m)} alt={`${m.label} analysis`} className="aspect-square" />
                           <span
-                            className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-bold shadow ${t.bg} ${t.text}`}
+                            className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-bold shadow backdrop-blur-md ${t.bg} ${t.text}`}
                           >
                             {m.uiScore}
                           </span>

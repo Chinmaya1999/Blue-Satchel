@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import { Briefcase } from "lucide-react";
+import { buildAiAnalysis, OverlayImage, tone } from "./ApiAnalysisPanel.jsx";
 
 // Print-only A4 report for a scan. Rendered through a portal straight into
 // <body>, next to #root, so the print stylesheet in index.css can hide the
@@ -29,6 +30,7 @@ const ScanReport = ({ scan, user, insight }) => {
   const skinAge = scan.rawMetrics?.skinAge;
   const created = new Date(scan.createdAt);
   const topConcerns = [...scan.concerns].sort((a, b) => b.severity - a.severity).slice(0, 3);
+  const ai = buildAiAnalysis(scan);
 
   return createPortal(
     <div className="print-report bg-white font-sans text-slate-900">
@@ -154,6 +156,63 @@ const ScanReport = ({ scan, user, insight }) => {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {/* Full AI analysis: every measurement on the photo with its overlay */}
+      {ai.tasks.length > 0 && (
+        <section className="report-page-break">
+          <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate-500">Full AI analysis</h2>
+          <p className="text-[10px] text-slate-400">
+            Every measurement Perfect Corp's AI returned, drawn on your photo over the area it detected. Scores run
+            0–100, where higher means healthier skin.
+            {ai.standard?.skinAge != null && ` Estimated skin age: ${ai.standard.skinAge}.`}
+          </p>
+          {!ai.overlaysAvailable && (
+            <p className="mt-1 text-[10px] text-amber-700">
+              The overlays for this scan have expired, so the photos are shown without them.
+            </p>
+          )}
+          {ai.tasks.map((task) => (
+            <div key={task.key} className="mt-4">
+              <div className="report-block flex items-baseline justify-between border-b border-slate-200 pb-1">
+                <h3 className="font-display text-xs font-bold text-slate-800">{task.title}</h3>
+                <span className="text-[10px] text-slate-400">
+                  {task.overall != null && `Composite ${Math.round(task.overall)} · `}
+                  {task.metrics.length} measurements
+                </span>
+              </div>
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {task.metrics.map((m) => {
+                  const t = tone(m.uiScore);
+                  return (
+                    <div key={m.id} className="report-block overflow-hidden rounded-lg border border-slate-200">
+                      <OverlayImage
+                        base={ai.baseImage}
+                        mask={ai.maskFor(m)}
+                        alt={`${m.label} analysis`}
+                        lazy={false}
+                        className="aspect-square"
+                      />
+                      <div className="px-2 py-1.5">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="truncate text-[11px] font-semibold">{m.label}</p>
+                          <p className="shrink-0 text-[11px] font-bold tabular-nums">{m.uiScore}</p>
+                        </div>
+                        <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full rounded-full" style={{ width: `${m.uiScore}%`, background: t.ring }} />
+                        </div>
+                        <p className="mt-1 flex justify-between text-[9px] text-slate-400">
+                          <span>raw {m.rawScore != null ? m.rawScore.toFixed(1) : "—"}</span>
+                          <span className={`font-semibold ${t.text}`}>{t.label}</span>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </section>
       )}
 

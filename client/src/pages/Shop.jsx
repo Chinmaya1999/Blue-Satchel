@@ -33,44 +33,46 @@ const Shop = () => {
   }, [q, category, tag]);
 
   return (
-    <div className="container-app py-10">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-slate-900">Shop Skincare</h1>
-        <p className="mt-1 text-slate-500">Curated products for every skin concern.</p>
+    <div className="fs-page fs-page-bg">
+    <div className="container-app py-12">
+      <div className="mb-10">
+        <p className="fs-eyebrow">Shop · matched to skin concerns</p>
+        <h1 className="fs-page-title mt-3">Shop <span className="fs-gradient-text">skincare</span></h1>
+        <p className="fs-page-sub">Curated products for every skin concern.</p>
       </div>
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-300/80" />
           <input
-            className="input pl-10"
+            className="input h-12 rounded-full pl-11"
             placeholder="Search products, ingredients…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <button onClick={() => setShowFilters((v) => !v)} className="btn-secondary sm:w-auto">
+        <button onClick={() => setShowFilters((v) => !v)} className="btn-secondary h-12 rounded-full px-6 sm:w-auto">
           <SlidersHorizontal size={15} /> Filters
         </button>
       </div>
 
       {showFilters && (
-        <div className="card mb-8 grid gap-5 p-5 sm:grid-cols-2">
+        <div className="card mb-8 grid gap-6 rounded-3xl p-6 sm:grid-cols-2">
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Category</p>
+            <p className="fs-eyebrow mb-3 text-[11px]">Category</p>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setCategory("")} className={`badge ${category === "" ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600"}`}>All</button>
+              <button onClick={() => setCategory("")} className={`fs-chip ${category === "" ? "fs-chip-on" : ""}`}>All</button>
               {CATEGORIES.map((c) => (
-                <button key={c} onClick={() => setCategory(c)} className={`badge capitalize ${category === c ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600"}`}>{c}</button>
+                <button key={c} onClick={() => setCategory(c)} className={`fs-chip capitalize ${category === c ? "fs-chip-on" : ""}`}>{c}</button>
               ))}
             </div>
           </div>
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Skin Concern</p>
+            <p className="fs-eyebrow mb-3 text-[11px]">Skin Concern</p>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setTag("")} className={`badge ${tag === "" ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600"}`}>All</button>
+              <button onClick={() => setTag("")} className={`fs-chip ${tag === "" ? "fs-chip-on" : ""}`}>All</button>
               {TAGS.map((t) => (
-                <button key={t} onClick={() => setTag(t)} className={`badge capitalize ${tag === t ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600"}`}>{t.replace("-", " ")}</button>
+                <button key={t} onClick={() => setTag(t)} className={`fs-chip capitalize ${tag === t ? "fs-chip-on" : ""}`}>{t.replace("-", " ")}</button>
               ))}
             </div>
           </div>
@@ -80,12 +82,13 @@ const Shop = () => {
       {loading ? (
         <Loader label="Loading products…" />
       ) : items.length === 0 ? (
-        <div className="py-20 text-center text-slate-400">No products match your filters.</div>
+        <div className="card rounded-3xl py-20 text-center text-slate-400">No products match your filters.</div>
       ) : (
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
           {items.map((p) => <ProductCard key={p._id} product={p} />)}
         </div>
       )}
+    </div>
     </div>
   );
 };

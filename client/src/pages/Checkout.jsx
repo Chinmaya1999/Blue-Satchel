@@ -67,13 +67,17 @@ const Checkout = () => {
   };
 
   return (
-    <div className="container-app max-w-5xl py-10">
-      <h1 className="mb-8 font-display text-2xl font-bold text-slate-900 sm:text-3xl">Checkout</h1>
+    <div className="fs-page fs-page-bg">
+    <div className="container-app max-w-5xl py-12">
+      <div className="mb-10">
+        <p className="fs-eyebrow">Secure checkout</p>
+        <h1 className="fs-page-title mt-3">Check<span className="fs-gradient-text">out</span></h1>
+      </div>
 
       <form onSubmit={submit} className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">
-          <div className="card p-6">
-            <h2 className="mb-4 font-display font-semibold text-slate-900">Shipping Address</h2>
+          <div className="card rounded-3xl p-6 sm:p-8">
+            <h2 className="mb-6 flex items-center gap-3 font-display text-lg font-semibold text-white"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400/10 font-mono text-xs text-cyan-300 ring-1 ring-cyan-300/30">01</span> Shipping Address</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="label">Address line 1</label>
@@ -102,16 +106,16 @@ const Checkout = () => {
             </div>
           </div>
 
-          <div className="card p-6">
-            <h2 className="mb-4 font-display font-semibold text-slate-900">Payment Method</h2>
+          <div className="card rounded-3xl p-6 sm:p-8">
+            <h2 className="mb-6 flex items-center gap-3 font-display text-lg font-semibold text-white"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400/10 font-mono text-xs text-cyan-300 ring-1 ring-cyan-300/30">02</span> Payment Method</h2>
             <div className="grid grid-cols-3 gap-3">
               {PAYMENT_METHODS.map((m) => (
                 <button
                   type="button"
                   key={m.id}
                   onClick={() => setMethod(m.id)}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-medium transition ${
-                    method === m.id ? "border-brand-500 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-500 hover:border-slate-300"
+                  className={`flex flex-col items-center gap-2 rounded-2xl border p-4 text-xs font-medium transition ${
+                    method === m.id ? "border-brand-500 bg-brand-50 text-brand-700 shadow-[0_0_30px_-10px_rgba(94,231,255,0.7)]" : "border-slate-200 text-slate-500 hover:border-slate-300"
                   }`}
                 >
                   <m.icon size={18} /> {m.label}
@@ -147,18 +151,18 @@ const Checkout = () => {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
+            <div className="flex items-center gap-2 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-400/25">
               <AlertCircle size={15} /> {error}
             </div>
           )}
         </div>
 
-        <div className="card h-fit p-6">
-          <h2 className="mb-4 font-display font-semibold text-slate-900">Order Summary</h2>
+        <div className="card h-fit rounded-3xl p-6 sm:p-8 lg:sticky lg:top-24">
+          <h2 className="mb-5 font-display text-lg font-semibold text-white">Order Summary</h2>
           <ul className="max-h-64 space-y-3 overflow-y-auto pr-1">
             {items.map((i) => (
               <li key={i.productId} className="flex items-center gap-3">
-                <img src={i.imageUrl} className="h-12 w-12 rounded-lg object-cover" />
+                <img src={i.imageUrl} className="fs-product-tile h-14 w-14 rounded-xl object-cover" />
                 <div className="flex-1">
                   <p className="line-clamp-1 text-sm font-medium text-slate-800">{i.name}</p>
                   <p className="text-xs text-slate-400">Qty {i.quantity}</p>
@@ -171,13 +175,14 @@ const Checkout = () => {
             <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>₹{subtotal}</span></div>
             <div className="flex justify-between text-slate-500"><span>Shipping</span><span>{shippingFee === 0 ? "Free" : `₹${shippingFee}`}</span></div>
             <div className="flex justify-between text-slate-500"><span>Tax (18%)</span><span>₹{tax}</span></div>
-            <div className="flex justify-between border-t border-slate-100 pt-2 font-display text-base font-bold text-slate-900"><span>Total</span><span>₹{total}</span></div>
+            <div className="flex justify-between border-t border-slate-100 pt-3 font-display text-lg font-bold text-white"><span>Total</span><span className="fs-gradient-text">₹{total}</span></div>
           </div>
-          <button type="submit" disabled={loading} className="btn-primary mt-6 w-full">
+          <button type="submit" disabled={loading} className="btn-primary mt-6 h-12 w-full rounded-full">
             {loading ? "Placing order…" : `Place order · ₹${total}`}
           </button>
         </div>
       </form>
+    </div>
     </div>
   );
 };

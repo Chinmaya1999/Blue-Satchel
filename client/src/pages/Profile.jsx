@@ -40,25 +40,28 @@ const Profile = () => {
   };
 
   return (
-    <div className="container-app max-w-4xl py-10">
-      <div className="mb-8 flex items-center gap-4">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
+    <div className="fs-page fs-page-bg">
+    <div className="container-app max-w-5xl py-12">
+      <div className="card relative mb-8 flex flex-col gap-5 overflow-hidden rounded-[2rem] p-6 sm:flex-row sm:items-center sm:p-8">
+        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-cyan-400/15 blur-3xl" />
+        <span className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-indigo-500 font-display text-3xl font-bold text-slate-950 shadow-[0_0_40px_-6px_rgba(94,231,255,0.7)] ring-4 ring-white/10">
           {user.name?.[0]?.toUpperCase()}
         </span>
-        <div>
-          <h1 className="font-display text-2xl font-bold text-slate-900">{user.name}</h1>
-          <p className="text-sm text-slate-500">{user.email}</p>
+        <div className="relative flex-1">
+          <p className="fs-eyebrow text-[11px]">Your profile</p>
+          <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-white">{user.name}</h1>
+          <p className="text-sm text-slate-400">{user.email}</p>
         </div>
-      </div>
 
-      <div className="mb-6 flex flex-wrap gap-3">
-        <Link to="/scan/history" className="btn-secondary"><ScanFace size={15} /> Scan history</Link>
-        <Link to="/orders" className="btn-secondary"><Package size={15} /> Order history</Link>
+      <div className="relative flex flex-wrap gap-3">
+        <Link to="/scan/history" className="btn-secondary rounded-full"><ScanFace size={15} /> Scan history</Link>
+        <Link to="/orders" className="btn-secondary rounded-full"><Package size={15} /> Order history</Link>
+      </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <form onSubmit={save} className="card space-y-5 p-6">
-          <h2 className="flex items-center gap-2 font-display font-semibold text-slate-900"><User size={16} /> Profile details</h2>
+        <form onSubmit={save} className="card space-y-5 rounded-3xl p-6 sm:p-8">
+          <h2 className="flex items-center gap-3 font-display text-lg font-semibold text-white"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/25"><User size={16} /></span> Profile details</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label">Full name</label>
@@ -76,7 +79,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <h3 className="pt-2 text-sm font-semibold text-slate-700">Default shipping address</h3>
+          <h3 className="fs-eyebrow border-t border-white/10 pt-6 text-[11px]">Default shipping address</h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="label">Address line 1</label>
@@ -100,17 +103,17 @@ const Profile = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={saving} className="btn-primary">
+          <button type="submit" disabled={saving} className="btn-primary rounded-full px-6">
             {saved ? <><CheckCircle2 size={15} /> Saved</> : <><Save size={15} /> {saving ? "Saving…" : "Save changes"}</>}
           </button>
         </form>
 
-        <div className="card p-6">
-          <h2 className="mb-4 flex items-center gap-2 font-display font-semibold text-slate-900"><Bell size={16} /> Notifications</h2>
+        <div className="card h-fit rounded-3xl p-6 sm:p-8">
+          <h2 className="mb-5 flex items-center gap-3 font-display text-lg font-semibold text-white"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-400/10 text-indigo-300 ring-1 ring-indigo-300/25"><Bell size={16} /></span> Notifications</h2>
           {user.notifications?.length ? (
             <ul className="max-h-96 space-y-3 overflow-y-auto pr-1">
               {[...user.notifications].reverse().map((n) => (
-                <li key={n._id} onClick={() => markRead(n._id)} className={`cursor-pointer rounded-xl border p-3 text-sm transition ${n.read ? "border-slate-100 bg-slate-50" : "border-brand-100 bg-brand-50"}`}>
+                <li key={n._id} onClick={() => markRead(n._id)} className={`cursor-pointer rounded-2xl border p-3.5 text-sm transition hover:border-cyan-300/40 ${n.read ? "border-slate-100 bg-slate-50" : "border-brand-100 bg-brand-50 shadow-[inset_3px_0_0_#5ee7ff]"}`}>
                   <p className="font-semibold text-slate-800">{n.title}</p>
                   <p className="mt-0.5 text-xs text-slate-500">{n.message}</p>
                 </li>
@@ -121,6 +124,7 @@ const Profile = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

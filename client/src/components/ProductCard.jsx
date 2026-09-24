@@ -6,8 +6,8 @@ const ProductCard = ({ product }) => {
   const { addItem } = useCart();
 
   return (
-    <div className="card group flex flex-col overflow-hidden transition hover:shadow-soft">
-      <Link to={`/shop/${product._id}`} className="relative block aspect-square overflow-hidden bg-slate-100">
+    <div className="card group flex flex-col overflow-hidden rounded-3xl transition duration-300 hover:-translate-y-1 hover:shadow-soft">
+      <Link to={`/shop/${product._id}`} className="fs-product-tile relative m-2 block aspect-square overflow-hidden rounded-2xl">
         <img
           src={product.imageUrl}
           alt={product.name}
@@ -15,18 +15,18 @@ const ProductCard = ({ product }) => {
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
         {product.bestseller && (
-          <span className="absolute left-3 top-3 rounded-full bg-brand-900/90 px-2.5 py-1 text-[11px] font-semibold text-white">
+          <span className="absolute left-3 top-3 rounded-full bg-slate-950/80 px-2.5 py-1 text-[11px] font-semibold text-cyan-200 ring-1 ring-cyan-300/30 backdrop-blur">
             Bestseller
           </span>
         )}
         {product.compareAtPrice && (
-          <span className="absolute right-3 top-3 rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-semibold text-white">
+          <span className="absolute right-3 top-3 rounded-full bg-rose-500/90 px-2.5 py-1 text-[11px] font-semibold text-white shadow-[0_0_16px_rgba(244,63,94,0.5)]">
             Save ₹{product.compareAtPrice - product.price}
           </span>
         )}
       </Link>
-      <div className="flex flex-1 flex-col p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-brand-500">{product.category}</p>
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-2">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">{product.category}</p>
         <Link to={`/shop/${product._id}`} className="mt-0.5 line-clamp-1 font-display font-semibold text-slate-900 hover:text-brand-700">
           {product.name}
         </Link>
@@ -44,7 +44,7 @@ const ProductCard = ({ product }) => {
           </div>
           <button
             onClick={() => addItem(product, 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-600 transition hover:bg-brand-600 hover:text-white active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/30 transition hover:bg-cyan-300 hover:text-slate-950 hover:shadow-[0_0_20px_rgba(94,231,255,0.6)] active:scale-95"
             aria-label={`Add ${product.name} to bag`}
           >
             <ShoppingBag size={16} />

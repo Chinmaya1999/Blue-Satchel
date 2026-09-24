@@ -594,7 +594,7 @@ const ScanCapture = () => {
   );
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full flex-col overflow-hidden bg-white lg:flex-row">
+    <div className="fs-page flex h-[calc(100vh-4rem)] w-full flex-col overflow-hidden bg-[#050814] lg:flex-row">
       {/* Camera pane — full bleed */}
       <div className="relative flex-1 overflow-hidden bg-slate-950 lg:flex-[1.4]">
         {cameraError ? (
@@ -617,7 +617,9 @@ const ScanCapture = () => {
           </>
         )}
 
-        {flash && <div className="absolute inset-0 bg-white" style={{ opacity: 0.85 }} />}
+        {flash && <div className="absolute inset-0 bg-cyan-50" style={{ opacity: 0.85 }} />}
+
+        {isCaptureStage && !currentShot && !cameraError && <div className="fs-photo-scan" />}
 
         {/* Top overlay bar */}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-slate-900/70 to-transparent p-5">
@@ -667,7 +669,7 @@ const ScanCapture = () => {
               <button
                 onClick={() => setAutoCapture((v) => !v)}
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold backdrop-blur-sm transition ${
-                  autoCapture ? "bg-brand-600/90 text-white" : "bg-white/15 text-white/80"
+                  autoCapture ? "bg-cyan-300 text-slate-950 shadow-[0_0_16px_rgba(94,231,255,0.6)]" : "bg-white/15 text-white/80"
                 }`}
               >
                 {autoCapture ? <Zap size={12} /> : <ZapOff size={12} />} Auto {autoCapture ? "on" : "off"}
@@ -715,15 +717,17 @@ const ScanCapture = () => {
         {/* Intro overlay — shown even if the camera failed, so "Upload a
             photo instead" is always reachable rather than a dead end. */}
         {flowStage === "intro" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/55 p-6 backdrop-blur-sm">
-            <div className="w-full max-w-sm rounded-3xl bg-white/95 p-6 text-center shadow-2xl backdrop-blur">
-              <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                <ScanFace size={22} />
+          <div className="absolute inset-0 flex items-center justify-center bg-[#050814]/60 p-6 backdrop-blur-sm">
+            <div className="fs-auth-card relative w-full max-w-sm overflow-hidden rounded-[2rem] p-7 text-center">
+              <div className="fs-auth-card-glow" />
+              <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/30 shadow-[0_0_40px_-6px_rgba(94,231,255,0.6)]">
+                <ScanFace size={24} />
               </span>
-              <h2 className="font-display text-lg font-bold text-slate-900">Guided AI Skin Scan</h2>
+              <p className="fs-eyebrow text-[10px]">3 angles · voice guided</p>
+              <h2 className="mt-2 font-display text-xl font-bold text-white">Guided AI Skin Scan</h2>
 
               {cameraError ? (
-                <div className="mt-3 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-left text-sm text-rose-700">
+                <div className="mt-3 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-left text-sm text-rose-700 ring-1 ring-rose-400/25">
                   <AlertCircle size={16} className="mt-0.5 shrink-0" />
                   {cameraError}
                 </div>
@@ -735,8 +739,8 @@ const ScanCapture = () => {
                   <div className="mt-5 flex justify-center gap-4">
                     {STEP_ORDER.map((s, i) => (
                       <div key={s} className="flex flex-col items-center gap-1.5">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">
-                          {i + 1}
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 font-mono text-xs font-bold text-brand-600 ring-1 ring-cyan-300/30">
+                          0{i + 1}
                         </span>
                         <span className="text-[11px] text-slate-500">{STEPS[s].label}</span>
                       </div>
@@ -745,7 +749,7 @@ const ScanCapture = () => {
                   <button
                     onClick={startGuidedScan}
                     disabled={!cameraReady || !modelsReady}
-                    className="btn-primary mt-6 w-full"
+                    className="btn-primary mt-6 h-12 w-full rounded-full"
                   >
                     {!cameraReady ? "Starting camera…" : !modelsReady ? "Loading face detector…" : "Start guided scan"}
                   </button>
@@ -754,7 +758,7 @@ const ScanCapture = () => {
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className={cameraError ? "btn-primary mt-4 w-full" : "mt-2 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600"}
+                className={cameraError ? "btn-primary mt-4 w-full rounded-full" : "mt-3 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600"}
               >
                 <Upload size={cameraError ? 15 : 13} /> Upload a photo instead
               </button>
@@ -765,7 +769,7 @@ const ScanCapture = () => {
 
         {/* Bottom overlay: status + controls */}
         {!cameraError && flowStage !== "intro" && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-4 bg-gradient-to-t from-slate-900/90 via-slate-900/50 to-transparent px-5 pb-6 pt-16">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-4 bg-gradient-to-t from-[#050814]/95 via-[#050814]/50 to-transparent px-5 pb-6 pt-16">
             {isCaptureStage && (
               <div className="flex flex-col items-center gap-2">
                 <p className="text-center text-sm font-medium text-white">{caption}</p>
@@ -784,7 +788,7 @@ const ScanCapture = () => {
               <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl bg-white/10 p-2.5 backdrop-blur-md ring-1 ring-white/15">
                 <button
                   onClick={() => capturePhoto(flowStage)}
-                  className="flex flex-[1.4] items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-brand-800 shadow-soft transition hover:bg-brand-50"
+                  className="fs-nav-cta flex-[1.4] justify-center rounded-xl py-2.5"
                 >
                   <Camera size={16} /> Capture now
                 </button>
@@ -802,8 +806,9 @@ const ScanCapture = () => {
         )}
 
         {submitting && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/75 backdrop-blur-sm">
-            <div className="h-14 w-14 animate-spin rounded-full border-[3px] border-white/20 border-t-white" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#050814]/75 backdrop-blur-sm">
+            <div className="fs-photo-scan" />
+            <div className="h-16 w-16 animate-spin rounded-full border-[3px] border-cyan-300/20 border-t-cyan-300 shadow-[0_0_30px_-4px_rgba(94,231,255,0.6)]" />
             <p className="px-6 text-center text-sm font-medium text-white">{ANALYSIS_STEPS[stepIndex]}</p>
           </div>
         )}
@@ -817,10 +822,11 @@ const ScanCapture = () => {
           banners added there for parity), rather than splitting a short
           viewport between a cramped video and this pane's full content
           height. */}
-      <div className="hidden lg:flex lg:w-[400px] lg:flex-col lg:overflow-y-auto lg:border-l lg:border-slate-100 lg:p-8 xl:w-[440px]">
+      <div className="fs-scan-pane hidden lg:flex lg:w-[400px] lg:flex-col lg:overflow-y-auto lg:border-l lg:border-slate-100 lg:p-8 xl:w-[440px]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-display text-xl font-bold text-slate-900 sm:text-2xl">Let's scan your skin</h1>
+            <p className="fs-eyebrow text-[11px]">AI skin assessment</p>
+            <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-white">Let's scan your <span className="fs-gradient-text">skin</span></h1>
             <p className="mt-1.5 text-sm text-slate-500">
               A guided, voice-narrated scan from three angles for a steadier reading.
             </p>
@@ -846,7 +852,7 @@ const ScanCapture = () => {
         {submitting && (
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <motion.div
-              className="h-full rounded-full bg-brand-600"
+              className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-indigo-400 shadow-[0_0_12px_rgba(94,231,255,0.8)]"
               animate={{ width: `${progressPct}%` }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             />
@@ -855,7 +861,7 @@ const ScanCapture = () => {
 
         {!submitting && (
           <>
-            <p className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">Captured angles</p>
+            <p className="fs-eyebrow mb-3 mt-7 text-[11px]">Captured angles</p>
             <div className="grid grid-cols-3 gap-3">
               {STEP_ORDER.map((s) => (
                 <div
@@ -886,7 +892,7 @@ const ScanCapture = () => {
         )}
 
         {flowStage === "intro" && (
-          <div className="mt-6 flex items-start gap-3 rounded-xl bg-brand-50 p-4">
+          <div className="mt-6 flex items-start gap-3 rounded-2xl bg-brand-50 p-4 ring-1 ring-cyan-300/20">
             <Sparkles size={17} className="mt-0.5 shrink-0 text-brand-600" />
             <p className="text-sm font-medium text-brand-900">
               Good lighting and a clear view of your face (glasses off, if you can) give the most accurate reading.
@@ -896,7 +902,7 @@ const ScanCapture = () => {
 
         {submitting && (
           <>
-            <p className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">What our AI checks</p>
+            <p className="fs-eyebrow mb-3 mt-7 text-[11px]">What our AI checks</p>
             <div className="space-y-2">
               {CHECKLIST.map((item, idx) => {
                 const isDone = idx < stepIndex;
@@ -906,15 +912,15 @@ const ScanCapture = () => {
                     key={item.key}
                     animate={{
                       scale: isActive ? 1.02 : 1,
-                      borderColor: isActive ? "#8fb3ff" : isDone ? "#a7f3d0" : "#f1f5f9",
-                      backgroundColor: isActive ? "#eef4ff" : isDone ? "#ecfdf5" : "#ffffff",
+                      borderColor: isActive ? "rgba(94,231,255,0.55)" : isDone ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.08)",
+                      backgroundColor: isActive ? "rgba(94,231,255,0.08)" : isDone ? "rgba(52,211,153,0.07)" : "rgba(255,255,255,0.02)",
                     }}
                     transition={{ duration: 0.3 }}
                     className="flex items-center gap-3 rounded-xl border p-3"
                   >
                     <span
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                        isDone ? "bg-emerald-500 text-white" : isActive ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-400"
+                        isDone ? "bg-emerald-400 text-slate-950" : isActive ? "bg-cyan-300 text-slate-950" : "bg-slate-100 text-slate-400"
                       }`}
                     >
                       {isDone ? <CheckCircle2 size={16} /> : <item.icon size={16} />}
@@ -937,7 +943,7 @@ const ScanCapture = () => {
           </>
         )}
 
-        <div className="mt-6 rounded-xl bg-slate-50 p-4 text-xs text-slate-500">
+        <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-500 ring-1 ring-white/10">
           Results include an overall skin health score out of 100, a severity breakdown for each concern, and a
           personalized product routine — the left and right views help steady the redness, texture and spots
           readings beyond what a single front photo can show.

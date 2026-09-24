@@ -20,23 +20,27 @@ const OrderHistory = () => {
     api.get("/orders").then(({ data }) => setOrders(data.orders)).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <Loader full label="Loading orders…" />;
+  if (loading) return <div className="fs-page fs-page-bg"><Loader full label="Loading orders…" /></div>;
 
   return (
-    <div className="container-app max-w-3xl py-10">
-      <h1 className="mb-8 font-display text-2xl font-bold text-slate-900 sm:text-3xl">Order History</h1>
+    <div className="fs-page fs-page-bg">
+    <div className="container-app max-w-3xl py-12">
+      <div className="mb-10">
+        <p className="fs-eyebrow">Your orders</p>
+        <h1 className="fs-page-title mt-3">Order <span className="fs-gradient-text">history</span></h1>
+      </div>
 
       {orders.length === 0 ? (
-        <div className="card flex flex-col items-center gap-3 p-14 text-center">
-          <ShoppingBag size={36} className="text-slate-300" />
+        <div className="card flex flex-col items-center gap-3 rounded-3xl p-14 text-center">
+          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/25 shadow-[0_0_40px_-8px_rgba(94,231,255,0.5)]"><ShoppingBag size={32} /></span>
           <p className="font-medium text-slate-500">You haven't placed any orders yet.</p>
-          <Link to="/shop" className="btn-primary mt-2">Start shopping</Link>
+          <Link to="/shop" className="btn-primary mt-2 rounded-full">Start shopping</Link>
         </div>
       ) : (
         <div className="space-y-3">
           {orders.map((o) => (
-            <Link key={o._id} to={`/order-confirmation/${o._id}`} className="card flex items-center gap-4 p-4 transition hover:shadow-soft">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+            <Link key={o._id} to={`/order-confirmation/${o._id}`} className="card group flex items-center gap-4 rounded-3xl p-4 transition hover:shadow-soft">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 ring-1 ring-cyan-300/25">
                 <Package size={20} />
               </div>
               <div className="flex-1">
@@ -46,12 +50,13 @@ const OrderHistory = () => {
                 </div>
                 <p className="text-xs text-slate-400">{new Date(o.createdAt).toLocaleString()} · {o.items.length} item(s)</p>
               </div>
-              <p className="font-display font-bold text-slate-900">₹{o.total}</p>
-              <ChevronRight size={18} className="text-slate-300" />
+              <p className="font-display text-lg font-bold text-white">₹{o.total}</p>
+              <ChevronRight size={18} className="text-slate-400 transition group-hover:translate-x-1 group-hover:text-cyan-300" />
             </Link>
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 };

@@ -5,8 +5,10 @@ const Logo = ({ light = false, size = "md" }) => {
   return (
     <div className="flex items-center gap-2 select-none">
       <span
-        className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-          light ? "bg-white/15 text-white" : "bg-brand-600 text-white"
+        className={`relative flex h-8 w-8 items-center justify-center rounded-lg ${
+          light
+            ? "bg-gradient-to-br from-cyan-300 to-indigo-500 text-slate-950 shadow-[0_0_24px_-4px_rgba(94,231,255,0.7)]"
+            : "bg-brand-600 text-white"
         }`}
       >
         <Briefcase size={16} strokeWidth={2.4} />

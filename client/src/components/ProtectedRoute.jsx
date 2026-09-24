@@ -6,7 +6,7 @@ export const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <Loader full label="Loading your session…" />;
+  if (loading) return <div className="fs-page fs-page-bg"><Loader full label="Loading your session…" /></div>;
   if (!user) return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   return children;
 };

@@ -64,9 +64,9 @@ const FACE_REGION_POSITIONS = {
 };
 
 const REGION_RING_STYLE = {
-  Low: "border-emerald-400 text-emerald-700",
-  Medium: "border-amber-400 text-amber-700",
-  High: "border-rose-400 text-rose-700",
+  Low: "border-emerald-400 text-emerald-300 shadow-[0_0_24px_-4px_rgba(52,211,153,0.8)]",
+  Medium: "border-amber-400 text-amber-300 shadow-[0_0_24px_-4px_rgba(251,191,36,0.8)]",
+  High: "border-rose-400 text-rose-300 shadow-[0_0_24px_-4px_rgba(251,113,133,0.8)]",
 };
 
 const LEVEL_STYLE = {
@@ -108,8 +108,21 @@ const downloadJson = (scan) => {
 };
 
 // The browser's print dialog offers both "Save as PDF" and a real printer.
-// The document title becomes the suggested PDF file name.
-const printReport = (scan) => {
+// The document title becomes the suggested PDF file name. Waits for the
+// report's photos and overlays to load so none print blank.
+const printReport = async (scan) => {
+  const images = [...document.querySelectorAll(".print-report img")];
+  await Promise.all(
+    images
+      .filter((img) => !img.complete)
+      .map(
+        (img) =>
+          new Promise((done) => {
+            img.addEventListener("load", done, { once: true });
+            img.addEventListener("error", done, { once: true });
+          })
+      )
+  );
   const previousTitle = document.title;
   document.title = reportFileName(scan, "pdf").replace(/\.pdf$/, "");
   window.addEventListener("afterprint", () => (document.title = previousTitle), { once: true });
@@ -148,12 +161,12 @@ const DownloadMenu = ({ scan }) => {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20"
+        className="btn rounded-full bg-white/10 text-white ring-1 ring-white/25 backdrop-blur hover:bg-white/20"
       >
         <FileDown size={15} /> Download <ChevronDown size={14} className={`transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div role="menu" className="absolute bottom-full left-0 z-20 mb-2 w-64 overflow-hidden rounded-xl bg-white p-1.5 shadow-soft ring-1 ring-slate-200">
+        <div role="menu" className="absolute bottom-full left-0 z-20 mb-2 w-64 overflow-hidden rounded-2xl bg-[#0b1224]/95 p-1.5 shadow-2xl ring-1 ring-white/15 backdrop-blur-xl">
           <button
             type="button"
             role="menuitem"
@@ -163,7 +176,7 @@ const DownloadMenu = ({ scan }) => {
             <FileDown size={16} className="mt-0.5 shrink-0 text-brand-600" />
             <span>
               <span className="block text-sm font-semibold text-slate-800">PDF report</span>
-              <span className="block text-xs text-slate-500">A4 report to save as PDF or print</span>
+              <span className="block text-xs text-slate-500">A4 report with every AI photo and overlay</span>
             </span>
           </button>
           <button
@@ -201,17 +214,19 @@ const ScanResult = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <Loader full label="Loading your results…" />;
+  if (loading) return <div className="fs-page fs-page-bg"><Loader full label="Loading your results…" /></div>;
   if (!scan) return <div className="container-app py-20 text-center text-slate-400">Scan not found.</div>;
 
   return (
-    <div className="bg-slate-50">
+    <div className="fs-page fs-page-bg">
       {/* Split hero: face left, key concerns right */}
-      <section className="grid lg:grid-cols-2">
+      <section className="grid border-b border-white/5 lg:grid-cols-2">
         {/* Left: photo + score */}
         <div className="relative min-h-[420px] overflow-hidden bg-slate-950 lg:min-h-[600px]">
           <img src={scan.imageUrl} alt="Your scan" className="h-full w-full object-cover opacity-90" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050814] via-[#050814]/40 to-[#050814]/10" />
+          <div className="fs-photo-scan" />
+          <div className="fs-corners absolute inset-5 opacity-50" />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-transparent to-transparent" />
 
           {/* Per-region wrinkle breakdown (Perfect Corp's hd_wrinkle), when available */}
@@ -223,11 +238,11 @@ const ScanResult = () => {
             return (
               <div
                 key={r.key}
-                className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
+                className="absolute hidden -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5 sm:flex"
                 style={{ top: pos.top, left: pos.left }}
               >
                 <span
-                  className={`flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white/95 font-display text-sm font-bold shadow-lg backdrop-blur-sm ${ring}`}
+                  className={`flex h-12 w-12 items-center justify-center rounded-full border-2 bg-slate-950/75 font-display text-sm font-bold backdrop-blur-md ${ring}`}
                 >
                   {healthScore}
                 </span>
@@ -269,7 +284,8 @@ const ScanResult = () => {
           </div>
 
           <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-            <h1 className="font-display text-2xl font-extrabold text-white sm:text-3xl">Your results are in</h1>
+            <p className="fs-eyebrow">Skin analysis complete</p>
+            <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">Your results are <span className="fs-gradient-text">in</span></h1>
             <div className="mt-6 flex items-end gap-6">
               <ScoreRing score={scan.overallScore} label={scan.overallLabel} size={128} stroke={10} />
               <div className="pb-2">
@@ -277,10 +293,10 @@ const ScanResult = () => {
                   {INSIGHT[scan.overallLabel] || INSIGHT.Fair}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2.5">
-                  <Link to="/scan" className="btn bg-white text-brand-800 hover:bg-brand-50">
+                  <Link to="/scan" className="fs-nav-cta">
                     <RotateCcw size={15} /> Scan again
                   </Link>
-                  <Link to="/scan/history" className="btn bg-white/10 text-white ring-1 ring-white/25 hover:bg-white/20">
+                  <Link to="/scan/history" className="btn rounded-full bg-white/10 text-white ring-1 ring-white/25 backdrop-blur hover:bg-white/20">
                     <History size={15} /> History
                   </Link>
                   <DownloadMenu scan={scan} />
@@ -291,16 +307,16 @@ const ScanResult = () => {
         </div>
 
         {/* Right: key concerns */}
-        <div className="flex flex-col justify-center bg-white p-6 sm:p-10 lg:p-12">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Key Concerns</p>
-          <h2 className="mt-1 font-display text-xl font-bold text-slate-900">What your scan found</h2>
+        <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-12">
+          <p className="fs-eyebrow">Key Concerns</p>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">What your scan found</h2>
 
           <div className="mt-6 space-y-3">
             {scan.concerns.map((c) => {
               const Icon = CONCERN_ICONS[c.key] || Target;
               const style = LEVEL_STYLE[c.level] || LEVEL_STYLE.Low;
               return (
-                <div key={c.key} className="flex items-center gap-4 rounded-2xl border border-slate-100 p-4 transition hover:border-slate-200 hover:shadow-card">
+                <div key={c.key} className="card flex items-center gap-4 rounded-2xl p-4 transition hover:border-slate-200 hover:shadow-card">
                   <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${style.bg} ${style.icon}`}>
                     <Icon size={19} />
                   </span>
@@ -324,13 +340,13 @@ const ScanResult = () => {
       <ApiAnalysisPanel scan={scan} />
 
       {/* Recommended products */}
-      <section className="container-app py-14">
-        <div className="mb-6 flex items-center justify-between">
+      <section className="container-app py-16">
+        <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Personalized routine</p>
-            <h2 className="mt-1 font-display text-xl font-bold text-slate-900">Recommended for you</h2>
+            <p className="fs-eyebrow">Personalized routine</p>
+            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">Recommended <span className="fs-gradient-text">for you</span></h2>
           </div>
-          <Link to="/shop" className="text-sm font-semibold text-brand-600 hover:underline">View all products</Link>
+          <Link to="/shop" className="btn-secondary rounded-full">View all products</Link>
         </div>
         {scan.recommendedProducts?.length > 0 ? (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
