@@ -5,7 +5,7 @@ import Loader from "../../components/Loader.jsx";
 
 const emptyForm = {
   name: "", brand: "Blue Satchel", description: "", category: "serum", price: "", compareAtPrice: "",
-  imageUrl: "", tags: "", skinTypes: "", stock: 100, bestseller: false,
+  imageUrl: "", productUrl: "", tags: "", skinTypes: "", stock: 100, bestseller: false,
 };
 
 const AdminProducts = () => {
@@ -27,7 +27,7 @@ const AdminProducts = () => {
     setEditing(p);
     setForm({
       name: p.name, brand: p.brand, description: p.description, category: p.category,
-      price: p.price, compareAtPrice: p.compareAtPrice || "", imageUrl: p.imageUrl,
+      price: p.price, compareAtPrice: p.compareAtPrice || "", imageUrl: p.imageUrl, productUrl: p.productUrl || "",
       tags: p.tags.join(", "), skinTypes: p.skinTypes.join(", "), stock: p.stock, bestseller: p.bestseller,
     });
     setShowForm(true);
@@ -115,7 +115,7 @@ const AdminProducts = () => {
               <textarea required placeholder="Description" rows={2} className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <select className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                  {["cleanser", "serum", "moisturizer", "sunscreen", "treatment", "toner", "mask"].map((c) => <option key={c}>{c}</option>)}
+                  {["cleanser", "toner", "serum", "treatment", "eye-care", "moisturizer", "sunscreen", "mask"].map((c) => <option key={c}>{c}</option>)}
                 </select>
                 <input required type="number" placeholder="Price" className="input" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
               </div>
@@ -124,6 +124,7 @@ const AdminProducts = () => {
                 <input type="number" placeholder="Stock" className="input" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
               </div>
               <input required placeholder="Image URL" className="input" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
+              <input type="url" placeholder="Brand product page URL (optional)" className="input" value={form.productUrl} onChange={(e) => setForm({ ...form, productUrl: e.target.value })} />
               <input placeholder="Tags (comma separated, e.g. spots, pores)" className="input" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
               <input placeholder="Skin types (comma separated)" className="input" value={form.skinTypes} onChange={(e) => setForm({ ...form, skinTypes: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-slate-600">

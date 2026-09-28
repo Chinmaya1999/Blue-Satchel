@@ -4,8 +4,11 @@ import api from "../api/axios.js";
 import ProductCard from "../components/ProductCard.jsx";
 import Loader from "../components/Loader.jsx";
 
-const CATEGORIES = ["cleanser", "serum", "moisturizer", "sunscreen", "treatment", "toner", "mask"];
-const TAGS = ["spots", "pores", "texture", "redness", "dark-circles", "hydration", "anti-aging", "acne", "brightening"];
+const CATEGORIES = ["cleanser", "toner", "serum", "treatment", "eye-care", "moisturizer", "sunscreen"];
+const TAGS = [
+  "acne", "pores", "oiliness", "spots", "texture", "redness", "hydration",
+  "brightening", "wrinkles", "firmness", "dark-circles", "eye-bags",
+];
 
 const Shop = () => {
   const [items, setItems] = useState([]);
@@ -13,15 +16,23 @@ const Shop = () => {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
   const [tag, setTag] = useState("");
+  const [brand, setBrand] = useState("");
+  const [brands, setBrands] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    api.get("/products/brands").then(({ data }) => setBrands(data.brands)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    const params = { limit: 24 };
+    // Oldest first keeps the catalogue in routine order (cleanser → sunscreen).
+    const params = { limit: 100, sort: "_id" };
     if (q) params.q = q;
     if (category) params.category = category;
     if (tag) params.tag = tag;
+    if (brand) params.brand = brand;
 
     api
       .get("/products", { params, signal: controller.signal })
@@ -30,7 +41,7 @@ const Shop = () => {
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [q, category, tag]);
+  }, [q, category, tag, brand]);
 
   return (
     <div className="fs-page fs-page-bg">
@@ -38,7 +49,9 @@ const Shop = () => {
       <div className="mb-10">
         <p className="fs-eyebrow">Shop · matched to skin concerns</p>
         <h1 className="fs-page-title mt-3">Shop <span className="fs-gradient-text">skincare</span></h1>
-        <p className="fs-page-sub">Curated products for every skin concern.</p>
+        <p className="fs-page-sub">
+          {brands.length > 0 ? `${brands.length} trusted brands` : "Trusted brands"}, picked for every skin concern your scan can detect.
+        </p>
       </div>
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -57,13 +70,13 @@ const Shop = () => {
       </div>
 
       {showFilters && (
-        <div className="card mb-8 grid gap-6 rounded-3xl p-6 sm:grid-cols-2">
+        <div className="card mb-8 grid gap-6 rounded-3xl p-6 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <p className="fs-eyebrow mb-3 text-[11px]">Category</p>
             <div className="flex flex-wrap gap-2">
               <button onClick={() => setCategory("")} className={`fs-chip ${category === "" ? "fs-chip-on" : ""}`}>All</button>
               {CATEGORIES.map((c) => (
-                <button key={c} onClick={() => setCategory(c)} className={`fs-chip capitalize ${category === c ? "fs-chip-on" : ""}`}>{c}</button>
+                <button key={c} onClick={() => setCategory(c)} className={`fs-chip capitalize ${category === c ? "fs-chip-on" : ""}`}>{c.replace("-", " ")}</button>
               ))}
             </div>
           </div>
@@ -73,6 +86,15 @@ const Shop = () => {
               <button onClick={() => setTag("")} className={`fs-chip ${tag === "" ? "fs-chip-on" : ""}`}>All</button>
               {TAGS.map((t) => (
                 <button key={t} onClick={() => setTag(t)} className={`fs-chip capitalize ${tag === t ? "fs-chip-on" : ""}`}>{t.replace("-", " ")}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="fs-eyebrow mb-3 text-[11px]">Brand</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setBrand("")} className={`fs-chip ${brand === "" ? "fs-chip-on" : ""}`}>All</button>
+              {brands.map((b) => (
+                <button key={b} onClick={() => setBrand(b)} className={`fs-chip ${brand === b ? "fs-chip-on" : ""}`}>{b}</button>
               ))}
             </div>
           </div>

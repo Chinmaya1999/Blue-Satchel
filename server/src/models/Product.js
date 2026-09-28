@@ -10,7 +10,13 @@ export const CONCERN_TAGS = [
   "anti-aging",
   "acne",
   "brightening",
+  "wrinkles",
+  "firmness",
+  "oiliness",
+  "eye-bags",
 ];
+
+export const PRODUCT_CATEGORIES = ["cleanser", "toner", "serum", "treatment", "eye-care", "moisturizer", "sunscreen", "mask"];
 
 const productSchema = new mongoose.Schema(
   {
@@ -19,13 +25,15 @@ const productSchema = new mongoose.Schema(
     description: { type: String, required: true },
     category: {
       type: String,
-      enum: ["cleanser", "serum", "moisturizer", "sunscreen", "treatment", "toner", "mask"],
+      enum: PRODUCT_CATEGORIES,
       required: true,
     },
     price: { type: Number, required: true, min: 0 },
     compareAtPrice: { type: Number, min: 0 },
     currency: { type: String, default: "INR" },
     imageUrl: { type: String, required: true },
+    // Brand's official product page, for real third-party products.
+    productUrl: { type: String, trim: true },
     images: [String],
     tags: { type: [String], enum: CONCERN_TAGS, default: [] },
     skinTypes: {
@@ -35,7 +43,7 @@ const productSchema = new mongoose.Schema(
     },
     ingredients: [String],
     stock: { type: Number, default: 100, min: 0 },
-    rating: { type: Number, default: 4.5, min: 0, max: 5 },
+    rating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0 },
     bestseller: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },

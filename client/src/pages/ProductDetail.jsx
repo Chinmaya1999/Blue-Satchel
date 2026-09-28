@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Star, ShoppingBag, ShieldCheck, Truck, ChevronLeft, Minus, Plus } from "lucide-react";
+import { Star, ShoppingBag, ShieldCheck, Truck, ChevronLeft, Minus, Plus, ExternalLink } from "lucide-react";
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
 import { useCart } from "../context/CartContext.jsx";
+import { productImageFallback } from "../components/ProductCard.jsx";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -32,23 +33,39 @@ const ProductDetail = () => {
       </Link>
 
       <div className="grid gap-10 md:grid-cols-2 lg:gap-16">
-        <div className="fs-product-tile relative aspect-square overflow-hidden rounded-[2rem] ring-1 ring-white/10 shadow-[0_40px_120px_-40px_rgba(56,189,248,0.45)]">
-          <div className="fs-corners absolute inset-5 z-10 opacity-70" />
-          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+        <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-white ring-1 ring-white/10 shadow-[0_40px_120px_-40px_rgba(56,189,248,0.45)]">
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            onError={(e) => productImageFallback(e, product.category)}
+            className="h-full w-full object-contain p-8"
+          />
         </div>
 
         <div>
-          <p className="fs-eyebrow">{product.category}</p>
+          <p className="fs-eyebrow">{product.brand} · {product.category.replace("-", " ")}</p>
           <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">{product.name}</h1>
-          <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
-            <Star size={15} className="fill-amber-400 text-amber-400" />
-            <span className="font-semibold text-slate-700">{product.rating}</span>
-            <span>({product.reviewCount} reviews)</span>
-          </div>
+          {product.reviewCount > 0 && (
+            <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+              <Star size={15} className="fill-amber-400 text-amber-400" />
+              <span className="font-semibold text-slate-700">{product.rating}</span>
+              <span>({product.reviewCount} reviews)</span>
+            </div>
+          )}
+          {product.productUrl && (
+            <a
+              href={product.productUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-300 hover:text-cyan-200"
+            >
+              View on {product.brand}'s official site <ExternalLink size={14} />
+            </a>
+          )}
 
           <div className="mt-4 flex items-baseline gap-2">
             <span className="fs-gradient-text font-display text-4xl font-bold">₹{product.price}</span>
-            {product.compareAtPrice && <span className="text-base text-slate-400 line-through">₹{product.compareAtPrice}</span>}
+            {product.compareAtPrice > product.price && <span className="text-base text-slate-400 line-through">₹{product.compareAtPrice}</span>}
           </div>
 
           <p className="mt-5 leading-relaxed text-slate-600">{product.description}</p>

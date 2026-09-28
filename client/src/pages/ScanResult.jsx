@@ -23,6 +23,7 @@ import {
   BadgeCheck,
   FlaskConical,
   ChevronDown,
+  ShoppingBag,
 } from "lucide-react";
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
@@ -31,6 +32,8 @@ import ProductCard from "../components/ProductCard.jsx";
 import ScanReport from "../components/ScanReport.jsx";
 import ApiAnalysisPanel from "../components/ApiAnalysisPanel.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useCart } from "../context/CartContext.jsx";
+import { ROUTINE_STEP_LABELS, concernsTargeted } from "../utils/routine.js";
 
 const CONCERN_ICONS = {
   spots: Target,
@@ -205,6 +208,8 @@ const ScanResult = () => {
   const { user } = useAuth();
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [routineAdded, setRoutineAdded] = useState(false);
+  const { addItem } = useCart();
 
   useEffect(() => {
     setLoading(true);
@@ -216,6 +221,18 @@ const ScanResult = () => {
 
   if (loading) return <div className="fs-page fs-page-bg"><Loader full label="Loading your results…" /></div>;
   if (!scan) return <div className="container-app py-20 text-center text-slate-400">Scan not found.</div>;
+
+  const topConcerns = [...scan.concerns]
+    .sort((a, b) => b.severity - a.severity)
+    .slice(0, 3)
+    .filter((c) => c.severity > 20)
+    .map((c) => c.label);
+
+  const addRoutineToBag = () => {
+    scan.recommendedProducts.forEach((p) => addItem(p, 1));
+    setRoutineAdded(true);
+    setTimeout(() => setRoutineAdded(false), 1800);
+  };
 
   return (
     <div className="fs-page fs-page-bg">
@@ -341,16 +358,35 @@ const ScanResult = () => {
 
       {/* Recommended products */}
       <section className="container-app py-16">
-        <div className="mb-8 flex items-end justify-between gap-4">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="fs-eyebrow">Personalized routine</p>
             <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">Recommended <span className="fs-gradient-text">for you</span></h2>
+            {topConcerns.length > 0 && (
+              <p className="mt-2 max-w-xl text-sm text-slate-400">
+                Built around your report's top concerns: <span className="text-slate-200">{topConcerns.join(", ")}</span>. Use in this order.
+              </p>
+            )}
           </div>
-          <Link to="/shop" className="btn-secondary rounded-full">View all products</Link>
+          <div className="flex gap-2">
+            {scan.recommendedProducts?.length > 0 && (
+              <button onClick={addRoutineToBag} className="btn-primary rounded-full">
+                <ShoppingBag size={15} /> {routineAdded ? "Added to bag ✓" : "Add routine to bag"}
+              </button>
+            )}
+            <Link to="/shop" className="btn-secondary rounded-full">View all products</Link>
+          </div>
         </div>
         {scan.recommendedProducts?.length > 0 ? (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
-            {scan.recommendedProducts.map((p) => <ProductCard key={p._id} product={p} />)}
+            {scan.recommendedProducts.map((p, i) => (
+              <ProductCard
+                key={p._id}
+                product={p}
+                step={`${i + 1} · ${ROUTINE_STEP_LABELS[p.category] || p.category}`}
+                targets={concernsTargeted(p, scan.concerns)}
+              />
+            ))}
           </div>
         ) : (
           <p className="text-slate-400">No recommendations available yet.</p>

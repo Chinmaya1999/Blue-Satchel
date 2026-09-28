@@ -147,7 +147,7 @@ const ScanReport = ({ scan, user, insight }) => {
           <ul className="mt-2 grid grid-cols-2 gap-2">
             {scan.recommendedProducts.map((p) => (
               <li key={p._id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-2">
-                {p.imageUrl && <img src={p.imageUrl} alt="" className="h-10 w-10 rounded object-cover" />}
+                {p.imageUrl && <img src={p.imageUrl} alt="" className="h-10 w-10 rounded bg-white object-contain" />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold">{p.name}</p>
                   <p className="text-[10px] text-slate-500">{p.brand}</p>
