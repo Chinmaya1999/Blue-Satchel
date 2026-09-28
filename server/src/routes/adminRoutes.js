@@ -4,6 +4,10 @@ import {
   getOverview,
   listCustomers,
   getCustomer,
+  updateUser,
+  deleteUser,
+  listUserLocations,
+  getScanAdmin,
   listAllScans,
   deleteScan,
   createProduct,
@@ -22,9 +26,13 @@ router.use(protect, adminOnly);
 router.get("/overview", getOverview);
 
 router.get("/customers", listCustomers);
+router.get("/customers/locations", listUserLocations);
 router.get("/customers/:id", getCustomer);
+router.patch("/customers/:id", updateUser);
+router.delete("/customers/:id", deleteUser);
 
 router.get("/scans", listAllScans);
+router.get("/scans/:id", getScanAdmin);
 router.delete("/scans/:id", deleteScan);
 
 router.get("/products", listProductsAdmin);

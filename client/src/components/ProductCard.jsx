@@ -49,8 +49,13 @@ const ProductCard = ({ product, step, targets }) => {
         )}
       </Link>
       <div className="flex flex-1 flex-col px-4 pb-4 pt-2">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
-          {product.brand} · {product.category.replace("-", " ")}
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">
+          <span>{product.brand} · {product.category.replace("-", " ")}</span>
+          {product.featured && (
+            <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 tracking-wider text-cyan-200 ring-1 ring-cyan-300/30">
+              Our formula
+            </span>
+          )}
         </p>
         <Link to={`/shop/${product._id}`} className="mt-0.5 line-clamp-2 font-display font-semibold text-slate-900 hover:text-brand-700">
           {product.name}

@@ -5,6 +5,8 @@ import { fileURLToPath } from "url";
 import ScanHistory from "../models/ScanHistory.js";
 import { analyzeSkin } from "../services/aiDiagnosticsService.js";
 import { recommendProducts } from "../services/recommendationEngine.js";
+import { reserveScan, releaseScan, quotaFor, DAILY_SCAN_LIMIT } from "../services/scanQuota.js";
+import { findDermatologists } from "../services/geoService.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, "..", "..", "uploads");
@@ -68,15 +70,29 @@ export const createScan = async (req, res, next) => {
 
     if (!front) return res.status(400).json({ message: "A front-facing selfie is required." });
 
+    if (!(await reserveScan(req.user))) {
+      return res.status(429).json({
+        message: `You've used your ${DAILY_SCAN_LIMIT} skin scans for today. You can scan again tomorrow.`,
+        quota: quotaFor(req.user),
+      });
+    }
+
     const imageUrl = saveUpload(front);
     const leftImageUrl = saveUpload(left);
     const rightImageUrl = saveUpload(right);
 
-    const analysis = await analyzeSkin({
-      front: front.buffer,
-      left: left?.buffer,
-      right: right?.buffer,
-    });
+    let analysis;
+    try {
+      analysis = await analyzeSkin({
+        front: front.buffer,
+        left: left?.buffer,
+        right: right?.buffer,
+      });
+    } catch (err) {
+      // The scan never happened, so it shouldn't count against today's limit.
+      await releaseScan(req.user);
+      throw err;
+    }
     if (analysis.rawMetrics?.perfectCorpOutput) {
       analysis.rawMetrics.savedImages = await saveProviderImages(analysis.rawMetrics.perfectCorpOutput);
     }
@@ -120,6 +136,25 @@ export const listMyScans = async (req, res, next) => {
   }
 };
 
+export const getScanQuota = async (req, res, next) => {
+  try {
+    res.json({ quota: quotaFor(req.user) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Skin clinics near the given point, for the "see a dermatologist" panel.
+export const nearbyDermatologists = async (req, res, next) => {
+  try {
+    const result = await findDermatologists(Number(req.query.lat), Number(req.query.lng));
+    res.json(result);
+  } catch (err) {
+    if (err.status === 400) return res.status(400).json({ message: err.message });
+    next(err);
+  }
+};
+
 export const getScan = async (req, res, next) => {
   try {
     const scan = await ScanHistory.findOne({ _id: req.params.id, user: req.user._id }).populate(
@@ -127,11 +162,14 @@ export const getScan = async (req, res, next) => {
     );
     if (!scan) return res.status(404).json({ message: "Scan not found." });
 
-    // Recommendations are picked when the scan is saved. If the scan has
-    // none (catalogue was empty then) or any of its picks has since been
-    // retired from the catalogue, rebuild them from the current catalogue.
+    // Recommendations are picked when the scan is saved. Rebuild them from
+    // the current catalogue if the scan has none (catalogue was empty then),
+    // any pick has since been retired, or it predates the Blue Satchel
+    // products every routine now includes.
     const stale =
-      !scan.recommendedProducts?.length || scan.recommendedProducts.some((p) => !p.isActive);
+      !scan.recommendedProducts?.length ||
+      scan.recommendedProducts.some((p) => !p.isActive) ||
+      !scan.recommendedProducts.some((p) => p.featured);
     if (stale) {
       const recommended = await recommendProducts(scan.concerns, { skinType: req.user.skinType });
       if (recommended.length) {

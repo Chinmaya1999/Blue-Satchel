@@ -27,8 +27,9 @@ const Shop = () => {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    // Oldest first keeps the catalogue in routine order (cleanser → sunscreen).
-    const params = { limit: 100, sort: "_id" };
+    // Blue Satchel's own products first, then the catalogue in routine order
+    // (oldest first: cleanser → sunscreen).
+    const params = { limit: 100, sort: "-featured _id" };
     if (q) params.q = q;
     if (category) params.category = category;
     if (tag) params.tag = tag;

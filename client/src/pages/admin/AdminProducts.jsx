@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, RotateCcw } from "lucide-react";
 import api from "../../api/axios.js";
 import Loader from "../../components/Loader.jsx";
 
 const emptyForm = {
   name: "", brand: "Blue Satchel", description: "", category: "serum", price: "", compareAtPrice: "",
-  imageUrl: "", productUrl: "", tags: "", skinTypes: "", stock: 100, bestseller: false,
+  imageUrl: "", productUrl: "", tags: "", skinTypes: "", stock: 100, bestseller: false, featured: false,
 };
 
 const AdminProducts = () => {
@@ -29,6 +29,7 @@ const AdminProducts = () => {
       name: p.name, brand: p.brand, description: p.description, category: p.category,
       price: p.price, compareAtPrice: p.compareAtPrice || "", imageUrl: p.imageUrl, productUrl: p.productUrl || "",
       tags: p.tags.join(", "), skinTypes: p.skinTypes.join(", "), stock: p.stock, bestseller: p.bestseller,
+      featured: !!p.featured,
     });
     setShowForm(true);
   };
@@ -46,6 +47,11 @@ const AdminProducts = () => {
     if (editing) await api.patch(`/admin/products/${editing._id}`, payload);
     else await api.post("/admin/products", payload);
     setShowForm(false);
+    load();
+  };
+
+  const reactivate = async (id) => {
+    await api.patch(`/admin/products/${id}`, { isActive: true });
     load();
   };
 
@@ -79,8 +85,14 @@ const AdminProducts = () => {
               {items.map((p) => (
                 <tr key={p._id} className="hover:bg-slate-50">
                   <td className="flex items-center gap-3 py-3 pr-4">
-                    <img src={p.imageUrl} className="h-9 w-9 rounded-lg object-cover" />
-                    <span className="font-medium text-slate-800">{p.name}</span>
+                    <img src={p.imageUrl} className="h-9 w-9 rounded-lg bg-white object-contain" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-800">{p.name}</p>
+                      <p className="text-xs text-slate-400">
+                        {p.brand}
+                        {p.featured && <span className="badge ml-1.5 bg-cyan-50 text-[10px] text-cyan-700">Always recommended</span>}
+                      </p>
+                    </div>
                   </td>
                   <td className="py-3 pr-4 capitalize text-slate-500">{p.category}</td>
                   <td className="py-3 pr-4 text-slate-500">₹{p.price}</td>
@@ -93,7 +105,11 @@ const AdminProducts = () => {
                   <td className="py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => openEdit(p)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-600"><Pencil size={15} /></button>
-                      <button onClick={() => deactivate(p._id)} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button>
+                      {p.isActive ? (
+                        <button onClick={() => deactivate(p._id)} title="Deactivate" className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button>
+                      ) : (
+                        <button onClick={() => reactivate(p._id)} title="Reactivate" className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"><RotateCcw size={15} /></button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -112,6 +128,7 @@ const AdminProducts = () => {
             </div>
             <div className="space-y-3">
               <input required placeholder="Product name" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <input required placeholder="Brand" className="input" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
               <textarea required placeholder="Description" rows={2} className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <select className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
@@ -129,6 +146,9 @@ const AdminProducts = () => {
               <input placeholder="Skin types (comma separated)" className="input" value={form.skinTypes} onChange={(e) => setForm({ ...form, skinTypes: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-slate-600">
                 <input type="checkbox" checked={form.bestseller} onChange={(e) => setForm({ ...form, bestseller: e.target.checked })} /> Mark as bestseller
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} /> Blue Satchel product — always include in scan routines
               </label>
             </div>
             <button type="submit" className="btn-primary mt-5 w-full">{editing ? "Save changes" : "Create product"}</button>

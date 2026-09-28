@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import * as faceapi from "face-api.js";
 import {
@@ -182,6 +182,12 @@ const ScanCapture = () => {
   const [submitting, setSubmitting] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState("");
+  const [quota, setQuota] = useState(null); // { limit, used, remaining }; limit null = unlimited (admin)
+  const limitReached = quota?.limit != null && quota.remaining === 0;
+
+  useEffect(() => {
+    api.get("/scans/quota").then(({ data }) => setQuota(data.quota)).catch(() => {});
+  }, []);
 
   const [modelsReady, setModelsReady] = useState(false);
   const [detectorError, setDetectorError] = useState("");
@@ -292,6 +298,12 @@ const ScanCapture = () => {
       });
       navigate(`/scan/${data.scan._id}`);
     } catch (err) {
+      if (err.response?.status === 429) {
+        setQuota(err.response.data.quota);
+        setSubmitting(false);
+        setFlowStage("intro");
+        return;
+      }
       setError(err.response?.data?.message || "Analysis failed. Please try again.");
       setSubmitting(false);
       setFlowStage(STEP_ORDER[STEP_ORDER.length - 1]);
@@ -725,7 +737,22 @@ const ScanCapture = () => {
               </span>
               <p className="fs-eyebrow text-[10px]">3 angles · voice guided</p>
               <h2 className="mt-2 font-display text-xl font-bold text-white">Guided AI Skin Scan</h2>
+              {quota?.limit != null && (
+                <p className={`mt-2 inline-flex rounded-full px-3 py-1 font-mono text-[11px] font-semibold ring-1 ${limitReached ? "bg-rose-500/10 text-rose-200 ring-rose-400/30" : "bg-cyan-400/10 text-cyan-200 ring-cyan-300/30"}`}>
+                  {quota.remaining} of {quota.limit} scans left today
+                </p>
+              )}
 
+              {limitReached ? (
+                <>
+                  <p className="mt-4 text-sm text-slate-400">
+                    You've used today's {quota.limit} free skin scans. Your limit resets at midnight (India time) — come back
+                    tomorrow to track your progress.
+                  </p>
+                  <Link to="/scan/history" className="btn-primary mt-6 h-12 w-full rounded-full">View my past scans</Link>
+                </>
+              ) : (
+              <>
               {cameraError ? (
                 <div className="mt-3 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-left text-sm text-rose-700 ring-1 ring-rose-400/25">
                   <AlertCircle size={16} className="mt-0.5 shrink-0" />
@@ -763,6 +790,8 @@ const ScanCapture = () => {
                 <Upload size={cameraError ? 15 : 13} /> Upload a photo instead
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileSelect} />
+              </>
+              )}
             </div>
           </div>
         )}

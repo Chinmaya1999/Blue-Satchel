@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Lock, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import AuthShell, { Field } from "../components/landing/AuthShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import GoogleSignIn from "../components/GoogleSignIn.jsx";
 
 const STAGES = [
   {
@@ -17,7 +18,7 @@ const STAGES = [
 ];
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -34,6 +35,19 @@ const Login = () => {
       navigate(params.get("redirect") || "/");
     } catch (err) {
       setError(err.response?.data?.message || "Unable to sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onGoogle = async (credential) => {
+    setError("");
+    setLoading(true);
+    try {
+      await googleLogin(credential);
+      navigate(params.get("redirect") || "/");
+    } catch (err) {
+      setError(err.response?.data?.message || "Google sign-in failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -85,6 +99,8 @@ const Login = () => {
           )}
         </button>
       </form>
+
+      <GoogleSignIn onCredential={onGoogle} />
 
       <div className="my-7 flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-slate-600">
         <span className="h-px flex-1 bg-white/10" /> New here <span className="h-px flex-1 bg-white/10" />

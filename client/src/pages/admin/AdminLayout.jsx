@@ -3,7 +3,7 @@ import { LayoutDashboard, Users, Package, ShoppingCart, ScanFace } from "lucide-
 
 const links = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, end: true },
-  { to: "/admin/customers", label: "Customers", icon: Users },
+  { to: "/admin/customers", label: "Users", icon: Users },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { to: "/admin/scans", label: "Scan History", icon: ScanFace },

@@ -5,7 +5,10 @@ import { connectDB } from "../config/db.js";
 import User from "../models/User.js";
 import Product from "../models/Product.js";
 import mongoose from "mongoose";
-import products from "./productCatalog.js";
+import productCatalog from "./productCatalog.js";
+import houseProducts from "./houseProducts.js";
+
+const products = [...houseProducts, ...productCatalog];
 
 const run = async () => {
   await connectDB();

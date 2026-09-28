@@ -1,5 +1,8 @@
 import Product from "../models/Product.js";
 import productCatalog from "../seed/productCatalog.js";
+import houseProducts from "../seed/houseProducts.js";
+
+const allProducts = [...houseProducts, ...productCatalog];
 
 // Placeholder products from the original seed. They're hidden rather than
 // deleted so past orders and scans that reference them keep resolving.
@@ -30,7 +33,7 @@ const LEGACY_DEMO_NAMES = [
  * doesn't set untouched.
  */
 export const syncProductCatalog = async () => {
-  const ops = productCatalog.map((p) => ({
+  const ops = allProducts.map((p) => ({
     updateOne: {
       filter: { brand: p.brand, name: p.name },
       update: { $set: { ...p, isActive: true } },
@@ -45,6 +48,6 @@ export const syncProductCatalog = async () => {
   );
 
   console.log(
-    `[catalog] ${productCatalog.length} products synced (${result.upsertedCount} new, ${result.modifiedCount} updated), ${hidden.modifiedCount} demo products hidden.`
+    `[catalog] ${allProducts.length} products synced (${result.upsertedCount} new, ${result.modifiedCount} updated), ${hidden.modifiedCount} demo products hidden.`
   );
 };

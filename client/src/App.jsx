@@ -10,6 +10,7 @@ import Register from "./pages/Register.jsx";
 import Shop from "./pages/Shop.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
 import ScanCapture from "./pages/ScanCapture.jsx";
+import ScanOptions from "./pages/ScanOptions.jsx";
 import ScanResult from "./pages/ScanResult.jsx";
 import ScanHistoryPage from "./pages/ScanHistory.jsx";
 import Checkout from "./pages/Checkout.jsx";
@@ -39,7 +40,8 @@ function App() {
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:id" element={<ProductDetail />} />
 
-          <Route path="/scan" element={<ProtectedRoute><ScanCapture /></ProtectedRoute>} />
+          <Route path="/scan" element={<ProtectedRoute><ScanOptions /></ProtectedRoute>} />
+          <Route path="/scan/detailed" element={<ProtectedRoute><ScanCapture /></ProtectedRoute>} />
           <Route path="/scan/history" element={<ProtectedRoute><ScanHistoryPage /></ProtectedRoute>} />
           <Route path="/scan/:id" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
 
@@ -48,6 +50,7 @@ function App() {
           <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
+          <Route path="/admin/scan-report/:id" element={<AdminRoute><ScanResult admin /></AdminRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="customers" element={<AdminCustomers />} />

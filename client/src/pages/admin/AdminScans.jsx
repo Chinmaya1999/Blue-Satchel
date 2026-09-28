@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Trash2 } from "lucide-react";
+import { Trash2, FileText } from "lucide-react";
 import api from "../../api/axios.js";
 import Loader from "../../components/Loader.jsx";
 
@@ -61,6 +61,9 @@ const AdminScans = () => {
                     <td className="py-3 pr-4 text-slate-500">{s.recommendedProducts?.length || 0} products</td>
                     <td className="py-3 pr-4 text-slate-500">{new Date(s.createdAt).toLocaleString()}</td>
                     <td className="py-3 pr-4 text-right">
+                      <Link to={`/admin/scan-report/${s._id}`} className="mr-1 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50">
+                        <FileText size={14} /> Report
+                      </Link>
                       <button
                         onClick={() => handleDelete(s._id)}
                         disabled={deletingId === s._id}

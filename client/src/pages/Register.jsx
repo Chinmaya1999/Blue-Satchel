@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, Loader2, Check } from "lucide-react";
+import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, Loader2, Check, MapPin } from "lucide-react";
 import AuthShell, { Field } from "../components/landing/AuthShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import GoogleSignIn from "../components/GoogleSignIn.jsx";
+import { getBrowserLocation } from "../utils/geo.js";
 
 const STAGES = [
   { preset: "capture", label: "1 · Take a selfie", detail: "Scanned line by line in seconds" },
@@ -37,7 +39,7 @@ const STRENGTH = [
 ];
 
 const Register = () => {
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [show, setShow] = useState(false);
@@ -51,10 +53,27 @@ const Register = () => {
     setError("");
     setLoading(true);
     try {
-      await register(form);
+      // Asks the browser for location; if declined, the server falls back to
+      // an approximate location from the request IP.
+      const location = await getBrowserLocation();
+      await register({ ...form, location });
       navigate("/scan");
     } catch (err) {
       setError(err.response?.data?.message || "Unable to create your account.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onGoogle = async (credential) => {
+    setError("");
+    setLoading(true);
+    try {
+      const location = await getBrowserLocation();
+      await googleLogin(credential, location);
+      navigate("/scan");
+    } catch (err) {
+      setError(err.response?.data?.message || "Google sign-up failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -117,7 +136,14 @@ const Register = () => {
             <>Create account & start scan <ArrowRight size={16} className="transition group-hover:translate-x-1" /></>
           )}
         </button>
+        <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-500">
+          <MapPin size={12} className="mt-0.5 shrink-0" />
+          We'll ask for your location to find dermatologists near you. If you don't allow it, we use an approximate
+          location based on your internet connection.
+        </p>
       </form>
+
+      <GoogleSignIn onCredential={onGoogle} text="signup_with" />
 
       <p className="mt-6 text-center text-sm text-slate-400">
         Already have an account?{" "}

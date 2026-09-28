@@ -1,10 +1,20 @@
 import User from "../models/User.js";
 import { generateToken } from "../utils/generateToken.js";
 import { crmService } from "../services/crmService.js";
+import { resolveSignupLocation } from "../services/geoService.js";
+
+const welcome = async (user) => {
+  user.crmContactId = await crmService.syncCustomer(user);
+  user.notifications.push({
+    title: "Welcome to Blue Satchel",
+    message: "Your account is ready. Take your first AI skin scan to get personalized recommendations.",
+  });
+  await user.save();
+};
 
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, location } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email and password are required." });
     }
@@ -14,15 +24,9 @@ export const register = async (req, res, next) => {
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) return res.status(409).json({ message: "An account with this email already exists." });
 
-    const user = await User.create({ name, email, password, phone });
-
-    const remoteId = await crmService.syncCustomer(user);
-    user.crmContactId = remoteId;
-    user.notifications.push({
-      title: "Welcome to Blue Satchel",
-      message: "Your account is ready. Take your first AI skin scan to get personalized recommendations.",
-    });
-    await user.save();
+    const signupLocation = await resolveSignupLocation(req, location);
+    const user = await User.create({ name, email, password, phone, signupLocation });
+    await welcome(user);
 
     res.status(201).json({ user: user.toSafeObject(), token: generateToken(user._id, user.role) });
   } catch (err) {
@@ -36,8 +40,63 @@ export const login = async (req, res, next) => {
     if (!email || !password) return res.status(400).json({ message: "Email and password are required." });
 
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+    if (user && !user.password && user.authProvider === "google") {
+      return res.status(400).json({ message: "This account uses Google sign-in. Please continue with Google." });
+    }
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: "Invalid email or password." });
+    }
+
+    res.json({ user: user.toSafeObject(), token: generateToken(user._id, user.role) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Public settings the login page needs (Google button is hidden when unset).
+export const getAuthConfig = (req, res) => {
+  res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || null });
+};
+
+/**
+ * Sign in / sign up with Google. The client sends the ID token from Google
+ * Identity Services; Google's tokeninfo endpoint verifies its signature and
+ * expiry, and we check it was issued for our client ID.
+ */
+export const googleLogin = async (req, res, next) => {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) return res.status(503).json({ message: "Google sign-in isn't configured." });
+    const { credential, location } = req.body;
+    if (!credential) return res.status(400).json({ message: "Missing Google credential." });
+
+    const verify = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+    const info = await verify.json();
+    if (!verify.ok || info.aud !== clientId || info.email_verified !== "true") {
+      return res.status(401).json({ message: "Google sign-in failed. Please try again." });
+    }
+
+    const email = info.email.toLowerCase();
+    let user = await User.findOne({ $or: [{ googleId: info.sub }, { email }] });
+    if (user) {
+      // Existing email/password account: link it to this Google identity.
+      if (!user.googleId) {
+        user.googleId = info.sub;
+        if (!user.avatarUrl && info.picture) user.avatarUrl = info.picture;
+        await user.save();
+      }
+    } else {
+      user = await User.create({
+        name: info.name || email.split("@")[0],
+        email,
+        authProvider: "google",
+        googleId: info.sub,
+        avatarUrl: info.picture,
+        signupLocation: await resolveSignupLocation(req, location),
+      });
+      await welcome(user);
     }
 
     res.json({ user: user.toSafeObject(), token: generateToken(user._id, user.role) });

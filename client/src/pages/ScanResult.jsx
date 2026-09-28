@@ -31,6 +31,7 @@ import ScoreRing from "../components/ScoreRing.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import ScanReport from "../components/ScanReport.jsx";
 import ApiAnalysisPanel from "../components/ApiAnalysisPanel.jsx";
+import NearbyDermatologists from "../components/NearbyDermatologists.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { ROUTINE_STEP_LABELS, concernsTargeted } from "../utils/routine.js";
@@ -203,9 +204,10 @@ const DownloadMenu = ({ scan }) => {
   );
 };
 
-const ScanResult = () => {
+// `admin`: read-only view of any user's scan, from the admin console.
+const ScanResult = ({ admin = false }) => {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user: me } = useAuth();
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [routineAdded, setRoutineAdded] = useState(false);
@@ -214,13 +216,16 @@ const ScanResult = () => {
   useEffect(() => {
     setLoading(true);
     api
-      .get(`/scans/${id}`)
+      .get(admin ? `/admin/scans/${id}` : `/scans/${id}`)
       .then(({ data }) => setScan(data.scan))
       .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <div className="fs-page fs-page-bg"><Loader full label="Loading your results…" /></div>;
   if (!scan) return <div className="container-app py-20 text-center text-slate-400">Scan not found.</div>;
+
+  // The admin endpoint populates the scan's owner; for users it's themselves.
+  const user = admin ? scan.user : me;
 
   const topConcerns = [...scan.concerns]
     .sort((a, b) => b.severity - a.severity)
@@ -301,8 +306,10 @@ const ScanResult = () => {
           </div>
 
           <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-            <p className="fs-eyebrow">Skin analysis complete</p>
-            <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">Your results are <span className="fs-gradient-text">in</span></h1>
+            <p className="fs-eyebrow">{admin ? `Admin view · ${user?.email || "deleted user"}` : "Skin analysis complete"}</p>
+            <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              {admin ? <>{user?.name || "User"}'s <span className="fs-gradient-text">results</span></> : <>Your results are <span className="fs-gradient-text">in</span></>}
+            </h1>
             <div className="mt-6 flex items-end gap-6">
               <ScoreRing score={scan.overallScore} label={scan.overallLabel} size={128} stroke={10} />
               <div className="pb-2">
@@ -310,12 +317,20 @@ const ScanResult = () => {
                   {INSIGHT[scan.overallLabel] || INSIGHT.Fair}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2.5">
-                  <Link to="/scan" className="fs-nav-cta">
-                    <RotateCcw size={15} /> Scan again
-                  </Link>
-                  <Link to="/scan/history" className="btn rounded-full bg-white/10 text-white ring-1 ring-white/25 backdrop-blur hover:bg-white/20">
-                    <History size={15} /> History
-                  </Link>
+                  {admin ? (
+                    <Link to={`/admin/customers/${user?._id}`} className="btn rounded-full bg-white/10 text-white ring-1 ring-white/25 backdrop-blur hover:bg-white/20">
+                      <History size={15} /> Back to user
+                    </Link>
+                  ) : (
+                    <>
+                      <Link to="/scan" className="fs-nav-cta">
+                        <RotateCcw size={15} /> Scan again
+                      </Link>
+                      <Link to="/scan/history" className="btn rounded-full bg-white/10 text-white ring-1 ring-white/25 backdrop-blur hover:bg-white/20">
+                        <History size={15} /> History
+                      </Link>
+                    </>
+                  )}
                   <DownloadMenu scan={scan} />
                 </div>
               </div>
@@ -369,7 +384,7 @@ const ScanResult = () => {
             )}
           </div>
           <div className="flex gap-2">
-            {scan.recommendedProducts?.length > 0 && (
+            {!admin && scan.recommendedProducts?.length > 0 && (
               <button onClick={addRoutineToBag} className="btn-primary rounded-full">
                 <ShoppingBag size={15} /> {routineAdded ? "Added to bag ✓" : "Add routine to bag"}
               </button>
@@ -392,6 +407,8 @@ const ScanResult = () => {
           <p className="text-slate-400">No recommendations available yet.</p>
         )}
       </section>
+
+      <NearbyDermatologists fallbackLocation={user?.signupLocation} useFallbackOnly={admin} />
 
       <ScanReport scan={scan} user={user} insight={INSIGHT[scan.overallLabel] || INSIGHT.Fair} />
     </div>

@@ -94,10 +94,14 @@ export const recommendProducts = async (concerns, { skinType, limit } = {}) => {
 
     for (let i = 0; i < (step.count || 1); i++) {
       const ranked = pool
-        // Eye products sit on a separate area, so they may share an active.
-        .filter((p) => !picked.includes(p) && (step.category === "eye-care" || !actives.has(primaryActive(p))))
+        // Eye products sit on a separate area, so they may share an active;
+        // Blue Satchel's own products are never blocked by the active check.
+        .filter(
+          (p) => !picked.includes(p) && (p.featured || step.category === "eye-care" || !actives.has(primaryActive(p)))
+        )
         .map((p) => ({ p, score: scoreProduct(p, severities, covered) }))
-        .sort((a, b) => b.score - a.score || b.p.rating - a.p.rating || a.p.price - b.p.price);
+        // Blue Satchel's own products take their step's first slot.
+        .sort((a, b) => b.p.featured - a.p.featured || b.score - a.score || b.p.rating - a.p.rating || a.p.price - b.p.price);
       if (!ranked.length) break;
       picked.push(ranked[0].p);
       if (step.category !== "eye-care") actives.add(primaryActive(ranked[0].p));

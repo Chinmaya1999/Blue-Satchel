@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createScan, listMyScans, getScan } from "../controllers/scanController.js";
+import { createScan, listMyScans, getScan, getScanQuota, nearbyDermatologists } from "../controllers/scanController.js";
 import { protect } from "../middleware/auth.js";
 import { upload } from "../middleware/upload.js";
 
@@ -14,6 +14,8 @@ const uploadAngles = upload.fields([
 router.use(protect);
 router.post("/", uploadAngles, createScan);
 router.get("/", listMyScans);
+router.get("/quota", getScanQuota);
+router.get("/dermatologists", nearbyDermatologists);
 router.get("/:id", getScan);
 
 export default router;

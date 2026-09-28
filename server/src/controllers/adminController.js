@@ -6,6 +6,7 @@ import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import ScanHistory from "../models/ScanHistory.js";
 import CRMSyncLog from "../models/CRMSyncLog.js";
+import { quotaFor } from "../services/scanQuota.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, "..", "..", "uploads");
@@ -44,28 +45,67 @@ export const getOverview = async (req, res, next) => {
   }
 };
 
-// --- Customer Operations (5.4) ---
+// --- User Operations (5.4) ---
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const listCustomers = async (req, res, next) => {
   try {
-    const { q, page = 1, limit = 15 } = req.query;
-    const filter = { role: "customer" };
+    const { q, role, page = 1, limit = 20 } = req.query;
+    const filter = {};
+    if (role === "customer" || role === "admin") filter.role = role;
     if (q) {
-      filter.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { email: { $regex: q, $options: "i" } },
-        { phone: { $regex: q, $options: "i" } },
-      ];
+      const rx = { $regex: escapeRegex(q), $options: "i" };
+      filter.$or = [{ name: rx }, { email: rx }, { phone: rx }, { "signupLocation.city": rx }];
     }
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10)));
-    const [items, total] = await Promise.all([
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const [users, total] = await Promise.all([
       User.find(filter)
         .sort({ createdAt: -1 })
         .skip((pageNum - 1) * limitNum)
         .limit(limitNum),
       User.countDocuments(filter),
     ]);
+
+    const stats = await ScanHistory.aggregate([
+      { $match: { user: { $in: users.map((u) => u._id) } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$user",
+          scanCount: { $sum: 1 },
+          lastScanAt: { $first: "$createdAt" },
+          lastScore: { $first: "$overallScore" },
+          lastLabel: { $first: "$overallLabel" },
+        },
+      },
+    ]);
+    const byUser = new Map(stats.map((s) => [String(s._id), s]));
+    const items = users.map((u) => {
+      const st = byUser.get(String(u._id));
+      return {
+        ...u.toSafeObject(),
+        scanCount: st?.scanCount || 0,
+        lastScanAt: st?.lastScanAt || null,
+        lastScore: st?.lastScore ?? null,
+        lastLabel: st?.lastLabel || null,
+        quota: quotaFor(u),
+      };
+    });
     res.json({ items, total, page: pageNum, pages: Math.ceil(total / limitNum) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Every user with a known signup location, for the admin map.
+export const listUserLocations = async (req, res, next) => {
+  try {
+    const users = await User.find(
+      { "signupLocation.lat": { $ne: null } },
+      "name email role signupLocation createdAt"
+    ).sort({ createdAt: -1 });
+    res.json({ items: users });
   } catch (err) {
     next(err);
   }
@@ -74,12 +114,57 @@ export const listCustomers = async (req, res, next) => {
 export const getCustomer = async (req, res, next) => {
   try {
     const customer = await User.findById(req.params.id);
-    if (!customer) return res.status(404).json({ message: "Customer not found." });
+    if (!customer) return res.status(404).json({ message: "User not found." });
     const [scans, orders] = await Promise.all([
       ScanHistory.find({ user: customer._id }).sort({ createdAt: -1 }).populate("recommendedProducts"),
       Order.find({ user: customer._id }).sort({ createdAt: -1 }),
     ]);
-    res.json({ customer, scans, orders });
+    res.json({ customer: { ...customer.toSafeObject(), quota: quotaFor(customer) }, scans, orders });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const allowed = ["name", "email", "phone", "skinType", "role", "dateOfBirth", "address"];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) user[key] = req.body[key];
+    }
+    if (String(user._id) === String(req.user._id) && user.role !== "admin") {
+      return res.status(400).json({ message: "You can't remove your own admin access." });
+    }
+    if (req.body.resetScanQuota) user.scanQuota = { day: null, count: 0 };
+
+    await user.save();
+    res.json({ user: { ...user.toSafeObject(), quota: quotaFor(user) } });
+  } catch (err) {
+    if (err.code === 11000) return res.status(409).json({ message: "Another account already uses that email." });
+    next(err);
+  }
+};
+
+// Deletes the account and its scans (with their photos). Orders are kept
+// for the business record.
+export const deleteUser = async (req, res, next) => {
+  try {
+    if (String(req.params.id) === String(req.user._id)) {
+      return res.status(400).json({ message: "You can't delete your own account." });
+    }
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const scans = await ScanHistory.find({ user: user._id });
+    for (const scan of scans) {
+      deleteUploadedFile(scan.imageUrl);
+      deleteUploadedFile(scan.leftImageUrl);
+      deleteUploadedFile(scan.rightImageUrl);
+    }
+    await ScanHistory.deleteMany({ user: user._id });
+    res.json({ message: "User deleted.", scansDeleted: scans.length });
   } catch (err) {
     next(err);
   }
@@ -101,6 +186,18 @@ export const listAllScans = async (req, res, next) => {
       ScanHistory.countDocuments(),
     ]);
     res.json({ items, total, page: pageNum, pages: Math.ceil(total / limitNum) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getScanAdmin = async (req, res, next) => {
+  try {
+    const scan = await ScanHistory.findById(req.params.id)
+      .populate("user", "name email phone skinType dateOfBirth signupLocation")
+      .populate("recommendedProducts");
+    if (!scan) return res.status(404).json({ message: "Scan not found." });
+    res.json({ scan });
   } catch (err) {
     next(err);
   }
