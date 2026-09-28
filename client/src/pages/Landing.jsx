@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import FaceScan3D from "../components/landing/FaceScan3D.jsx";
 import SkinLayers3D from "../components/landing/SkinLayers3D.jsx";
 import LiveLandmarks from "../components/landing/LiveLandmarks.jsx";
+import SkinExpectations from "../components/landing/SkinExpectations.jsx";
 
 const reveal = {
   initial: { opacity: 0, y: 28 },
@@ -631,6 +632,8 @@ const Landing = () => {
           </motion.div>
         </div>
       </section>
+
+      <SkinExpectations />
 
       {/* ───────── CTA ───────── */}
       <section className="container-app pb-24">
