@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 import { ProtectedRoute, AdminRoute } from "./components/ProtectedRoute.jsx";
 
 import Landing from "./pages/Landing.jsx";
@@ -30,6 +31,7 @@ import AdminScans from "./pages/admin/AdminScans.jsx";
 function App() {
   return (
     <div className="flex min-h-screen flex-col">
+      <ScrollToTop />
       <Navbar />
       <CartDrawer />
       <main className="flex-1">
