@@ -127,10 +127,12 @@ export const getScan = async (req, res, next) => {
     );
     if (!scan) return res.status(404).json({ message: "Scan not found." });
 
-    // Recommendations are picked when the scan is saved. A scan saved while
-    // the catalogue was empty has none, so fill them in from the current
-    // catalogue the first time it's opened.
-    if (!scan.recommendedProducts?.length) {
+    // Recommendations are picked when the scan is saved. If the scan has
+    // none (catalogue was empty then) or any of its picks has since been
+    // retired from the catalogue, rebuild them from the current catalogue.
+    const stale =
+      !scan.recommendedProducts?.length || scan.recommendedProducts.some((p) => !p.isActive);
+    if (stale) {
       const recommended = await recommendProducts(scan.concerns, { skinType: req.user.skinType });
       if (recommended.length) {
         scan.recommendedProducts = recommended.map((p) => p._id);
