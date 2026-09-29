@@ -100,7 +100,18 @@ const Register = () => {
       <form onSubmit={submit} className="mt-6 space-y-4">
         <Field icon={User} label="Full name" required autoComplete="name" value={form.name} onChange={set("name")} />
         <Field icon={Mail} label="Email address" type="email" required autoComplete="email" value={form.email} onChange={set("email")} />
-        <Field icon={Phone} label="Phone (optional)" type="tel" autoComplete="tel" value={form.phone} onChange={set("phone")} />
+        <Field
+          icon={Phone}
+          label="Phone number"
+          type="tel"
+          required
+          autoComplete="tel"
+          inputMode="tel"
+          pattern="\+?[0-9 \-]{10,18}"
+          title="Enter a valid phone number (10–15 digits, optional + country code)"
+          value={form.phone}
+          onChange={set("phone")}
+        />
         <div>
           <Field
             icon={Lock}

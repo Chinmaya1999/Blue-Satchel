@@ -14,9 +14,15 @@ const welcome = async (user) => {
 
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password, phone, location } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email and password are required." });
+    const { name, email, password, location } = req.body;
+    const phone = typeof req.body.phone === "string" ? req.body.phone.trim() : "";
+    if (!name || !email || !password || !phone) {
+      return res.status(400).json({ message: "Name, email, phone number and password are required." });
+    }
+    // 10–15 digits (E.164 max), allowing a leading + and spaces/dashes.
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (!/^\+?[\d\s-]+$/.test(phone) || phoneDigits.length < 10 || phoneDigits.length > 15) {
+      return res.status(400).json({ message: "Please enter a valid phone number (10–15 digits)." });
     }
     if (password.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters." });
