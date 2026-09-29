@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MapPin, Navigation, Phone, Globe, Loader2, LocateFixed, Stethoscope } from "lucide-react";
 import api from "../api/axios.js";
 import OsmMap, { esc } from "./OsmMap.jsx";
-import { getBrowserLocation, locationAlreadyGranted, directionsUrl, formatPlace } from "../utils/geo.js";
+import { getBrowserLocation, directionsUrl, formatPlace } from "../utils/geo.js";
 
 /**
  * Skin / dermatology clinics near the user, from OpenStreetMap.
@@ -49,8 +49,9 @@ const NearbyDermatologists = ({ fallbackLocation, useFallbackOnly = false }) => 
       if (fallback) search(fallback, "Signup location");
       return;
     }
-    // Only locate automatically when it won't trigger a permission prompt.
-    locationAlreadyGranted().then((granted) => granted && useMyLocation());
+    // Locate straight away; the browser shows its permission prompt the first
+    // time, and falls back to the signup location if the user declines.
+    useMyLocation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
