@@ -6,10 +6,12 @@ import Logo from "./Logo.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { isUnlimited } from "../utils/credits.js";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { count, setIsOpen } = useCart();
+  const { shopEnabled } = useSiteSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
@@ -88,14 +90,16 @@ const Navbar = () => {
             </Link>
           )}
 
-          <button onClick={() => setIsOpen(true)} className="fs-nav-icon relative" aria-label="Open shopping bag">
-            <ShoppingBag size={18} />
-            {count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-300 px-1 text-[10px] font-bold text-slate-950">
-                {count}
-              </span>
-            )}
-          </button>
+          {shopEnabled && (
+            <button onClick={() => setIsOpen(true)} className="fs-nav-icon relative" aria-label="Open shopping bag">
+              <ShoppingBag size={18} />
+              {count > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-300 px-1 text-[10px] font-bold text-slate-950">
+                  {count}
+                </span>
+              )}
+            </button>
+          )}
 
           {user ? (
             <div className="hidden items-center gap-1.5 sm:flex">

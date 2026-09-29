@@ -2,9 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { ScanFace, ArrowRight, Cpu, ShieldCheck, Lock } from "lucide-react";
 import Logo from "./Logo.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
 const Footer = () => {
   const { user } = useAuth();
+  const { shopEnabled } = useSiteSettings();
   const { pathname } = useLocation();
   // Customer pages are dark and run straight into the footer; the light admin console keeps a gap.
   const flush = !pathname.startsWith("/admin");
@@ -24,7 +26,7 @@ const Footer = () => {
       links: user
         ? [
             ["Profile", "/profile"],
-            ["Orders", "/orders"],
+            ...(shopEnabled ? [["Orders", "/orders"]] : []),
           ]
         : [
             ["Sign in", "/login"],

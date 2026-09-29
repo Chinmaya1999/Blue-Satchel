@@ -3,7 +3,8 @@ import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
-import { ProtectedRoute, AdminRoute, CreditRoute } from "./components/ProtectedRoute.jsx";
+import { ProtectedRoute, AdminRoute, CreditRoute, ShopRoute } from "./components/ProtectedRoute.jsx";
+import { useSiteSettings } from "./context/SiteSettingsContext.jsx";
 
 import Landing from "./pages/Landing.jsx";
 import Login from "./pages/Login.jsx";
@@ -32,11 +33,12 @@ import AdminScans from "./pages/admin/AdminScans.jsx";
 import AdminPayments from "./pages/admin/AdminPayments.jsx";
 
 function App() {
+  const { shopEnabled } = useSiteSettings();
   return (
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />
       <Navbar />
-      <CartDrawer />
+      {shopEnabled && <CartDrawer />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -54,9 +56,10 @@ function App() {
           <Route path="/scan/history" element={<ProtectedRoute><ScanHistoryPage /></ProtectedRoute>} />
           <Route path="/scan/:id" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
 
-          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-          <Route path="/order-confirmation/:id" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+          {/* Buying pages exist only while shop sales are switched on in admin. */}
+          <Route path="/checkout" element={<ShopRoute><ProtectedRoute><Checkout /></ProtectedRoute></ShopRoute>} />
+          <Route path="/order-confirmation/:id" element={<ShopRoute><ProtectedRoute><OrderConfirmation /></ProtectedRoute></ShopRoute>} />
+          <Route path="/orders" element={<ShopRoute><ProtectedRoute><OrderHistory /></ProtectedRoute></ShopRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
           <Route path="/admin/scan-report/:id" element={<AdminRoute><ScanResult admin /></AdminRoute>} />

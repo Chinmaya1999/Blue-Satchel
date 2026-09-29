@@ -7,11 +7,12 @@ import AppSetting from "../models/AppSetting.js";
  * server containers run briefly, and the periodic refresh keeps the other
  * one in step.
  */
-const DEFAULTS = { quickScanFree: false };
+const DEFAULTS = { quickScanFree: false, shopEnabled: false };
 let cache = { ...DEFAULTS };
 
 const toPlain = (doc) => ({
   quickScanFree: Boolean(doc?.quickScanFree),
+  shopEnabled: Boolean(doc?.shopEnabled),
   updatedAt: doc?.updatedAt ?? null,
   updatedBy: doc?.updatedBy ?? null,
 });
@@ -26,7 +27,9 @@ export const getSettings = () => cache;
 
 export const updateSettings = async (patch, adminId) => {
   const update = { updatedBy: adminId };
-  if (typeof patch.quickScanFree === "boolean") update.quickScanFree = patch.quickScanFree;
+  for (const key of ["quickScanFree", "shopEnabled"]) {
+    if (typeof patch[key] === "boolean") update[key] = patch[key];
+  }
   await AppSetting.findOneAndUpdate({ key: "global" }, update, { upsert: true, setDefaultsOnInsert: true });
   return loadSettings();
 };

@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
 import { crmService } from "../services/crmService.js";
+import { getSettings } from "../services/settings.js";
 import {
   isRazorpayConfigured,
   razorpayKeyId,
@@ -98,6 +99,11 @@ const finalizeOrder = async (order, user) => {
 
 export const createOrder = async (req, res, next) => {
   try {
+    // Catalog-only mode: nothing can be bought until an admin turns sales on.
+    // (Payments already in progress can still be verified below.)
+    if (!getSettings().shopEnabled) {
+      return res.status(403).json({ code: "SHOP_DISABLED", message: "Online ordering isn't available yet. You can still browse all products." });
+    }
     const paymentMethod = req.body.paymentMethod === "cod" ? "cod" : "razorpay";
     const shippingAddress = cleanAddress(req.body.shippingAddress);
     if (!shippingAddress.line1 || !shippingAddress.city || !shippingAddress.state || !shippingAddress.postalCode) {

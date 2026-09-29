@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Star, ShoppingBag, ExternalLink } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
 // Local illustration per category, shown if a brand's hosted image fails to load.
 const FALLBACK_IMAGE = {
@@ -21,6 +22,7 @@ export const productImageFallback = (e, category) => {
 
 const ProductCard = ({ product, step, targets }) => {
   const { addItem } = useCart();
+  const { shopEnabled } = useSiteSettings();
 
   return (
     <div className="card group flex flex-col overflow-hidden rounded-3xl transition duration-300 hover:-translate-y-1 hover:shadow-soft">
@@ -91,13 +93,15 @@ const ProductCard = ({ product, step, targets }) => {
                 <ExternalLink size={15} />
               </a>
             )}
-            <button
-              onClick={() => addItem(product, 1)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/30 transition hover:bg-cyan-300 hover:text-slate-950 hover:shadow-[0_0_20px_rgba(94,231,255,0.6)] active:scale-95"
-              aria-label={`Add ${product.name} to bag`}
-            >
-              <ShoppingBag size={16} />
-            </button>
+            {shopEnabled && (
+              <button
+                onClick={() => addItem(product, 1)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/30 transition hover:bg-cyan-300 hover:text-slate-950 hover:shadow-[0_0_20px_rgba(94,231,255,0.6)] active:scale-95"
+                aria-label={`Add ${product.name} to bag`}
+              >
+                <ShoppingBag size={16} />
+              </button>
+            )}
           </div>
         </div>
       </div>

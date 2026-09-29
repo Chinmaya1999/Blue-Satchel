@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import Loader from "./Loader.jsx";
 import { canAfford, buyCreditsPath, minScanCost } from "../utils/credits.js";
 import { usePricing } from "../context/PricingContext.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
 export const verifyEmailPath = (next) => `/verify-email${next ? `?next=${encodeURIComponent(next)}` : ""}`;
 
@@ -31,6 +32,15 @@ export const CreditRoute = ({ mode, children }) => {
   if (!costs) return <div className="fs-page fs-page-bg"><Loader full label="Loading…" /></div>;
   const cost = mode === "any" ? minScanCost(costs) : costs[mode];
   if (!canAfford(user, cost)) return <Navigate to={buyCreditsPath(cost, location.pathname)} replace />;
+  return children;
+};
+
+// Checkout / orders pages: only while the admin has shop sales switched on.
+// Otherwise (catalog-only mode) send people back to browse the shop.
+export const ShopRoute = ({ children }) => {
+  const { shopEnabled, loaded } = useSiteSettings();
+  if (!loaded) return <div className="fs-page fs-page-bg"><Loader full label="Loading…" /></div>;
+  if (!shopEnabled) return <Navigate to="/shop" replace />;
   return children;
 };
 

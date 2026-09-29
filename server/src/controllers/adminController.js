@@ -424,8 +424,10 @@ export const getAppSettings = async (req, res, next) => {
 
 export const updateAppSettings = async (req, res, next) => {
   try {
-    if (req.body.quickScanFree !== undefined && typeof req.body.quickScanFree !== "boolean") {
-      return res.status(400).json({ message: "quickScanFree must be true or false." });
+    for (const key of ["quickScanFree", "shopEnabled"]) {
+      if (req.body[key] !== undefined && typeof req.body[key] !== "boolean") {
+        return res.status(400).json({ message: `${key} must be true or false.` });
+      }
     }
     const settings = await updateSettings(req.body, req.user._id);
     res.json({ settings, costs: scanCosts(), baseCosts: BASE_SCAN_COSTS });

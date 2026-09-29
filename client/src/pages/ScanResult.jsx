@@ -35,6 +35,7 @@ import RupamAnalysisPanel from "../components/RupamAnalysisPanel.jsx";
 import NearbyDermatologists from "../components/NearbyDermatologists.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 import { ROUTINE_STEP_LABELS, concernsTargeted } from "../utils/routine.js";
 
 const CONCERN_ICONS = {
@@ -216,6 +217,7 @@ const ScanResult = ({ admin = false }) => {
   const [loading, setLoading] = useState(true);
   const [routineAdded, setRoutineAdded] = useState(false);
   const { addItem } = useCart();
+  const { shopEnabled } = useSiteSettings();
 
   useEffect(() => {
     setLoading(true);
@@ -389,7 +391,7 @@ const ScanResult = ({ admin = false }) => {
             )}
           </div>
           <div className="flex gap-2">
-            {!admin && scan.recommendedProducts?.length > 0 && (
+            {!admin && shopEnabled && scan.recommendedProducts?.length > 0 && (
               <button onClick={addRoutineToBag} className="btn-primary rounded-full">
                 <ShoppingBag size={15} /> {routineAdded ? "Added to bag ✓" : "Add routine to bag"}
               </button>

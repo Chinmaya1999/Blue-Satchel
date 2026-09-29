@@ -4,6 +4,7 @@ import { Star, ShoppingBag, ShieldCheck, Truck, ChevronLeft, Minus, Plus, Extern
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
 import { useCart } from "../context/CartContext.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 import { productImageFallback } from "../components/ProductCard.jsx";
 
 const ProductDetail = () => {
@@ -13,6 +14,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
+  const { shopEnabled } = useSiteSettings();
 
   useEffect(() => {
     setLoading(true);
@@ -85,29 +87,37 @@ const ProductDetail = () => {
             </div>
           )}
 
-          <div className="mt-7 flex items-center gap-3">
-            <div className="flex items-center rounded-full border border-slate-200 bg-white">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="flex h-12 w-12 items-center justify-center rounded-full hover:bg-slate-50">
-                <Minus size={14} />
-              </button>
-              <span className="w-8 text-center font-semibold text-white">{qty}</span>
-              <button onClick={() => setQty((q) => Math.min(product.stock, q + 1))} className="flex h-12 w-12 items-center justify-center rounded-full hover:bg-slate-50">
-                <Plus size={14} />
+          {shopEnabled ? (
+            <>
+            <div className="mt-7 flex items-center gap-3">
+              <div className="flex items-center rounded-full border border-slate-200 bg-white">
+                <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="flex h-12 w-12 items-center justify-center rounded-full hover:bg-slate-50">
+                  <Minus size={14} />
+                </button>
+                <span className="w-8 text-center font-semibold text-white">{qty}</span>
+                <button onClick={() => setQty((q) => Math.min(product.stock, q + 1))} className="flex h-12 w-12 items-center justify-center rounded-full hover:bg-slate-50">
+                  <Plus size={14} />
+                </button>
+              </div>
+              <button
+                onClick={() => { addItem(product, qty); setAdded(true); setTimeout(() => setAdded(false), 1800); }}
+                className="btn-primary h-12 flex-1 rounded-full"
+                disabled={product.stock === 0}
+              >
+                <ShoppingBag size={16} /> {product.stock === 0 ? "Out of stock" : added ? "Added to bag ✓" : "Add to bag"}
               </button>
             </div>
-            <button
-              onClick={() => { addItem(product, qty); setAdded(true); setTimeout(() => setAdded(false), 1800); }}
-              className="btn-primary h-12 flex-1 rounded-full"
-              disabled={product.stock === 0}
-            >
-              <ShoppingBag size={16} /> {product.stock === 0 ? "Out of stock" : added ? "Added to bag ✓" : "Add to bag"}
-            </button>
-          </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-4 border-t border-slate-100 pt-6">
-            <div className="flex items-center gap-2 text-sm text-slate-500"><Truck size={16} className="text-brand-500" /> Free shipping over ₹999</div>
-            <div className="flex items-center gap-2 text-sm text-slate-500"><ShieldCheck size={16} className="text-brand-500" /> Secure checkout</div>
-          </div>
+            <div className="mt-8 grid grid-cols-2 gap-4 border-t border-slate-100 pt-6">
+              <div className="flex items-center gap-2 text-sm text-slate-500"><Truck size={16} className="text-brand-500" /> Free shipping over ₹999</div>
+              <div className="flex items-center gap-2 text-sm text-slate-500"><ShieldCheck size={16} className="text-brand-500" /> Secure checkout</div>
+            </div>
+            </>
+          ) : (
+            <p className="mt-7 rounded-2xl bg-white/[0.03] px-4 py-3 text-sm text-slate-400 ring-1 ring-white/10">
+              Online ordering isn't open yet — explore the full details here.
+            </p>
+          )}
         </div>
       </div>
     </div>

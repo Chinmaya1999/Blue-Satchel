@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios.js";
+import ShopSalesToggle from "./ShopSalesToggle.jsx";
 import Loader from "../../components/Loader.jsx";
 
 const STATUSES = ["placed", "confirmed", "shipped", "delivered", "cancelled"];
@@ -21,6 +22,8 @@ const AdminOrders = () => {
   };
 
   return (
+    <div className="space-y-6">
+    <ShopSalesToggle />
     <div className="card p-5">
       <h2 className="mb-4 font-display font-semibold text-slate-900">Order Management</h2>
       {loading ? <Loader /> : (
@@ -68,6 +71,7 @@ const AdminOrders = () => {
           </table>
         </div>
       )}
+    </div>
     </div>
   );
 };

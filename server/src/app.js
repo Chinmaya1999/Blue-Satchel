@@ -13,6 +13,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import creditRoutes from "./routes/creditRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import { sanitizeBody, apiLimiter } from "./middleware/security.js";
+import { getSettings } from "./services/settings.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -42,6 +43,13 @@ app.use("/uploads", express.static(path.join(__dirname, "..", "uploads"), { dotf
 app.get("/api/health", (req, res) => res.json({ status: "ok", service: "blue-satchel-business-platform" }));
 
 app.use("/api", apiLimiter);
+
+// Switches the storefront needs (no auth): whether the shop sells, and
+// whether Quick Scan is free.
+app.get("/api/settings", (req, res) => {
+  const { shopEnabled, quickScanFree } = getSettings();
+  res.json({ shopEnabled, quickScanFree });
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/scans", scanRoutes);

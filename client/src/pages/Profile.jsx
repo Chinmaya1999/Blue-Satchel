@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { User, Bell, ScanFace, Package, Save, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 import api from "../api/axios.js";
 
 const SKIN_TYPES = ["normal", "oily", "dry", "combination", "sensitive", "unknown"];
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
+  const { shopEnabled } = useSiteSettings();
   const [form, setForm] = useState({
     name: user.name || "",
     phone: user.phone || "",
@@ -55,7 +57,7 @@ const Profile = () => {
 
       <div className="relative flex flex-wrap gap-3">
         <Link to="/scan/history" className="btn-secondary rounded-full"><ScanFace size={15} /> Scan history</Link>
-        <Link to="/orders" className="btn-secondary rounded-full"><Package size={15} /> Order history</Link>
+        {shopEnabled && <Link to="/orders" className="btn-secondary rounded-full"><Package size={15} /> Order history</Link>}
       </div>
       </div>
 

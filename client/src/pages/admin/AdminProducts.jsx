@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X, RotateCcw } from "lucide-react";
 import api from "../../api/axios.js";
+import ShopSalesToggle from "./ShopSalesToggle.jsx";
 import Loader from "../../components/Loader.jsx";
 
 const emptyForm = {
@@ -62,6 +63,8 @@ const AdminProducts = () => {
   };
 
   return (
+    <div className="space-y-6">
+    <ShopSalesToggle />
     <div className="card p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display font-semibold text-slate-900">Product Management</h2>
@@ -155,6 +158,7 @@ const AdminProducts = () => {
           </form>
         </div>
       )}
+    </div>
     </div>
   );
 };
