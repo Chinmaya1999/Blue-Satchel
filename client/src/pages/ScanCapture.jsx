@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import * as faceapi from "face-api.js";
@@ -23,7 +23,35 @@ import {
   VolumeX,
   SkipForward,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import api from "../api/axios.js";
+
+// Escape untrusted vendor text before dropping it into Swal's `html`.
+const escapeHtml = (str) =>
+  String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// Show the AI vendor's raw response (e.g. an out-of-credits or rate-limit
+// payload) in a popup so it's clear the failure came from the live API.
+const showApiErrorAlert = (data) => {
+  const message = data?.message || "Analysis failed. Please try again.";
+  const raw = data?.providerResponse;
+  const rawHtml =
+    raw !== undefined && raw !== null
+      ? `<p style="margin:14px 0 6px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#64748b;">Raw API response${
+          data?.providerStatus ? ` · HTTP ${escapeHtml(data.providerStatus)}` : ""
+        }${data?.provider ? ` · ${escapeHtml(data.provider)}` : ""}</p><pre style="text-align:left;max-height:220px;overflow:auto;background:#0f172a;color:#e2e8f0;padding:12px;border-radius:10px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${escapeHtml(
+          JSON.stringify(raw, null, 2)
+        )}</pre>`
+      : "";
+  return Swal.fire({
+    icon: "error",
+    title: "Skin analysis failed",
+    html: `<p style="font-size:14px;color:#334155;">${escapeHtml(message)}</p>${rawHtml}`,
+    confirmButtonText: "Got it",
+    confirmButtonColor: "#0ea5e9",
+    width: raw ? 560 : 420,
+  });
+};
 
 const CHECKLIST = [
   { key: "spots", icon: Target, label: "Spots & blemishes", desc: "Scanning for localized dark spots and blemish density." },
@@ -66,6 +94,9 @@ const RIGHT_YAW_MAX = 0.34;
 // The front shot is the one sent to the live AI provider, which requires the
 // face to fill most of the frame — much closer than side angles need to be.
 const FRONT_MIN_WIDTH_RATIO = 0.5;
+// Quick Scan (Rupam) wants a normally-framed, complete face with margin rather
+// than a lens-filling close-up, so it uses a gentler minimum and no tight crop.
+const QUICK_FRONT_MIN_WIDTH_RATIO = 0.3;
 const SIDE_MIN_WIDTH_RATIO = 0.12;
 const MAX_WIDTH_RATIO = 0.85;
 // Every photo sent to the AI provider is drawn into a square canvas this
@@ -73,7 +104,9 @@ const MAX_WIDTH_RATIO = 0.85;
 // side is under 1080px with error_below_min_image_size, so stay above that.
 const OUTPUT_SIZE = 1280;
 
-const STEP_ORDER = ["front", "left", "right"];
+// Detailed scan walks all three angles; Quick scan captures the front only.
+const DETAILED_STEPS = ["front", "left", "right"];
+const QUICK_STEPS = ["front"];
 const STEPS = {
   front: {
     label: "Front",
@@ -169,7 +202,8 @@ const speakText = (text) => {
   window.speechSynthesis.speak(utter);
 };
 
-const ScanCapture = () => {
+const ScanCapture = ({ quick = false }) => {
+  const STEP_ORDER = useMemo(() => (quick ? QUICK_STEPS : DETAILED_STEPS), [quick]);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const analysisCanvasRef = useRef(null);
@@ -290,6 +324,7 @@ const ScanCapture = () => {
     setError("");
     try {
       const formData = new FormData();
+      formData.append("mode", quick ? "quick" : "detailed");
       formData.append("front", front.blob, "front.jpg");
       if (left?.blob) formData.append("left", left.blob, "left.jpg");
       if (right?.blob) formData.append("right", right.blob, "right.jpg");
@@ -304,11 +339,14 @@ const ScanCapture = () => {
         setFlowStage("intro");
         return;
       }
-      setError(err.response?.data?.message || "Analysis failed. Please try again.");
+      const data = err.response?.data;
+      setError(data?.message || "Analysis failed. Please try again.");
       setSubmitting(false);
       setFlowStage(STEP_ORDER[STEP_ORDER.length - 1]);
+      // Pop the vendor's actual response (e.g. low-credits/rate-limit).
+      showApiErrorAlert(data);
     }
-  }, [navigate]);
+  }, [navigate, quick, STEP_ORDER]);
 
   const advanceStage = useCallback(
     (fromStage) => {
@@ -326,7 +364,7 @@ const ScanCapture = () => {
         }, 900);
       }
     },
-    [speak, submitAllShots]
+    [speak, submitAllShots, STEP_ORDER]
   );
 
   const capturePhoto = useCallback(
@@ -344,15 +382,13 @@ const ScanCapture = () => {
       if (!video || !canvas) return;
       const maxSize = Math.min(video.videoWidth, video.videoHeight);
 
-      // The front shot is the one sent to the live AI provider, which
-      // requires the face to fill most of the frame (much stricter than
-      // this app's own capture-guide threshold) — crop tightly around the
-      // already-detected face box instead of the full centered frame so
-      // that requirement is met regardless of how close the user physically
-      // sits. FACE_CROP_RATIO leaves a comfortable margin above the
-      // provider's ~60%-of-width minimum.
+      // Perfect Corp's detailed-scan front shot requires the face to fill most
+      // of the frame, so it's cropped tightly around the detected face box.
+      // Quick Scan (Rupam) is the opposite — its detector rejects lens-filling
+      // crops as "no face detected", so it keeps the full centered frame
+      // (whole face with margin). FACE_CROP_RATIO leaves a comfortable margin.
       const FACE_CROP_RATIO = 0.78;
-      const box = stage === "front" ? lastFaceBoxRef.current : null;
+      const box = stage === "front" && !quick ? lastFaceBoxRef.current : null;
       let size = maxSize;
       let sx = (video.videoWidth - size) / 2;
       let sy = (video.videoHeight - size) / 2;
@@ -384,7 +420,7 @@ const ScanCapture = () => {
         0.92
       );
     },
-    [speak, advanceStage]
+    [speak, advanceStage, quick]
   );
 
   // Live detection loop for whichever step is active
@@ -466,7 +502,12 @@ const ScanCapture = () => {
               blinkDetectedRef.current = true;
             }
 
-            const minWidthRatio = flowStage === "front" ? FRONT_MIN_WIDTH_RATIO : SIDE_MIN_WIDTH_RATIO;
+            const minWidthRatio =
+              flowStage === "front"
+                ? quick
+                  ? QUICK_FRONT_MIN_WIDTH_RATIO
+                  : FRONT_MIN_WIDTH_RATIO
+                : SIDE_MIN_WIDTH_RATIO;
             const sizeOk = widthRatio > minWidthRatio && widthRatio < MAX_WIDTH_RATIO;
             const verticalOk = cy > 0.1 && cy < 0.9;
 
@@ -521,7 +562,7 @@ const ScanCapture = () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [cameraReady, cameraError, submitting, modelsReady, flowStage, autoCapture, capturePhoto]);
+  }, [cameraReady, cameraError, submitting, modelsReady, flowStage, autoCapture, capturePhoto, STEP_ORDER]);
 
   const startGuidedScan = () => {
     setFlowStage("front");
@@ -714,7 +755,7 @@ const ScanCapture = () => {
                 closer, larger face than the side angles do. */}
             <div
               className={`relative min-w-[220px] ${
-                flowStage === "front" ? "h-[85%] w-[56%]" : "h-[64%] w-[42%]"
+                flowStage === "front" && !quick ? "h-[85%] w-[56%]" : "h-[64%] w-[42%]"
               }`}
             >
               <div className={`h-full w-full rounded-[50%] border-2 border-dashed transition-colors duration-300 ${postureColor}`} />
@@ -735,8 +776,8 @@ const ScanCapture = () => {
               <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/30 shadow-[0_0_40px_-6px_rgba(94,231,255,0.6)]">
                 <ScanFace size={24} />
               </span>
-              <p className="fs-eyebrow text-[10px]">3 angles · voice guided</p>
-              <h2 className="mt-2 font-display text-xl font-bold text-white">Guided AI Skin Scan</h2>
+              <p className="fs-eyebrow text-[10px]">{quick ? "1 selfie · instant" : "3 angles · voice guided"}</p>
+              <h2 className="mt-2 font-display text-xl font-bold text-white">{quick ? "Quick AI Skin Scan" : "Guided AI Skin Scan"}</h2>
               {quota?.limit != null && (
                 <p className={`mt-2 inline-flex rounded-full px-3 py-1 font-mono text-[11px] font-semibold ring-1 ${limitReached ? "bg-rose-500/10 text-rose-200 ring-rose-400/30" : "bg-cyan-400/10 text-cyan-200 ring-cyan-300/30"}`}>
                   {quota.remaining} of {quota.limit} scans left today
@@ -761,7 +802,9 @@ const ScanCapture = () => {
               ) : (
                 <>
                   <p className="mt-1.5 text-sm text-slate-500">
-                    I'll talk you through it — front, then a slow turn left and right — and capture each angle automatically.
+                    {quick
+                      ? "Just one front-facing selfie — I'll capture it automatically once you're centered, lit and steady."
+                      : "I'll talk you through it — front, then a slow turn left and right — and capture each angle automatically."}
                   </p>
                   <div className="mt-5 flex justify-center gap-4">
                     {STEP_ORDER.map((s, i) => (
@@ -778,7 +821,7 @@ const ScanCapture = () => {
                     disabled={!cameraReady || !modelsReady}
                     className="btn-primary mt-6 h-12 w-full rounded-full"
                   >
-                    {!cameraReady ? "Starting camera…" : !modelsReady ? "Loading face detector…" : "Start guided scan"}
+                    {!cameraReady ? "Starting camera…" : !modelsReady ? "Loading face detector…" : quick ? "Start quick scan" : "Start guided scan"}
                   </button>
                 </>
               )}
@@ -857,7 +900,9 @@ const ScanCapture = () => {
             <p className="fs-eyebrow text-[11px]">AI skin assessment</p>
             <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-white">Let's scan your <span className="fs-gradient-text">skin</span></h1>
             <p className="mt-1.5 text-sm text-slate-500">
-              A guided, voice-narrated scan from three angles for a steadier reading.
+              {quick
+                ? "A quick single-selfie scan for an instant skin snapshot."
+                : "A guided, voice-narrated scan from three angles for a steadier reading."}
             </p>
           </div>
           {flowStage !== "intro" && (
@@ -890,7 +935,7 @@ const ScanCapture = () => {
 
         {!submitting && (
           <>
-            <p className="fs-eyebrow mb-3 mt-7 text-[11px]">Captured angles</p>
+            <p className="fs-eyebrow mb-3 mt-7 text-[11px]">{quick ? "Captured photo" : "Captured angles"}</p>
             <div className="grid grid-cols-3 gap-3">
               {STEP_ORDER.map((s) => (
                 <div
@@ -974,8 +1019,10 @@ const ScanCapture = () => {
 
         <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-500 ring-1 ring-white/10">
           Results include an overall skin health score out of 100, a severity breakdown for each concern, and a
-          personalized product routine — the left and right views help steady the redness, texture and spots
-          readings beyond what a single front photo can show.
+          personalized product routine.
+          {quick
+            ? " Want a steadier reading across redness, texture and spots? Try the Detailed scan's three angles."
+            : " The left and right views help steady the redness, texture and spots readings beyond what a single front photo can show."}
         </div>
 
         <p className="mt-auto pt-6 text-center text-xs text-slate-400">

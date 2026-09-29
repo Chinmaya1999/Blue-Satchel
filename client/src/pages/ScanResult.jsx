@@ -31,6 +31,7 @@ import ScoreRing from "../components/ScoreRing.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import ScanReport from "../components/ScanReport.jsx";
 import ApiAnalysisPanel from "../components/ApiAnalysisPanel.jsx";
+import RupamAnalysisPanel from "../components/RupamAnalysisPanel.jsx";
 import NearbyDermatologists from "../components/NearbyDermatologists.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
@@ -89,8 +90,9 @@ const INSIGHT = {
 const reportFileName = (scan, ext) =>
   `blue-satchel-skin-report-${new Date(scan.createdAt).toISOString().slice(0, 10)}-${scan._id.slice(-6)}.${ext}`;
 
-// Saves the scan as JSON, including Perfect Corp's raw API output
-// (rawMetrics.perfectCorpOutput) exactly as the API returned it.
+// Saves the scan as JSON, including the vendor's raw API output
+// (Perfect Corp's perfectCorpOutput or Rupam's rupamOutput) exactly as the
+// API returned it.
 const downloadJson = (scan) => {
   const data = {
     reportId: scan._id,
@@ -101,7 +103,7 @@ const downloadJson = (scan) => {
     skinAge: scan.rawMetrics?.skinAge ?? null,
     concerns: scan.concerns,
     faceRegions: scan.faceRegions,
-    apiResponse: scan.rawMetrics?.perfectCorpOutput ?? null,
+    apiResponse: scan.rawMetrics?.perfectCorpOutput ?? scan.rawMetrics?.rupamOutput ?? null,
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
   const a = document.createElement("a");
@@ -138,7 +140,7 @@ const printReport = async (scan) => {
 const DownloadMenu = ({ scan }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const hasApiData = Boolean(scan.rawMetrics?.perfectCorpOutput);
+  const hasApiData = Boolean(scan.rawMetrics?.perfectCorpOutput || scan.rawMetrics?.rupamOutput);
 
   useEffect(() => {
     if (!open) return;
@@ -194,7 +196,9 @@ const DownloadMenu = ({ scan }) => {
             <span>
               <span className="block text-sm font-semibold text-slate-800">API data (JSON)</span>
               <span className="block text-xs text-slate-500">
-                {hasApiData ? "Raw Perfect Corp response for this scan" : "Not available for demo scans"}
+                {hasApiData
+                  ? `Raw ${scan.provider === "rupam" ? "Rupam.ai" : "Perfect Corp"} response for this scan`
+                  : "Not available for demo scans"}
               </span>
             </span>
           </button>
@@ -278,13 +282,13 @@ const ScanResult = ({ admin = false }) => {
           <div className="absolute inset-x-0 top-0 flex items-start justify-between p-6 sm:p-8">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm ring-1 ring-white/15">
               <ScanFace size={13} /> Skin Analysis Report
-              {scan.provider === "perfectcorp" ? (
-                <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] text-emerald-200">
-                  <BadgeCheck size={11} /> Live AI
-                </span>
-              ) : (
+              {scan.provider === "mock" ? (
                 <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] text-amber-200">
                   <FlaskConical size={11} /> Demo data
+                </span>
+              ) : (
+                <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] text-emerald-200">
+                  <BadgeCheck size={11} /> Live AI
                 </span>
               )}
             </span>
@@ -370,6 +374,7 @@ const ScanResult = ({ admin = false }) => {
       </section>
 
       <ApiAnalysisPanel scan={scan} />
+      <RupamAnalysisPanel scan={scan} />
 
       {/* Recommended products */}
       <section className="container-app py-16">

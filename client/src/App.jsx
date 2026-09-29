@@ -44,6 +44,7 @@ function App() {
 
           <Route path="/scan" element={<ProtectedRoute><ScanOptions /></ProtectedRoute>} />
           <Route path="/scan/detailed" element={<ProtectedRoute><ScanCapture /></ProtectedRoute>} />
+          <Route path="/scan/quick" element={<ProtectedRoute><ScanCapture quick /></ProtectedRoute>} />
           <Route path="/scan/history" element={<ProtectedRoute><ScanHistoryPage /></ProtectedRoute>} />
           <Route path="/scan/:id" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
 

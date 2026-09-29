@@ -13,6 +13,8 @@ const concernSchema = new mongoose.Schema(
 const scanHistorySchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    // "detailed" = guided 3-angle scan; "quick" = single front-facing selfie.
+    mode: { type: String, enum: ["detailed", "quick", "focus"], default: "detailed" },
     imageUrl: { type: String, required: true },
     leftImageUrl: { type: String },
     rightImageUrl: { type: String },

@@ -14,6 +14,7 @@ const LEVEL_COLOR = {
 
 const SOURCE_LABEL = {
   perfectcorp: "Perfect Corp YouCam AI Skin Analysis (live)",
+  rupam: "Rupam.ai AI Skin Analysis (live)",
   mock: "Demo data (not a real analysis)",
 };
 

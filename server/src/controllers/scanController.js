@@ -67,6 +67,9 @@ export const createScan = async (req, res, next) => {
     const front = req.files?.front?.[0];
     const left = req.files?.left?.[0];
     const right = req.files?.right?.[0];
+    // Quick scan sends only a front selfie and runs on Rupam; detailed adds
+    // left/right angles. The mode also selects the AI provider (see analyzeSkin).
+    const mode = req.body?.mode === "quick" ? "quick" : "detailed";
 
     if (!front) return res.status(400).json({ message: "A front-facing selfie is required." });
 
@@ -83,11 +86,14 @@ export const createScan = async (req, res, next) => {
 
     let analysis;
     try {
-      analysis = await analyzeSkin({
-        front: front.buffer,
-        left: left?.buffer,
-        right: right?.buffer,
-      });
+      analysis = await analyzeSkin(
+        {
+          front: front.buffer,
+          left: left?.buffer,
+          right: right?.buffer,
+        },
+        { mode }
+      );
     } catch (err) {
       // The scan never happened, so it shouldn't count against today's limit.
       await releaseScan(req.user);
@@ -96,10 +102,20 @@ export const createScan = async (req, res, next) => {
     if (analysis.rawMetrics?.perfectCorpOutput) {
       analysis.rawMetrics.savedImages = await saveProviderImages(analysis.rawMetrics.perfectCorpOutput);
     }
+    // Rupam's composite (annotated) image is a signed S3 URL that expires in
+    // 24h — copy it into uploads/ so the results page keeps showing it.
+    if (analysis.rawMetrics?.compositeUri) {
+      try {
+        analysis.rawMetrics.savedCompositeUrl = await saveRemoteImage(analysis.rawMetrics.compositeUri);
+      } catch (err) {
+        console.error("[scan] could not save Rupam composite image:", err.message);
+      }
+    }
     const recommended = await recommendProducts(analysis.concerns, { skinType: req.user.skinType });
 
     const scan = await ScanHistory.create({
       user: req.user._id,
+      mode,
       imageUrl,
       leftImageUrl,
       rightImageUrl,

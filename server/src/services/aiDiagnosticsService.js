@@ -292,7 +292,12 @@ const getAccessToken = async () => {
   const accessToken = json?.result?.access_token ?? json?.access_token;
   const expiresIn = json?.result?.expires_in ?? json?.expires_in ?? 3600;
   if (!res.ok || !accessToken) {
-    throw new Error(`Perfect Corp auth failed (${res.status}): ${JSON.stringify(json)}`);
+    const err = new Error(json?.error || `Perfect Corp auth failed (${res.status}).`);
+    err.status = res.status >= 400 && res.status < 500 ? 422 : 503;
+    err.provider = "perfectcorp";
+    err.providerStatus = res.status;
+    err.providerResponse = json;
+    throw err;
   }
 
   cachedToken = { accessToken, expiresAt: Date.now() + expiresIn * 1000 };
@@ -314,6 +319,11 @@ const pcFetch = async (path, options, accessToken) => {
     // paying customers.
     const err = new Error(json?.error || `Perfect Corp API error on ${path} (${res.status}).`);
     err.status = res.status >= 400 && res.status < 500 ? 422 : 503;
+    // Forward the vendor's raw body + status so the client can show exactly
+    // what the API returned (e.g. an out-of-credits payload).
+    err.provider = "perfectcorp";
+    err.providerStatus = res.status;
+    err.providerResponse = json;
     throw err;
   }
   return json;
@@ -482,13 +492,149 @@ const analyzeWithPerfectCorp = async ({ front }) => {
 };
 
 /**
- * @param {{ front: Buffer, left?: Buffer, right?: Buffer }} buffers
+ * Rupam.ai live provider — AI skin analysis tuned for Bharatiya (Fitzpatrick
+ * III–VI) skin tones. Reference: https://rupam.ai/en/docs
+ * ---------------------------------------------------------------------------
+ * Two-step flow:
+ *   1. POST /auth/token with `Authorization: Bearer <API_KEY>` (the sk_live_…
+ *      key goes in the header, NOT the body) -> { access_token, expires_in, … }.
+ *      Cached until shortly before expiry.
+ *   2. POST /analyze as multipart form (`image` file + `collect_image` flag)
+ *      with `Authorization: Bearer <access_token>`.
+ * Response scores run 0-100 where HIGHER = healthier, so we invert into this
+ * app's `severity` (higher = worse), mirroring the Perfect Corp adapter.
  */
-export const analyzeSkin = async (buffers) => {
-  const provider = process.env.AI_PROVIDER || "mock";
+const RUPAM_BASE_URL = process.env.RUPAM_API_BASE || "https://api.rupam.ai/rupam/v1";
+const RUPAM_ANALYZE_TIMEOUT_MS = 210000; // docs' own curl uses --max-time 210
+
+// Map Rupam condition_ids onto this app's existing concern keys so the
+// recommendation engine and result-page icons line up; anything unmapped keeps
+// a normalized form of its own id/name.
+const RUPAM_CONCERN_MAP = {
+  acne: "acne",
+  pores: "pores",
+  dark_circles: "dark-circles",
+  pigmentation: "spots",
+  spots: "spots",
+  redness: "redness",
+  texture: "texture",
+  wrinkles: "wrinkles",
+  oiliness: "oiliness",
+};
+
+let cachedRupamToken = null; // { accessToken, expiresAt }
+
+const rupamErrorMessage = (json, status) => {
+  // A rejected image (bad quality / no face) reports why in rejection_reason.
+  if (json?.rejection_reason) return json.rejection_reason;
+  if (json?.quality?.rejection_reason) return json.quality.rejection_reason;
+  const d = json?.detail;
+  if (typeof d === "string") return d;
+  if (d && typeof d === "object") return d.detail || d.error || JSON.stringify(d);
+  return json?.message || json?.error || `Rupam API error (${status}).`;
+};
+
+const rupamError = (json, status) => {
+  const err = new Error(rupamErrorMessage(json, status));
+  // Route every vendor failure through the client's generic (non-429) branch
+  // so it surfaces the raw response; 429 is avoided since the client reserves
+  // it for the app's own daily-scan quota.
+  err.status = status >= 500 ? 503 : 422;
+  err.provider = "rupam";
+  err.providerStatus = status;
+  err.providerResponse = json;
+  return err;
+};
+
+const getRupamToken = async () => {
+  if (cachedRupamToken && cachedRupamToken.expiresAt > Date.now() + 30000) {
+    return cachedRupamToken.accessToken;
+  }
+  const apiKey = process.env.RUPAM_API_KEY;
+  if (!apiKey) throw new Error("RUPAM_API_KEY is not configured.");
+
+  const res = await fetch(`${RUPAM_BASE_URL}/auth/token`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  const json = await res.json().catch(() => null);
+  const accessToken = json?.access_token;
+  if (!res.ok || !accessToken) throw rupamError(json, res.status);
+
+  const expiresInMs = (json.expires_in ?? 86400) * 1000;
+  cachedRupamToken = { accessToken, expiresAt: Date.now() + expiresInMs };
+  return accessToken;
+};
+
+const analyzeWithRupam = async ({ front }) => {
+  const accessToken = await getRupamToken();
+
+  const form = new FormData();
+  form.append("image", new Blob([front], { type: "image/jpeg" }), "front.jpg");
+  // Store the image on Rupam's side only when explicitly opted in (needed for
+  // their annotation/overlay asset generation); defaults off for privacy.
+  form.append("collect_image", process.env.RUPAM_COLLECT_IMAGE === "true" ? "true" : "false");
+
+  const res = await fetch(`${RUPAM_BASE_URL}/analyze`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` }, // let fetch set the multipart boundary
+    body: form,
+    signal: AbortSignal.timeout(RUPAM_ANALYZE_TIMEOUT_MS),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    console.error(`[rupam] ${res.status} on /analyze:`, json);
+    throw rupamError(json, res.status);
+  }
+
+  const conditions = Array.isArray(json?.conditions) ? json.conditions : [];
+  const concerns = conditions.map((c) => {
+    const key = RUPAM_CONCERN_MAP[c.condition_id] || String(c.condition_id || "").replace(/_/g, "-");
+    // Rupam `score` is 0-100 with higher = healthier; invert to severity.
+    const severity = Math.round(clamp(100 - (typeof c.score === "number" ? c.score : 50)));
+    return {
+      key,
+      label: c.condition_name || key,
+      severity,
+      level: levelFor(severity),
+    };
+  });
+
+  const overallScore = Math.round(clamp(json?.overall_skin_health_score ?? 50));
+  const overallLabel =
+    overallScore >= 85 ? "Excellent" : overallScore >= 70 ? "Good" : overallScore >= 50 ? "Fair" : "Needs Care";
+
+  return {
+    provider: "rupam",
+    overallScore,
+    overallLabel,
+    concerns,
+    rawMetrics: {
+      anglesUsed: ["front"],
+      requestId: json?.request_id,
+      skinProfile: json?.skin_profile,
+      imageQuality: json?.image_quality,
+      compositeUri: json?.annotations?.composite_uri,
+      rupamOutput: json,
+    },
+  };
+};
+
+// Provider used for a given scan mode. Quick Scan is wired to Rupam by
+// default; everything else follows AI_PROVIDER.
+const providerForMode = (mode) =>
+  mode === "quick" ? process.env.QUICK_SCAN_PROVIDER || "rupam" : process.env.AI_PROVIDER || "mock";
+
+/**
+ * @param {{ front: Buffer, left?: Buffer, right?: Buffer }} buffers
+ * @param {{ mode?: string }} [options]
+ */
+export const analyzeSkin = async (buffers, { mode } = {}) => {
+  const provider = providerForMode(mode);
   if (provider === "mock") return analyzeWithMockProvider(buffers);
   if (provider === "perfectcorp") return analyzeWithPerfectCorp(buffers);
-  throw new Error(`Unsupported AI_PROVIDER "${provider}"`);
+  if (provider === "rupam") return analyzeWithRupam(buffers);
+  throw new Error(`Unsupported AI provider "${provider}"`);
 };
 
 export const CONCERN_DEFINITIONS = CONCERN_DEFS;

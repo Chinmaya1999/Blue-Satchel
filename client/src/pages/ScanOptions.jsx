@@ -19,12 +19,14 @@ const MODES = [
   },
   {
     key: "quick",
+    to: "/scan/quick",
     icon: Zap,
     name: "Quick Scan",
     tagline: "One selfie, instant snapshot",
     time: "~15 sec",
-    features: ["Single front-facing photo", "5 key concerns scored", "Overall skin score", "Short product routine"],
-    available: false,
+    features: ["Single front-facing photo", "Key concerns scored", "Overall skin score", "Short product routine"],
+    badge: "Fastest",
+    available: true,
   },
   {
     key: "focus",
