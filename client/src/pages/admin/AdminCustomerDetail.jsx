@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ChevronLeft, Mail, Phone, Trash2, MapPin, FileText, RotateCcw, Save, Pencil, X } from "lucide-react";
+import { ChevronLeft, Mail, Phone, Trash2, MapPin, FileText, Save, Pencil, X, Coins } from "lucide-react";
 import api from "../../api/axios.js";
 import Loader from "../../components/Loader.jsx";
 import OsmMap, { esc } from "../../components/OsmMap.jsx";
@@ -19,6 +19,8 @@ const AdminCustomerDetail = () => {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [adjust, setAdjust] = useState({ amount: "", note: "" });
+  const [adjusting, setAdjusting] = useState(false);
 
   useEffect(() => {
     api.get(`/admin/customers/${id}`).then(({ data }) => setData(data)).catch(() => setData({ notFound: true }));
@@ -26,7 +28,7 @@ const AdminCustomerDetail = () => {
 
   if (!data) return <Loader label="Loading user…" />;
   if (data.notFound) return <div className="card p-8 text-center text-slate-400">User not found.</div>;
-  const { customer, scans, orders } = data;
+  const { customer, scans, orders, creditTransactions = [] } = data;
   const loc = customer.signupLocation;
   const isSelf = me?._id === customer._id;
 
@@ -82,6 +84,29 @@ const AdminCustomerDetail = () => {
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
+  const submitAdjust = async (e) => {
+    e.preventDefault();
+    setAdjusting(true);
+    setMessage("");
+    try {
+      const { data: res } = await api.post(`/admin/customers/${id}/credits`, {
+        amount: Number(adjust.amount),
+        note: adjust.note,
+      });
+      setData((prev) => ({
+        ...prev,
+        customer: { ...prev.customer, credits: res.credits },
+        creditTransactions: [{ ...res.transaction, createdBy: { name: me?.name } }, ...(prev.creditTransactions || [])],
+      }));
+      setAdjust({ amount: "", note: "" });
+      setMessage(`Credits updated. New balance: ${res.credits.balance}.`);
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Couldn't adjust credits.");
+    } finally {
+      setAdjusting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Link to="/admin/customers" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-brand-600">
@@ -105,6 +130,11 @@ const AdminCustomerDetail = () => {
             </h2>
             <p className="flex items-center gap-1.5 text-sm text-slate-500"><Mail size={13} /> {customer.email}</p>
             {customer.phone && <p className="flex items-center gap-1.5 text-sm text-slate-500"><Phone size={13} /> {customer.phone}</p>}
+            {customer.emailVerified === false ? (
+              <span className="badge mt-1 bg-amber-50 text-amber-700">Email not verified</span>
+            ) : (
+              <span className="badge mt-1 bg-emerald-50 text-emerald-700">Email verified</span>
+            )}
           </div>
           <div className="ml-auto flex flex-wrap gap-2">
             {!editing && (
@@ -123,18 +153,43 @@ const AdminCustomerDetail = () => {
           <div><dt className="text-xs text-slate-400">Sign-in</dt><dd className="mt-0.5 capitalize text-slate-700">{customer.authProvider || "local"}{customer.googleId && customer.authProvider !== "google" ? " + Google" : ""}</dd></div>
           <div><dt className="text-xs text-slate-400">Joined</dt><dd className="mt-0.5 text-slate-700">{new Date(customer.createdAt).toLocaleString()}</dd></div>
           <div>
-            <dt className="text-xs text-slate-400">Scans today</dt>
-            <dd className="mt-0.5 flex items-center gap-2 text-slate-700">
-              {!customer.quota ? "—" : customer.quota.limit == null ? `${customer.quota.used} (no limit)` : `${customer.quota.used} of ${customer.quota.limit}`}
-              {customer.quota?.used > 0 && customer.quota.limit != null && (
-                <button onClick={() => save({ resetScanQuota: true })} disabled={saving} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline">
-                  <RotateCcw size={12} /> Reset
-                </button>
-              )}
+            <dt className="text-xs text-slate-400">Credits</dt>
+            <dd className="mt-0.5 flex items-center gap-1.5 font-semibold text-slate-800">
+              <Coins size={14} className="text-amber-500" />
+              {customer.credits?.unlimited ? "Unlimited (admin)" : customer.credits?.balance ?? customer.credits ?? 0}
             </dd>
           </div>
         </dl>
         {message && <p className="mt-3 text-sm text-slate-500">{message}</p>}
+
+        {/* Manual credit adjustment */}
+        <form onSubmit={submitAdjust} className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-100 p-4">
+          <label className="text-xs text-slate-500">
+            Add / remove credits
+            <input
+              required
+              type="number"
+              step="1"
+              placeholder="e.g. 100 or -50"
+              className="input mt-1 w-40"
+              value={adjust.amount}
+              onChange={(e) => setAdjust({ ...adjust, amount: e.target.value })}
+            />
+          </label>
+          <label className="min-w-[14rem] flex-1 text-xs text-slate-500">
+            Reason (shown in the ledger)
+            <input
+              required
+              placeholder="Goodwill for failed scan, promo, correction…"
+              className="input mt-1"
+              value={adjust.note}
+              onChange={(e) => setAdjust({ ...adjust, note: e.target.value })}
+            />
+          </label>
+          <button type="submit" disabled={adjusting} className="btn-primary py-2.5 text-sm disabled:opacity-60">
+            <Coins size={14} /> {adjusting ? "Saving…" : "Apply"}
+          </button>
+        </form>
 
         {editing && (
           <form
@@ -236,6 +291,48 @@ const AdminCustomerDetail = () => {
             {orders.length === 0 && <p className="text-sm text-slate-400">No orders placed.</p>}
           </ul>
         </div>
+      </div>
+
+      {/* Credit ledger */}
+      <div className="card p-5">
+        <h3 className="mb-3 font-display font-semibold text-slate-900">Credit history ({creditTransactions.length})</h3>
+        {creditTransactions.length === 0 ? (
+          <p className="text-sm text-slate-400">No credit activity yet.</p>
+        ) : (
+          <div className="max-h-[28rem] overflow-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
+                  <th className="py-2 pr-4">Date</th>
+                  <th className="py-2 pr-4">Type</th>
+                  <th className="py-2 pr-4">Details</th>
+                  <th className="py-2 pr-4 text-right">Credits</th>
+                  <th className="py-2 text-right">Balance</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {creditTransactions.map((t) => (
+                  <tr key={t._id}>
+                    <td className="py-2.5 pr-4 whitespace-nowrap text-slate-500">{new Date(t.createdAt).toLocaleString()}</td>
+                    <td className="py-2.5 pr-4 capitalize text-slate-700">
+                      {t.type}
+                      {t.paymentStatus === "failed" && <span className="badge ml-1 bg-rose-50 text-rose-700">Declined</span>}
+                    </td>
+                    <td className="py-2.5 pr-4 text-slate-500">
+                      {t.type === "purchase" && `${t.plan?.name} · $${t.amountUsd} · ${t.paymentMethod?.toUpperCase()} · ${t.paymentReference || ""}`}
+                      {(t.type === "scan" || t.type === "refund") && <span className="capitalize">{t.scanMode} scan{t.type === "refund" ? " refunded" : ""}</span>}
+                      {t.type === "adjustment" && `${t.note}${t.createdBy?.name ? ` — by ${t.createdBy.name}` : ""}`}
+                    </td>
+                    <td className={`py-2.5 pr-4 text-right font-semibold tabular-nums ${t.amount > 0 ? "text-emerald-600" : t.amount < 0 ? "text-rose-600" : "text-slate-400"}`}>
+                      {t.amount > 0 ? `+${t.amount}` : t.amount}
+                    </td>
+                    <td className="py-2.5 text-right tabular-nums text-slate-500">{t.balanceAfter ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

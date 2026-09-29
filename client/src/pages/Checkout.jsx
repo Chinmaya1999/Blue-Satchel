@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { CreditCard, Smartphone, Banknote, AlertCircle, ShoppingBag } from "lucide-react";
+import { Smartphone, Banknote, AlertCircle, ShoppingBag, ShieldCheck } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/axios.js";
+import { loadRazorpay } from "../utils/razorpay.js";
 
 const PAYMENT_METHODS = [
-  { id: "card", label: "Credit / Debit Card", icon: CreditCard },
-  { id: "upi", label: "UPI", icon: Smartphone },
-  { id: "cod", label: "Cash on Delivery", icon: Banknote },
+  { id: "razorpay", label: "Pay online", hint: "UPI, QR, cards, netbanking", icon: Smartphone },
+  { id: "cod", label: "Cash on Delivery", hint: "Pay when it arrives", icon: Banknote },
 ];
 
 const Checkout = () => {
@@ -24,9 +24,7 @@ const Checkout = () => {
     postalCode: user?.address?.postalCode || "",
     country: "India",
   });
-  const [method, setMethod] = useState("card");
-  const [card, setCard] = useState({ number: "", expiry: "", cvv: "" });
-  const [upiId, setUpiId] = useState("");
+  const [method, setMethod] = useState("razorpay");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -48,20 +46,55 @@ const Checkout = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    const done = (order) => {
+      clearCart();
+      navigate(`/order-confirmation/${order._id}`);
+    };
     try {
-      const payload = {
+      if (method === "razorpay" && !(await loadRazorpay())) {
+        throw new Error("Couldn't load the payment window. Check your connection and try again.");
+      }
+      const { data } = await api.post("/orders", {
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
         shippingAddress: address,
         paymentMethod: method,
-        ...(method === "card" ? { card } : {}),
-        ...(method === "upi" ? { upiId } : {}),
-      };
-      const { data } = await api.post("/orders", payload);
-      clearCart();
-      navigate(`/order-confirmation/${data.order._id}`);
+      });
+      if (method === "cod") return done(data.order);
+
+      // Online: pay in Razorpay Checkout; our server verifies it before confirming.
+      const checkout = new window.Razorpay({
+        key: data.razorpay.keyId,
+        order_id: data.razorpay.orderId,
+        amount: data.razorpay.amount,
+        currency: data.razorpay.currency,
+        name: "Blue Satchel",
+        description: `Order ${data.order.orderNumber}`,
+        prefill: { name: user?.name, email: user?.email, contact: user?.phone },
+        theme: { color: "#22d3ee" },
+        handler: async (response) => {
+          try {
+            const { data: verified } = await api.post(`/orders/${data.order._id}/verify`, response);
+            done(verified.order);
+          } catch (err) {
+            setError(err.response?.data?.message || "We couldn't confirm your payment. If you were charged, please contact support.");
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setError("Payment cancelled — your bag is saved. You can try again.");
+            setLoading(false);
+          },
+        },
+      });
+      checkout.on("payment.failed", (resp) => {
+        const reason = resp.error?.description || "Payment failed.";
+        setError(`${reason} You can try again.`);
+        api.post(`/orders/${data.order._id}/payment-failed`, { reason }).catch(() => {});
+      });
+      checkout.open();
     } catch (err) {
-      setError(err.response?.data?.message || "Could not place order.");
-    } finally {
+      setError(err.response?.data?.message || err.message || "Could not place order.");
       setLoading(false);
     }
   };
@@ -108,7 +141,7 @@ const Checkout = () => {
 
           <div className="card rounded-3xl p-6 sm:p-8">
             <h2 className="mb-6 flex items-center gap-3 font-display text-lg font-semibold text-white"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400/10 font-mono text-xs text-cyan-300 ring-1 ring-cyan-300/30">02</span> Payment Method</h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {PAYMENT_METHODS.map((m) => (
                 <button
                   type="button"
@@ -119,31 +152,15 @@ const Checkout = () => {
                   }`}
                 >
                   <m.icon size={18} /> {m.label}
+                  <span className="text-[10px] font-normal opacity-70">{m.hint}</span>
                 </button>
               ))}
             </div>
 
-            {method === "card" && (
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="label">Card number</label>
-                  <input required placeholder="4111 1111 1111 1111" className="input" value={card.number} onChange={(e) => setCard({ ...card, number: e.target.value })} />
-                </div>
-                <div>
-                  <label className="label">Expiry (MM/YY)</label>
-                  <input required placeholder="12/28" className="input" value={card.expiry} onChange={(e) => setCard({ ...card, expiry: e.target.value })} />
-                </div>
-                <div>
-                  <label className="label">CVV</label>
-                  <input required placeholder="123" className="input" value={card.cvv} onChange={(e) => setCard({ ...card, cvv: e.target.value })} />
-                </div>
-              </div>
-            )}
-            {method === "upi" && (
-              <div className="mt-5">
-                <label className="label">UPI ID</label>
-                <input required placeholder="name@bank" className="input" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
-              </div>
+            {method === "razorpay" && (
+              <p className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                <ShieldCheck size={15} className="shrink-0 text-emerald-500" /> You'll pay securely in Razorpay's window — UPI, QR, cards, netbanking or wallets.
+              </p>
             )}
             {method === "cod" && (
               <p className="mt-4 text-sm text-slate-500">Pay with cash when your order is delivered.</p>
@@ -178,7 +195,7 @@ const Checkout = () => {
             <div className="flex justify-between border-t border-slate-100 pt-3 font-display text-lg font-bold text-white"><span>Total</span><span className="fs-gradient-text">₹{total}</span></div>
           </div>
           <button type="submit" disabled={loading} className="btn-primary mt-6 h-12 w-full rounded-full">
-            {loading ? "Placing order…" : `Place order · ₹${total}`}
+            {loading ? "Processing…" : method === "cod" ? `Place order · ₹${total}` : `Pay ₹${total}`}
           </button>
         </div>
       </form>

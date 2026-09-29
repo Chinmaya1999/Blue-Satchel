@@ -536,9 +536,8 @@ const rupamErrorMessage = (json, status) => {
 
 const rupamError = (json, status) => {
   const err = new Error(rupamErrorMessage(json, status));
-  // Route every vendor failure through the client's generic (non-429) branch
-  // so it surfaces the raw response; 429 is avoided since the client reserves
-  // it for the app's own daily-scan quota.
+  // Vendor failures map to 422 (bad photo, etc.) or 503 (vendor down) — never
+  // 402/429, which the client treats as "out of credits" / rate limited.
   err.status = status >= 500 ? 503 : 422;
   err.provider = "rupam";
   err.providerStatus = status;

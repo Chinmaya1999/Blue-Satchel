@@ -3,7 +3,7 @@ import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
-import { ProtectedRoute, AdminRoute } from "./components/ProtectedRoute.jsx";
+import { ProtectedRoute, AdminRoute, CreditRoute } from "./components/ProtectedRoute.jsx";
 
 import Landing from "./pages/Landing.jsx";
 import Login from "./pages/Login.jsx";
@@ -19,6 +19,8 @@ import OrderConfirmation from "./pages/OrderConfirmation.jsx";
 import OrderHistory from "./pages/OrderHistory.jsx";
 import Profile from "./pages/Profile.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import Credits from "./pages/Credits.jsx";
+import VerifyEmail from "./pages/VerifyEmail.jsx";
 
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
@@ -27,6 +29,7 @@ import AdminCustomerDetail from "./pages/admin/AdminCustomerDetail.jsx";
 import AdminProducts from "./pages/admin/AdminProducts.jsx";
 import AdminOrders from "./pages/admin/AdminOrders.jsx";
 import AdminScans from "./pages/admin/AdminScans.jsx";
+import AdminPayments from "./pages/admin/AdminPayments.jsx";
 
 function App() {
   return (
@@ -39,12 +42,15 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<ProtectedRoute allowUnverified><VerifyEmail /></ProtectedRoute>} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:id" element={<ProductDetail />} />
 
-          <Route path="/scan" element={<ProtectedRoute><ScanOptions /></ProtectedRoute>} />
-          <Route path="/scan/detailed" element={<ProtectedRoute><ScanCapture /></ProtectedRoute>} />
-          <Route path="/scan/quick" element={<ProtectedRoute><ScanCapture quick /></ProtectedRoute>} />
+          {/* Scanning needs credits: without enough, these send you to /credits. */}
+          <Route path="/scan" element={<ProtectedRoute><CreditRoute mode="any"><ScanOptions /></CreditRoute></ProtectedRoute>} />
+          <Route path="/scan/detailed" element={<ProtectedRoute><CreditRoute mode="detailed"><ScanCapture /></CreditRoute></ProtectedRoute>} />
+          <Route path="/scan/quick" element={<ProtectedRoute><CreditRoute mode="quick"><ScanCapture quick /></CreditRoute></ProtectedRoute>} />
+          <Route path="/credits" element={<ProtectedRoute><Credits /></ProtectedRoute>} />
           <Route path="/scan/history" element={<ProtectedRoute><ScanHistoryPage /></ProtectedRoute>} />
           <Route path="/scan/:id" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
 
@@ -61,6 +67,7 @@ function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="scans" element={<AdminScans />} />
+            <Route path="payments" element={<AdminPayments />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { createScan, listMyScans, getScan, getScanQuota, nearbyDermatologists } from "../controllers/scanController.js";
 import { protect } from "../middleware/auth.js";
 import { upload } from "../middleware/upload.js";
+import { scanLimiter } from "../middleware/security.js";
 
 const router = Router();
 
@@ -12,7 +13,7 @@ const uploadAngles = upload.fields([
 ]);
 
 router.use(protect);
-router.post("/", uploadAngles, createScan);
+router.post("/", scanLimiter, uploadAngles, createScan);
 router.get("/", listMyScans);
 router.get("/quota", getScanQuota);
 router.get("/dermatologists", nearbyDermatologists);

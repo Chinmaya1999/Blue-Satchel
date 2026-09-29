@@ -42,7 +42,15 @@ const AdminOrders = () => {
                   <td className="py-3 pr-4 font-medium text-slate-800">{o.orderNumber}</td>
                   <td className="py-3 pr-4 text-slate-500">{o.user?.name}</td>
                   <td className="py-3 pr-4 text-slate-500">₹{o.total}</td>
-                  <td className="py-3 pr-4 capitalize text-slate-500">{o.paymentMethod} · {o.paymentStatus}</td>
+                  <td className="py-3 pr-4 text-slate-500">
+                    {o.paymentMethod === "razorpay" ? "Online" : o.paymentMethod === "cod" ? "Cash on delivery" : `${o.paymentMethod.toUpperCase()} (simulated)`}
+                    {" · "}
+                    <span className={o.paymentStatus === "paid" ? "font-semibold text-emerald-600" : o.paymentStatus === "failed" ? "text-rose-600" : ""}>
+                      {o.paymentMethod === "razorpay" && o.paymentStatus !== "paid" ? (o.paymentStatus === "failed" ? "declined" : "not paid") : o.paymentStatus}
+                    </span>
+                    {o.paymentReference && <span className="block font-mono text-[10px] text-slate-400">{o.paymentReference}</span>}
+                    {o.paymentMessage?.includes("stock ran out") && <span className="block text-[11px] text-rose-600">{o.paymentMessage}</span>}
+                  </td>
                   <td className="py-3 pr-4">
                     <select
                       value={o.status}

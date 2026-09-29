@@ -31,8 +31,10 @@ const Login = () => {
     setError("");
     setLoading(true);
     try {
-      await login(form.email, form.password);
-      navigate(params.get("redirect") || "/");
+      const user = await login(form.email, form.password);
+      const redirect = params.get("redirect") || "/";
+      // Signed up but never entered the email code — finish that first.
+      navigate(user.emailVerified === false ? `/verify-email?next=${encodeURIComponent(redirect === "/" ? "/scan" : redirect)}` : redirect);
     } catch (err) {
       setError(err.response?.data?.message || "Unable to sign in. Please try again.");
     } finally {

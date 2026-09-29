@@ -118,7 +118,7 @@ const AdminCustomers = () => {
                   <th className="py-2 pr-4">User</th>
                   <th className="py-2 pr-4">Signup location</th>
                   <th className="py-2 pr-4">Scans</th>
-                  <th className="py-2 pr-4">Today</th>
+                  <th className="py-2 pr-4">Credits</th>
                   <th className="py-2 pr-4">Last score</th>
                   <th className="py-2 pr-4">Joined</th>
                   <th></th>
@@ -142,7 +142,10 @@ const AdminCustomers = () => {
                             {u.role === "admin" && <span className="badge bg-violet-50 text-[10px] text-violet-700">Admin</span>}
                             {u.authProvider === "google" && <span className="badge bg-slate-100 text-[10px] text-slate-500">Google</span>}
                           </p>
-                          <p className="truncate text-xs text-slate-400">{u.email}</p>
+                          <p className="truncate text-xs text-slate-400">
+                            {u.email}
+                            {u.emailVerified === false && <span className="ml-1.5 font-semibold text-amber-600">· unverified</span>}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -158,7 +161,7 @@ const AdminCustomers = () => {
                     </td>
                     <td className="py-3 pr-4 text-slate-500">{u.scanCount}</td>
                     <td className="py-3 pr-4 text-slate-500">
-                      {!u.quota ? "—" : u.quota.limit == null ? `${u.quota.used} · no limit` : `${u.quota.used}/${u.quota.limit}`}
+                      {!u.credits ? "—" : u.credits.unlimited ? "Unlimited" : u.credits.balance}
                     </td>
                     <td className="py-3 pr-4 text-slate-500">{u.lastScore != null ? `${u.lastScore}/100 · ${u.lastLabel}` : "—"}</td>
                     <td className="py-3 pr-4 text-slate-500">{new Date(u.createdAt).toLocaleDateString()}</td>

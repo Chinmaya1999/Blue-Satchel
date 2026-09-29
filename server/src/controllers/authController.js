@@ -2,6 +2,12 @@ import User from "../models/User.js";
 import { generateToken } from "../utils/generateToken.js";
 import { crmService } from "../services/crmService.js";
 import { resolveSignupLocation } from "../services/geoService.js";
+import {
+  issueVerificationCode,
+  verifyEmailCode,
+  RESEND_COOLDOWN_SECONDS,
+  CODE_TTL_MINUTES,
+} from "../services/emailVerification.js";
 
 const welcome = async (user) => {
   user.crmContactId = await crmService.syncCustomer(user);
@@ -12,29 +18,61 @@ const welcome = async (user) => {
   await user.save();
 };
 
+const str = (v) => (typeof v === "string" ? v.trim() : "");
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
+
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password, location } = req.body;
-    const phone = typeof req.body.phone === "string" ? req.body.phone.trim() : "";
+    const name = str(req.body.name);
+    const email = str(req.body.email).toLowerCase();
+    const phone = str(req.body.phone);
+    const password = typeof req.body.password === "string" ? req.body.password : "";
+    const { location } = req.body;
     if (!name || !email || !password || !phone) {
       return res.status(400).json({ message: "Name, email, phone number and password are required." });
     }
+    if (name.length > 80) return res.status(400).json({ message: "Name is too long." });
+    if (!EMAIL_RE.test(email)) return res.status(400).json({ message: "Please enter a valid email address." });
     // 10–15 digits (E.164 max), allowing a leading + and spaces/dashes.
     const phoneDigits = phone.replace(/\D/g, "");
     if (!/^\+?[\d\s-]+$/.test(phone) || phoneDigits.length < 10 || phoneDigits.length > 15) {
       return res.status(400).json({ message: "Please enter a valid phone number (10–15 digits)." });
     }
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters." });
+    // bcrypt only reads the first 72 bytes, so cap it there.
+    if (password.length < 6 || password.length > 72) {
+      return res.status(400).json({ message: "Password must be 6–72 characters." });
     }
-    const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing) return res.status(409).json({ message: "An account with this email already exists." });
-
     const signupLocation = await resolveSignupLocation(req, location);
-    const user = await User.create({ name, email, password, phone, signupLocation });
-    await welcome(user);
+    const existing = await User.findOne({ email });
+    let user;
+    if (existing && existing.emailVerified === false && existing.authProvider === "local") {
+      // Never-verified sign-up for this email (a typo'd retry, or someone who
+      // entered an address they don't own). It could do nothing without
+      // verifying, so the new sign-up replaces it and gets a fresh code.
+      Object.assign(existing, { name, password, phone, signupLocation });
+      user = await existing.save();
+    } else if (existing) {
+      return res.status(409).json({ message: "An account with this email already exists." });
+    } else {
+      user = await User.create({ name, email, password, phone, signupLocation, emailVerified: false });
+      await welcome(user);
+    }
 
-    res.status(201).json({ user: user.toSafeObject(), token: generateToken(user._id, user.role) });
+    // The account exists either way; if the email fails to send, the verify
+    // page lets them request the code again.
+    let emailSent = true;
+    try {
+      await issueVerificationCode(user, { welcome: true });
+    } catch (err) {
+      emailSent = false;
+      console.error("[email] verification code not sent:", err.message);
+    }
+
+    res.status(201).json({
+      user: user.toSafeObject(),
+      token: generateToken(user._id, user.role),
+      verification: { emailSent, codeTtlMinutes: CODE_TTL_MINUTES, resendCooldownSeconds: RESEND_COOLDOWN_SECONDS },
+    });
   } catch (err) {
     next(err);
   }
@@ -42,10 +80,11 @@ export const register = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const email = str(req.body.email).toLowerCase();
+    const password = typeof req.body.password === "string" ? req.body.password : "";
     if (!email || !password) return res.status(400).json({ message: "Email and password are required." });
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+    const user = await User.findOne({ email }).select("+password");
     if (user && !user.password && user.authProvider === "google") {
       return res.status(400).json({ message: "This account uses Google sign-in. Please continue with Google." });
     }
@@ -73,7 +112,8 @@ export const googleLogin = async (req, res, next) => {
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (!clientId) return res.status(503).json({ message: "Google sign-in isn't configured." });
-    const { credential, location } = req.body;
+    const { location } = req.body;
+    const credential = str(req.body.credential);
     if (!credential) return res.status(400).json({ message: "Missing Google credential." });
 
     const verify = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`, {
@@ -88,9 +128,12 @@ export const googleLogin = async (req, res, next) => {
     let user = await User.findOne({ $or: [{ googleId: info.sub }, { email }] });
     if (user) {
       // Existing email/password account: link it to this Google identity.
-      if (!user.googleId) {
-        user.googleId = info.sub;
+      // Google has verified the email, so that also completes verification.
+      if (!user.googleId || user.emailVerified === false) {
+        user.googleId ??= info.sub;
         if (!user.avatarUrl && info.picture) user.avatarUrl = info.picture;
+        user.emailVerified = true;
+        user.emailVerification = undefined;
         await user.save();
       }
     } else {
@@ -100,6 +143,7 @@ export const googleLogin = async (req, res, next) => {
         authProvider: "google",
         googleId: info.sub,
         avatarUrl: info.picture,
+        emailVerified: true,
         signupLocation: await resolveSignupLocation(req, location),
       });
       await welcome(user);
@@ -108,6 +152,29 @@ export const googleLogin = async (req, res, next) => {
     res.json({ user: user.toSafeObject(), token: generateToken(user._id, user.role) });
   } catch (err) {
     next(err);
+  }
+};
+
+// The 6-digit code from the welcome email.
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const user = await verifyEmailCode(req.user._id, String(req.body.code || "").trim());
+    res.json({ user: user.toSafeObject() });
+  } catch (err) {
+    if (err.status && err.status < 500) return res.status(err.status).json({ message: err.message });
+    next(err);
+  }
+};
+
+export const resendVerificationCode = async (req, res, next) => {
+  try {
+    if (req.user.emailVerified !== false) return res.status(400).json({ message: "Your email is already verified." });
+    await issueVerificationCode(req.user);
+    res.json({ message: `A new code has been sent to ${req.user.email}.`, resendCooldownSeconds: RESEND_COOLDOWN_SECONDS });
+  } catch (err) {
+    if (err.status === 429) return res.status(429).json({ message: err.message, retryAfter: err.retryAfter });
+    console.error("[email] resend failed:", err.message);
+    res.status(502).json({ message: "We couldn't send the email right now. Please try again in a minute." });
   }
 };
 

@@ -43,10 +43,22 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
+  // Returns the full response: { user, token, verification: { emailSent, … } }.
   const register = async (payload) => {
     const { data } = await api.post("/auth/register", payload);
     persist(data.user, data.token);
+    return data;
+  };
+
+  const verifyEmail = async (code) => {
+    const { data } = await api.post("/auth/verify-email", { code });
+    persist(data.user);
     return data.user;
+  };
+
+  const resendVerificationCode = async () => {
+    const { data } = await api.post("/auth/resend-code");
+    return data;
   };
 
   const googleLogin = async (credential, location) => {
@@ -61,6 +73,16 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Applies a new credit balance returned by a purchase or scan.
+  const setCredits = useCallback((balance) => {
+    setUser((prev) => {
+      if (!prev || typeof balance !== "number") return prev;
+      const next = { ...prev, credits: balance };
+      localStorage.setItem("bs_user", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const updateProfile = async (payload) => {
     const { data } = await api.patch("/auth/me", payload);
     persist(data.user);
@@ -69,7 +91,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, googleLogin, logout, updateProfile, refreshMe }}
+      value={{ user, loading, login, register, googleLogin, logout, updateProfile, refreshMe, setCredits, verifyEmail, resendVerificationCode }}
     >
       {children}
     </AuthContext.Provider>

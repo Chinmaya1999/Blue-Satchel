@@ -15,6 +15,8 @@ const scanHistorySchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     // "detailed" = guided 3-angle scan; "quick" = single front-facing selfie.
     mode: { type: String, enum: ["detailed", "quick", "focus"], default: "detailed" },
+    // Credits this scan cost (0 for admins and scans from before credits).
+    creditsCharged: { type: Number, default: 0 },
     imageUrl: { type: String, required: true },
     leftImageUrl: { type: String },
     rightImageUrl: { type: String },

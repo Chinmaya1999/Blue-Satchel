@@ -6,7 +6,9 @@ import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import ScanHistory from "../models/ScanHistory.js";
 import CRMSyncLog from "../models/CRMSyncLog.js";
-import { quotaFor } from "../services/scanQuota.js";
+import CreditTransaction from "../models/CreditTransaction.js";
+import { creditSummary, grantCredits, scanCosts, BASE_SCAN_COSTS } from "../services/credits.js";
+import { loadSettings, updateSettings } from "../services/settings.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, "..", "..", "uploads");
@@ -20,12 +22,25 @@ const deleteUploadedFile = (imageUrl) => {
 // --- Dashboard ---
 export const getOverview = async (req, res, next) => {
   try {
-    const [customers, orders, scans, products, revenueAgg] = await Promise.all([
+    const [customers, orders, scans, products, revenueAgg, creditAgg] = await Promise.all([
       User.countDocuments({ role: "customer" }),
       Order.countDocuments(),
       ScanHistory.countDocuments(),
       Product.countDocuments({ isActive: true }),
-      Order.aggregate([{ $group: { _id: null, total: { $sum: "$total" } } }]),
+      // Paid orders, plus cash-on-delivery orders that weren't cancelled;
+      // unpaid online checkouts aren't revenue.
+      Order.aggregate([
+        {
+          $match: {
+            $or: [{ paymentStatus: "paid" }, { paymentMethod: "cod", status: { $ne: "cancelled" } }],
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$total" } } },
+      ]),
+      CreditTransaction.aggregate([
+        { $match: { type: "purchase", paymentStatus: "paid" } },
+        { $group: { _id: null, revenueUsd: { $sum: "$amountUsd" }, purchases: { $sum: 1 } } },
+      ]),
     ]);
     const recentOrders = await Order.find().sort({ createdAt: -1 }).limit(5).populate("user", "name email");
     const recentScans = await ScanHistory.find().sort({ createdAt: -1 }).limit(5).populate("user", "name email");
@@ -36,6 +51,8 @@ export const getOverview = async (req, res, next) => {
         scans,
         products,
         revenue: revenueAgg[0]?.total || 0,
+        creditRevenueUsd: creditAgg[0]?.revenueUsd || 0,
+        creditPurchases: creditAgg[0]?.purchases || 0,
       },
       recentOrders,
       recentScans,
@@ -89,7 +106,7 @@ export const listCustomers = async (req, res, next) => {
         lastScanAt: st?.lastScanAt || null,
         lastScore: st?.lastScore ?? null,
         lastLabel: st?.lastLabel || null,
-        quota: quotaFor(u),
+        credits: creditSummary(u),
       };
     });
     res.json({ items, total, page: pageNum, pages: Math.ceil(total / limitNum) });
@@ -115,11 +132,12 @@ export const getCustomer = async (req, res, next) => {
   try {
     const customer = await User.findById(req.params.id);
     if (!customer) return res.status(404).json({ message: "User not found." });
-    const [scans, orders] = await Promise.all([
+    const [scans, orders, creditTransactions] = await Promise.all([
       ScanHistory.find({ user: customer._id }).sort({ createdAt: -1 }).populate("recommendedProducts"),
       Order.find({ user: customer._id }).sort({ createdAt: -1 }),
+      CreditTransaction.find({ user: customer._id }).sort({ createdAt: -1 }).limit(100).populate("createdBy", "name"),
     ]);
-    res.json({ customer: { ...customer.toSafeObject(), quota: quotaFor(customer) }, scans, orders });
+    res.json({ customer: { ...customer.toSafeObject(), credits: creditSummary(customer) }, scans, orders, creditTransactions });
   } catch (err) {
     next(err);
   }
@@ -137,10 +155,8 @@ export const updateUser = async (req, res, next) => {
     if (String(user._id) === String(req.user._id) && user.role !== "admin") {
       return res.status(400).json({ message: "You can't remove your own admin access." });
     }
-    if (req.body.resetScanQuota) user.scanQuota = { day: null, count: 0 };
-
     await user.save();
-    res.json({ user: { ...user.toSafeObject(), quota: quotaFor(user) } });
+    res.json({ user: { ...user.toSafeObject(), credits: creditSummary(user) } });
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ message: "Another account already uses that email." });
     next(err);
@@ -298,6 +314,121 @@ export const listCrmLogs = async (req, res, next) => {
   try {
     const logs = await CRMSyncLog.find().sort({ createdAt: -1 }).limit(100);
     res.json({ items: logs });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// --- Credits & payments ---
+
+// Every credit movement (purchases incl. declined ones, scan charges,
+// refunds, admin adjustments) plus revenue and usage totals.
+export const listCreditTransactions = async (req, res, next) => {
+  try {
+    const { type, status, q, page = 1, limit = 25 } = req.query;
+    const filter = {};
+    if (["purchase", "scan", "refund", "adjustment"].includes(type)) filter.type = type;
+    if (["paid", "failed", "pending"].includes(status)) filter.paymentStatus = status;
+    if (q) {
+      const rx = { $regex: escapeRegex(q), $options: "i" };
+      const users = await User.find({ $or: [{ name: rx }, { email: rx }, { phone: rx }] }, "_id");
+      filter.$or = [{ user: { $in: users.map((u) => u._id) } }, { paymentReference: rx }];
+    }
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
+
+    const [items, total, purchaseTotals, spentAgg, balanceAgg] = await Promise.all([
+      CreditTransaction.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .populate("user", "name email phone")
+        .populate("createdBy", "name"),
+      CreditTransaction.countDocuments(filter),
+      CreditTransaction.aggregate([
+        { $match: { type: "purchase" } },
+        {
+          $group: {
+            _id: "$paymentStatus",
+            count: { $sum: 1 },
+            revenueUsd: { $sum: "$amountUsd" },
+            credits: { $sum: "$amount" },
+            buyers: { $addToSet: "$user" },
+          },
+        },
+      ]),
+      CreditTransaction.aggregate([
+        { $match: { type: { $in: ["scan", "refund"] } } },
+        { $group: { _id: "$scanMode", net: { $sum: "$amount" }, scans: { $sum: { $cond: [{ $eq: ["$type", "scan"] }, 1, 0] } } } },
+      ]),
+      User.aggregate([{ $group: { _id: null, outstanding: { $sum: "$credits" } } }]),
+    ]);
+
+    const paid = purchaseTotals.find((t) => t._id === "paid");
+    const failed = purchaseTotals.find((t) => t._id === "failed");
+    const pending = purchaseTotals.find((t) => t._id === "pending");
+
+    res.json({
+      items,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      stats: {
+        revenueUsd: paid?.revenueUsd || 0,
+        purchases: paid?.count || 0,
+        failedPurchases: failed?.count || 0,
+        pendingPurchases: pending?.count || 0,
+        payingCustomers: paid?.buyers?.length || 0,
+        creditsSold: paid?.credits || 0,
+        creditsSpent: -spentAgg.reduce((sum, m) => sum + m.net, 0),
+        creditsOutstanding: balanceAgg[0]?.outstanding || 0,
+        byMode: Object.fromEntries(spentAgg.map((m) => [m._id, { scans: m.scans, credits: -m.net }])),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Manually add or remove credits (goodwill, refunds, corrections).
+export const adjustUserCredits = async (req, res, next) => {
+  try {
+    const amount = Math.trunc(Number(req.body.amount));
+    const note = String(req.body.note || "").trim();
+    if (!amount) return res.status(400).json({ message: "Enter a non-zero number of credits." });
+    if (!note) return res.status(400).json({ message: "Add a short note explaining the adjustment." });
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const result = await grantCredits(user._id, amount, { type: "adjustment", note, createdBy: req.user._id });
+    if (!result) {
+      return res.status(400).json({ message: `This user only has ${user.credits ?? 0} credits.` });
+    }
+    user.credits = result.balance;
+    res.json({ credits: creditSummary(user), transaction: result.transaction });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// --- Site settings ---
+
+export const getAppSettings = async (req, res, next) => {
+  try {
+    res.json({ settings: await loadSettings(), costs: scanCosts(), baseCosts: BASE_SCAN_COSTS });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateAppSettings = async (req, res, next) => {
+  try {
+    if (req.body.quickScanFree !== undefined && typeof req.body.quickScanFree !== "boolean") {
+      return res.status(400).json({ message: "quickScanFree must be true or false." });
+    }
+    const settings = await updateSettings(req.body, req.user._id);
+    res.json({ settings, costs: scanCosts(), baseCosts: BASE_SCAN_COSTS });
   } catch (err) {
     next(err);
   }

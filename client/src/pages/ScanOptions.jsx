@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ScanFace, Zap, Crosshair, Clock, Check, ArrowRight, Lock } from "lucide-react";
-import api from "../api/axios.js";
+import { ScanFace, Zap, Crosshair, Clock, Check, ArrowRight, Lock, Coins } from "lucide-react";
+import { useAuth } from "../context/AuthContext.jsx";
+import { canAfford, isUnlimited, buyCreditsPath } from "../utils/credits.js";
+import { usePricing } from "../context/PricingContext.jsx";
 
 // Scan modes offered on "Skin Scan". Only the detailed scan is live; the
 // other two are listed as coming soon.
@@ -40,13 +42,18 @@ const MODES = [
 ];
 
 const ScanOptions = () => {
-  const [quota, setQuota] = useState(null);
+  const { user, refreshMe } = useAuth();
+  const { costs, refreshPricing } = usePricing();
 
+  // Pick up credits spent or bought in another tab, and any pricing change
+  // an admin made (e.g. Quick Scan switched free/paid).
   useEffect(() => {
-    api.get("/scans/quota").then(({ data }) => setQuota(data.quota)).catch(() => {});
-  }, []);
+    refreshMe();
+    refreshPricing();
+  }, [refreshMe, refreshPricing]);
 
-  const limitReached = quota?.limit != null && quota.remaining === 0;
+  const unlimited = isUnlimited(user);
+  const balance = user?.credits ?? 0;
 
   return (
     <div className="fs-page fs-page-bg">
@@ -57,20 +64,22 @@ const ScanOptions = () => {
             <h1 className="fs-page-title mt-3">Choose your <span className="fs-gradient-text">scan</span></h1>
             <p className="fs-page-sub">Pick how deep you want to go. You can switch next time.</p>
           </div>
-          {quota?.limit != null && (
-            <span
-              className={`rounded-full px-3.5 py-1.5 font-mono text-xs font-semibold ring-1 ${
-                limitReached ? "bg-rose-500/10 text-rose-200 ring-rose-400/30" : "bg-cyan-400/10 text-cyan-200 ring-cyan-300/30"
-              }`}
-            >
-              {quota.remaining} of {quota.limit} scans left today
-            </span>
-          )}
+          <Link
+            to="/credits"
+            className="inline-flex items-center gap-2 rounded-full bg-amber-300/10 px-3.5 py-1.5 font-mono text-xs font-semibold text-amber-100 ring-1 ring-amber-300/30 transition hover:bg-amber-300/20"
+          >
+            <Coins size={13} className="text-amber-300" />
+            {unlimited ? "Unlimited credits" : `${balance} credits`}
+            {!unlimited && <span className="text-amber-200/70">· Buy more</span>}
+          </Link>
         </div>
 
         <div className="grid gap-5 md:grid-cols-3">
           {MODES.map((m) => {
             const Icon = m.icon;
+            const cost = costs[m.key];
+            const free = cost === 0;
+            const affordable = canAfford(user, cost);
             const card = (
               <div
                 className={`card relative flex h-full flex-col rounded-3xl p-6 transition duration-300 ${
@@ -98,9 +107,18 @@ const ScanOptions = () => {
 
                 <h2 className="mt-5 font-display text-xl font-bold text-white">{m.name}</h2>
                 <p className="mt-1 text-sm text-slate-400">{m.tagline}</p>
-                <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-slate-500">
-                  <Clock size={13} /> {m.time}
-                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+                  <span className="inline-flex items-center gap-1.5 text-slate-500">
+                    <Clock size={13} /> {m.time}
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ring-1 ${
+                      free ? "bg-emerald-400/10 text-emerald-200 ring-emerald-300/30" : "bg-amber-300/10 text-amber-200 ring-amber-300/25"
+                    }`}
+                  >
+                    <Coins size={12} /> {free ? "Free" : `${cost} credits`}
+                  </span>
+                </div>
 
                 <ul className="mt-5 flex-1 space-y-2">
                   {m.features.map((f) => (
@@ -113,18 +131,20 @@ const ScanOptions = () => {
                 <div className="mt-6">
                   {!m.available ? (
                     <span className="btn-secondary pointer-events-none h-12 w-full rounded-full opacity-70">Coming soon</span>
-                  ) : limitReached ? (
-                    <span className="btn-secondary pointer-events-none h-12 w-full rounded-full opacity-70">Daily limit reached</span>
+                  ) : !affordable ? (
+                    <span className="btn-secondary h-12 w-full rounded-full">
+                      <Coins size={15} /> Buy credits · need {cost - balance} more
+                    </span>
                   ) : (
                     <span className="btn-primary h-12 w-full rounded-full">
-                      Start {m.name.toLowerCase()} <ArrowRight size={16} />
+                      Start {m.name.toLowerCase()}{free ? " · free" : ""} <ArrowRight size={16} />
                     </span>
                   )}
                 </div>
               </div>
             );
-            return m.available && !limitReached ? (
-              <Link key={m.key} to={m.to} className="block">
+            return m.available ? (
+              <Link key={m.key} to={affordable ? m.to : buyCreditsPath(cost, m.to)} className="block">
                 {card}
               </Link>
             ) : (
@@ -134,13 +154,6 @@ const ScanOptions = () => {
             );
           })}
         </div>
-
-        {limitReached && (
-          <p className="mt-6 text-sm text-slate-400">
-            You've used today's {quota.limit} free scans — your limit resets at midnight (India time).{" "}
-            <Link to="/scan/history" className="font-semibold text-cyan-300 hover:text-cyan-200">View past scans</Link>
-          </p>
-        )}
       </div>
     </div>
   );

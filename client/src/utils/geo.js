@@ -10,17 +10,6 @@ export const getBrowserLocation = ({ timeout = 10000 } = {}) =>
     );
   });
 
-// True when the user has already allowed location for this site, so asking
-// again won't show a prompt.
-export const locationAlreadyGranted = async () => {
-  try {
-    const status = await navigator.permissions?.query({ name: "geolocation" });
-    return status?.state === "granted";
-  } catch {
-    return false;
-  }
-};
-
 export const directionsUrl = (lat, lng) =>
   `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 

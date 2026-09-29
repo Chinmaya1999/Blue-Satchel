@@ -14,6 +14,17 @@ const addressSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// The pending 6-digit code. Only a hash is stored, never the code itself.
+const emailVerificationSchema = new mongoose.Schema(
+  {
+    codeHash: String,
+    expiresAt: Date,
+    attempts: { type: Number, default: 0 },
+    lastSentAt: Date,
+  },
+  { _id: false }
+);
+
 // Where the user was when they signed up. `source` records how it was found:
 // "gps" = browser geolocation the user allowed, "ip" = approximate, from the
 // request IP when they didn't.
@@ -49,6 +60,12 @@ const userSchema = new mongoose.Schema(
     authProvider: { type: String, enum: ["local", "google"], default: "local" },
     googleId: { type: String, index: { unique: true, sparse: true } },
     phone: { type: String, trim: true },
+    // Email ownership. false = signed up with email + password and hasn't
+    // entered the 6-digit code yet (see services/emailVerification.js).
+    // Unset = account from before verification existed; treated as verified
+    // so existing customers aren't locked out.
+    emailVerified: { type: Boolean },
+    emailVerification: { type: emailVerificationSchema, select: false },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     skinType: {
       type: String,
@@ -59,11 +76,9 @@ const userSchema = new mongoose.Schema(
     avatarUrl: String,
     address: addressSchema,
     signupLocation: locationSchema,
-    // Scans used on `day` (YYYY-MM-DD, India time) — see services/scanQuota.js.
-    scanQuota: {
-      day: String,
-      count: { type: Number, default: 0 },
-    },
+    // Prepaid scan credits (see services/credits.js). Every change goes
+    // through an atomic $inc and is recorded in CreditTransaction.
+    credits: { type: Number, default: 0, min: 0 },
     crmContactId: { type: String, default: null },
     notifications: [
       {
@@ -92,6 +107,7 @@ userSchema.methods.comparePassword = function (candidate) {
 userSchema.methods.toSafeObject = function () {
   const obj = this.toObject();
   delete obj.password;
+  delete obj.emailVerification;
   return obj;
 };
 

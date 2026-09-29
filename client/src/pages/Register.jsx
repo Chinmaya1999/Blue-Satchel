@@ -56,8 +56,9 @@ const Register = () => {
       // Asks the browser for location; if declined, the server falls back to
       // an approximate location from the request IP.
       const location = await getBrowserLocation();
-      await register({ ...form, location });
-      navigate("/scan");
+      const data = await register({ ...form, location });
+      // New accounts must enter the 6-digit code from their welcome email.
+      navigate("/verify-email?next=/scan", { state: { emailSent: data.verification?.emailSent } });
     } catch (err) {
       setError(err.response?.data?.message || "Unable to create your account.");
     } finally {
@@ -119,6 +120,7 @@ const Register = () => {
             type={show ? "text" : "password"}
             required
             minLength={6}
+            maxLength={72}
             autoComplete="new-password"
             value={form.password}
             onChange={set("password")}

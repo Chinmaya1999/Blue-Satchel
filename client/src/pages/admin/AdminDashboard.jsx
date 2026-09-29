@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Users, Package, ShoppingCart, ScanFace, IndianRupee } from "lucide-react";
+import { Users, Package, ShoppingCart, ScanFace, IndianRupee, Coins } from "lucide-react";
 import api from "../../api/axios.js";
 import Loader from "../../components/Loader.jsx";
 
@@ -26,12 +26,20 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard icon={Users} label="Customers" value={stats.customers} accent="bg-brand-50 text-brand-600" />
         <StatCard icon={ShoppingCart} label="Orders" value={stats.orders} accent="bg-amber-50 text-amber-600" />
         <StatCard icon={ScanFace} label="Skin Scans" value={stats.scans} accent="bg-emerald-50 text-emerald-600" />
         <StatCard icon={Package} label="Active Products" value={stats.products} accent="bg-violet-50 text-violet-600" />
-        <StatCard icon={IndianRupee} label="Revenue" value={`₹${stats.revenue.toLocaleString()}`} accent="bg-rose-50 text-rose-600" />
+        <StatCard icon={IndianRupee} label="Shop revenue" value={`₹${stats.revenue.toLocaleString()}`} accent="bg-rose-50 text-rose-600" />
+        <Link to="/admin/payments" className="block">
+          <StatCard
+            icon={Coins}
+            label={`Credit sales (${stats.creditPurchases ?? 0})`}
+            value={`$${(stats.creditRevenueUsd ?? 0).toLocaleString()}`}
+            accent="bg-amber-50 text-amber-600"
+          />
+        </Link>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

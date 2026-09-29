@@ -1,10 +1,11 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ShoppingBag, User, Menu, X, ScanFace, LayoutGrid, LogOut, Bell, History, Home, Shield, ArrowRight } from "lucide-react";
+import { ShoppingBag, User, Menu, X, ScanFace, LayoutGrid, LogOut, Bell, History, Home, Shield, ArrowRight, Coins } from "lucide-react";
 import Logo from "./Logo.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
+import { isUnlimited } from "../utils/credits.js";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -15,6 +16,7 @@ const Navbar = () => {
   const { pathname } = useLocation();
 
   const unreadCount = user?.notifications?.filter((n) => !n.read).length || 0;
+  const creditsLabel = isUnlimited(user) ? "Unlimited" : `${user?.credits ?? 0}`;
 
   const links = [
     { to: "/", label: "Home", icon: Home, end: true },
@@ -68,6 +70,17 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-1.5">
+          {user && (
+            <Link
+              to="/credits"
+              title="Scan credits — buy more"
+              className="flex items-center gap-1.5 rounded-full bg-amber-300/10 px-3 py-1.5 text-xs font-semibold text-amber-100 ring-1 ring-amber-300/30 transition hover:bg-amber-300/20"
+            >
+              <Coins size={14} className="text-amber-300" />
+              <span className="tabular-nums">{creditsLabel}</span>
+              <span className="hidden text-amber-200/70 lg:inline">credits</span>
+            </Link>
+          )}
           {user && (
             <Link to="/profile" className="fs-nav-icon relative hidden sm:flex" aria-label="Notifications">
               <Bell size={18} />
@@ -142,6 +155,9 @@ const Navbar = () => {
               <div className="my-2 h-px bg-white/10" />
               {user ? (
                 <>
+                  <Link to="/credits" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-white/5">
+                    <Coins size={17} className="text-amber-300" /> {creditsLabel} credits · Buy more
+                  </Link>
                   <Link to="/profile" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-white/5">
                     <User size={17} className="text-cyan-300" /> {user.name}
                   </Link>

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { protect, adminOnly } from "../middleware/auth.js";
+import { listPlans, createPlan, updatePlan, deletePlan } from "../controllers/planController.js";
 import {
   getOverview,
   listCustomers,
@@ -17,6 +18,10 @@ import {
   listAllOrders,
   updateOrderStatus,
   listCrmLogs,
+  listCreditTransactions,
+  adjustUserCredits,
+  getAppSettings,
+  updateAppSettings,
 } from "../controllers/adminController.js";
 
 const router = Router();
@@ -30,6 +35,17 @@ router.get("/customers/locations", listUserLocations);
 router.get("/customers/:id", getCustomer);
 router.patch("/customers/:id", updateUser);
 router.delete("/customers/:id", deleteUser);
+router.post("/customers/:id/credits", adjustUserCredits);
+
+router.get("/credits", listCreditTransactions);
+
+router.get("/plans", listPlans);
+router.post("/plans", createPlan);
+router.patch("/plans/:id", updatePlan);
+router.delete("/plans/:id", deletePlan);
+
+router.get("/settings", getAppSettings);
+router.patch("/settings", updateAppSettings);
 
 router.get("/scans", listAllScans);
 router.get("/scans/:id", getScanAdmin);
