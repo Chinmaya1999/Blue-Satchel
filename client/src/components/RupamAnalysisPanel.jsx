@@ -6,7 +6,7 @@ import { Cpu, Eye, EyeOff, ImageOff, Sparkles } from "lucide-react";
 // condition with its grade and detail, and the vendor's suggestions. The raw
 // JSON itself is available from Download → API data (JSON).
 
-const GRADE_TONE = {
+export const GRADE_TONE = {
   A: { text: "text-emerald-700", bg: "bg-emerald-50", ring: "#10b981" },
   B: { text: "text-lime-700", bg: "bg-lime-50", ring: "#65a30d" },
   C: { text: "text-amber-700", bg: "bg-amber-50", ring: "#f59e0b" },
@@ -14,7 +14,7 @@ const GRADE_TONE = {
   F: { text: "text-rose-700", bg: "bg-rose-50", ring: "#f43f5e" },
 };
 
-const severityTone = (sev) =>
+export const severityTone = (sev) =>
   sev === "none"
     ? GRADE_TONE.A
     : sev === "mild"
@@ -26,7 +26,38 @@ const severityTone = (sev) =>
 // Signed S3 composite/image links carry X-Amz-Expires=86400 (24h).
 const LINK_TTL_MS = 24 * 60 * 60 * 1000;
 
-const titleCase = (s) => String(s || "").replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+export const titleCase = (s) => String(s || "").replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Everything needed to draw a Rupam scan: the raw output, the annotated
+// overlay (the server's saved copy first, since Rupam's signed link expires
+// after 24h), the plain photo, and whether the overlay is still available.
+export const buildRupamAnalysis = (scan) => {
+  const out = scan.rawMetrics?.rupamOutput;
+  if (!out) return null;
+  const linksValid = Date.now() - new Date(scan.createdAt).getTime() < LINK_TTL_MS;
+  return {
+    out,
+    overlay: scan.rawMetrics?.savedCompositeUrl || (linksValid ? out.annotations?.composite_uri : null),
+    baseImage: scan.imageUrl || (linksValid ? out.image_url : null),
+    tone: out.skin_profile?.skin_tone || {},
+    type: out.skin_profile?.skin_type || {},
+    quality: out.image_quality || {},
+    conditions: out.conditions || [],
+    suggestions: out.suggestions || [],
+    meta: out.metadata || {},
+  };
+};
+
+// Extra per-condition fields Rupam includes (coverage, spot count, …).
+export const conditionExtras = (c) => {
+  const extras = [];
+  if (c.coverage_pct != null) extras.push(`${c.coverage_pct}% coverage`);
+  if (c.spot_count != null) extras.push(`${c.spot_count} spots`);
+  if (c.detection_count != null && c.condition_id === "acne") extras.push(`${c.detection_count} detected`);
+  if (c.puffiness_detected != null) extras.push(c.puffiness_detected ? "puffiness detected" : "no puffiness");
+  if (c.confidence != null) extras.push(`${Math.round(c.confidence * 100)}% confidence`);
+  return extras;
+};
 
 const Stat = ({ label, value, hint }) => (
   <div className="card rounded-2xl border border-slate-100 p-4">
@@ -40,12 +71,7 @@ const Stat = ({ label, value, hint }) => (
 // extra fields Rupam included for it (coverage, spot count, region hotspots…).
 const ConditionCard = ({ c }) => {
   const grade = GRADE_TONE[c.grade] || GRADE_TONE.C;
-  const extras = [];
-  if (c.coverage_pct != null) extras.push(`${c.coverage_pct}% coverage`);
-  if (c.spot_count != null) extras.push(`${c.spot_count} spots`);
-  if (c.detection_count != null && c.condition_id === "acne") extras.push(`${c.detection_count} detected`);
-  if (c.puffiness_detected != null) extras.push(c.puffiness_detected ? "puffiness detected" : "no puffiness");
-  if (c.confidence != null) extras.push(`${Math.round(c.confidence * 100)}% confidence`);
+  const extras = conditionExtras(c);
 
   return (
     <div className="card rounded-2xl border border-slate-100 p-4">
@@ -78,21 +104,12 @@ const ConditionCard = ({ c }) => {
 };
 
 const RupamAnalysisPanel = ({ scan }) => {
-  const out = scan.rawMetrics?.rupamOutput;
   const [showOverlay, setShowOverlay] = useState(true);
-  if (!out) return null;
+  const rupam = buildRupamAnalysis(scan);
+  if (!rupam) return null;
 
-  const linksValid = Date.now() - new Date(scan.createdAt).getTime() < LINK_TTL_MS;
-  const overlay = scan.rawMetrics?.savedCompositeUrl || (linksValid ? out.annotations?.composite_uri : null);
-  const baseImage = scan.imageUrl || (linksValid ? out.image_url : null);
+  const { out, overlay, baseImage, tone, type, quality: q, conditions, suggestions, meta } = rupam;
   const shownImage = (showOverlay && overlay) || baseImage;
-
-  const tone = out.skin_profile?.skin_tone || {};
-  const type = out.skin_profile?.skin_type || {};
-  const q = out.image_quality || {};
-  const conditions = out.conditions || [];
-  const suggestions = out.suggestions || [];
-  const meta = out.metadata || {};
 
   return (
     <section className="border-t border-slate-100">
@@ -143,7 +160,7 @@ const RupamAnalysisPanel = ({ scan }) => {
                 Detected spots and zones marked on your photo by Rupam.
               </p>
             )}
-            {!scan.rawMetrics?.savedCompositeUrl && !linksValid && (
+            {!overlay && out.annotations?.composite_uri && (
               <p className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
                 <ImageOff size={14} className="shrink-0" />
                 Rupam's annotated overlay for this scan has expired. New scans keep it permanently.

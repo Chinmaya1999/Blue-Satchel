@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import { Briefcase } from "lucide-react";
 import { buildAiAnalysis, OverlayImage, tone } from "./ApiAnalysisPanel.jsx";
+import { buildRupamAnalysis, conditionExtras, GRADE_TONE, severityTone, titleCase } from "./RupamAnalysisPanel.jsx";
 
 // Print-only A4 report for a scan. Rendered through a portal straight into
 // <body>, next to #root, so the print stylesheet in index.css can hide the
@@ -32,6 +33,7 @@ const ScanReport = ({ scan, user, insight }) => {
   const created = new Date(scan.createdAt);
   const topConcerns = [...scan.concerns].sort((a, b) => b.severity - a.severity).slice(0, 3);
   const ai = buildAiAnalysis(scan);
+  const rupam = buildRupamAnalysis(scan);
 
   return createPortal(
     <div className="print-report bg-white font-sans text-slate-900">
@@ -214,6 +216,161 @@ const ScanReport = ({ scan, user, insight }) => {
               </div>
             </div>
           ))}
+        </section>
+      )}
+
+      {/* Full AI analysis (Rupam): annotated photo, skin profile, every
+          condition with its detail, and Rupam's suggestions */}
+      {rupam && (
+        <section className="report-page-break">
+          <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate-500">
+            Full AI analysis · Rupam.ai
+          </h2>
+          <p className="text-[10px] text-slate-400">
+            Everything Rupam's AI returned for this scan. Condition scores run 0–100, where higher means healthier skin.
+          </p>
+
+          {/* Photos + skin profile */}
+          <div className="report-block mt-3 flex gap-4">
+            <div className="grid shrink-0 grid-cols-2 gap-2">
+              {rupam.overlay && (
+                <figure>
+                  <img src={rupam.overlay} alt="Annotated analysis" className="h-52 w-52 rounded-lg object-cover" />
+                  <figcaption className="mt-1 text-center text-[9px] text-slate-400">Detected spots & zones</figcaption>
+                </figure>
+              )}
+              {rupam.baseImage && (
+                <figure>
+                  <img src={rupam.baseImage} alt="Analysed photo" className="h-52 w-52 rounded-lg object-cover" />
+                  <figcaption className="mt-1 text-center text-[9px] text-slate-400">Analysed photo</figcaption>
+                </figure>
+              )}
+            </div>
+            <dl className="grid flex-1 grid-cols-2 content-start gap-2 text-xs">
+              {[
+                ["Overall score", rupam.out.overall_skin_health_score],
+                [
+                  "Skin type",
+                  rupam.type.classification &&
+                    `${titleCase(rupam.type.classification)}${
+                      rupam.type.confidence != null ? ` (${Math.round(rupam.type.confidence * 100)}%)` : ""
+                    }`,
+                ],
+                ["Fitzpatrick", rupam.tone.fitzpatrick_estimate != null ? `F${rupam.tone.fitzpatrick_estimate}` : null],
+                ["Skin tone", [rupam.tone.category, rupam.tone.skin_tone_label].filter(Boolean).join(" · ")],
+                ["ITA angle", rupam.tone.ita_angle != null ? `${rupam.tone.ita_angle}°` : null],
+                ["Face detected", rupam.quality.face_detected == null ? null : rupam.quality.face_detected ? "Yes" : "No"],
+                ["Sharpness", rupam.quality.sharpness_score != null ? `${Math.round(rupam.quality.sharpness_score * 100)}%` : null],
+                ["Lighting", rupam.quality.lighting_score != null ? `${Math.round(rupam.quality.lighting_score * 100)}%` : null],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-slate-200 px-3 py-2">
+                  <dt className="text-[9px] uppercase tracking-wide text-slate-400">{label}</dt>
+                  <dd className="font-display text-sm font-bold">{value || "—"}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          {!rupam.overlay && rupam.out.annotations?.composite_uri && (
+            <p className="mt-1 text-[10px] text-amber-700">
+              Rupam's annotated overlay for this scan has expired, so only the photo is shown.
+            </p>
+          )}
+
+          {/* Conditions */}
+          <h3 className="report-block mt-5 border-b border-slate-200 pb-1 font-display text-xs font-bold text-slate-800">
+            Detected conditions
+          </h3>
+          <table className="mt-2 w-full border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
+                <th className="py-1.5 font-semibold">Condition</th>
+                <th className="w-10 py-1.5 font-semibold">Grade</th>
+                <th className="w-20 py-1.5 font-semibold">Severity</th>
+                <th className="w-1/3 py-1.5 font-semibold">Health score</th>
+                <th className="py-1.5 font-semibold">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rupam.conditions.map((c) => {
+                const grade = GRADE_TONE[c.grade] || GRADE_TONE.C;
+                return (
+                  <tr key={c.condition_id} className="report-block border-b border-slate-100 align-top">
+                    <td className="py-1.5 pr-2 font-medium">{c.condition_name || titleCase(c.condition_id)}</td>
+                    <td className="py-1.5 font-bold" style={{ color: grade.ring }}>{c.grade || "—"}</td>
+                    <td className={`py-1.5 font-semibold ${severityTone(c.severity).text}`}>{titleCase(c.severity)}</td>
+                    <td className="py-1.5 pr-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full rounded-full" style={{ width: `${c.score ?? 0}%`, background: grade.ring }} />
+                        </div>
+                        <span className="w-7 text-right font-semibold tabular-nums">{c.score}</span>
+                      </div>
+                    </td>
+                    <td className="py-1.5 text-[10px] text-slate-500">{conditionExtras(c).join(" · ") || "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Region breakdowns Rupam returned (e.g. pigmentation by face zone, pores by region) */}
+          {rupam.conditions
+            .filter((c) => c.regions?.length)
+            .map((c) => (
+              <div key={`${c.condition_id}-regions`} className="report-block mt-4">
+                <h4 className="text-[11px] font-semibold text-slate-700">
+                  {c.condition_name || titleCase(c.condition_id)} by face region
+                </h4>
+                <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+                  {c.regions.map((r) => (
+                    <div key={r.region || r.region_name} className="rounded-lg border border-slate-200 px-2 py-1.5">
+                      <p className="text-[10px] font-semibold">{titleCase(r.region || r.region_name)}</p>
+                      <p className="text-[9px] text-slate-500">
+                        {[
+                          r.coverage_pct != null && `${r.coverage_pct}% coverage`,
+                          r.region_score != null && `score ${r.region_score}`,
+                          r.dominant_depth && r.dominant_depth !== "none" && titleCase(r.dominant_depth),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+          {/* Suggestions */}
+          {rupam.suggestions.length > 0 && (
+            <>
+              <h3 className="report-block mt-5 border-b border-slate-200 pb-1 font-display text-xs font-bold text-slate-800">
+                Suggestions
+              </h3>
+              <ol className="mt-2 space-y-1.5">
+                {rupam.suggestions.map((s, i) => (
+                  <li key={i} className="report-block flex gap-2 text-xs">
+                    <span className="w-5 shrink-0 font-mono text-[10px] font-bold text-brand-600">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex-1">
+                      {s.text}
+                      <span className="ml-1 text-[9px] uppercase tracking-wide text-slate-400">
+                        {titleCase(s.related_conditions?.[0] || s.condition_id)}
+                        {s.priority ? ` · ${s.priority} priority` : ""}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+
+          <p className="report-block mt-4 text-[9px] text-slate-400">
+            Request {rupam.out.request_id || "—"}
+            {rupam.meta.processing_time_ms != null && ` · processed in ${(rupam.meta.processing_time_ms / 1000).toFixed(1)}s`}
+            {rupam.meta.pipeline_version && ` · pipeline v${rupam.meta.pipeline_version}`}
+            {rupam.meta.model_set && ` · model set ${rupam.meta.model_set}`}
+          </p>
         </section>
       )}
 
