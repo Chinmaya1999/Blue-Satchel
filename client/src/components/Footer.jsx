@@ -1,6 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { ScanFace, ArrowRight, Cpu, ShieldCheck, Lock } from "lucide-react";
 import Logo from "./Logo.jsx";
+import { LEGAL_LINKS } from "./LegalPage.jsx";
+import { COMPANY } from "../utils/company.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
@@ -33,6 +35,7 @@ const Footer = () => {
             ["Create account", "/register"],
           ],
     },
+    { title: "Legal & support", links: LEGAL_LINKS },
   ];
 
   return (
@@ -42,7 +45,7 @@ const Footer = () => {
       <div className="absolute -top-40 left-1/2 -z-10 h-80 w-[40rem] -translate-x-1/2 rounded-full bg-cyan-500/10 blur-[120px]" />
 
       <div className="container-app pt-16">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-[1.4fr_1fr_1fr_1.4fr]">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.4fr]">
           <div className="col-span-2 lg:col-span-1">
             <Logo light />
             <p className="mt-4 max-w-xs text-sm leading-relaxed">
@@ -100,7 +103,11 @@ const Footer = () => {
 
       <div className="border-t border-white/5">
         <div className="container-app flex flex-col items-start justify-between gap-3 py-6 text-xs text-slate-500 sm:flex-row sm:items-center">
-          <p>© {new Date().getFullYear()} Blue Satchel · Proof of Concept build for demonstration purposes.</p>
+          <div className="space-y-1">
+            <p>© {new Date().getFullYear()} {COMPANY.legalName}. All rights reserved.</p>
+            <p>Skin analysis is informational only and is not a medical diagnosis.</p>
+            <p>{COMPANY.email} · {COMPANY.phone} · {COMPANY.address}</p>
+          </div>
           <p className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#5ee7ff]" />
             Built for every skin tone and type

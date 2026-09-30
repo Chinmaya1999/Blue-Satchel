@@ -23,6 +23,7 @@ const Navbar = () => {
   const links = [
     { to: "/", label: "Home", icon: Home, end: true },
     { to: "/shop", label: "Shop", icon: LayoutGrid },
+    ...(user ? [{ to: "/credits", label: "Pricing", icon: Coins }] : []),
     ...(user ? [{ to: "/scan", label: "Skin Scan", icon: ScanFace, end: true }] : []),
     ...(user ? [{ to: "/scan/history", label: "Scan History", icon: History }] : []),
     ...(user?.role === "admin" ? [{ to: "/admin", label: "Console", icon: Shield }] : []),

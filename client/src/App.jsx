@@ -22,6 +22,12 @@ import Profile from "./pages/Profile.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import Credits from "./pages/Credits.jsx";
 import VerifyEmail from "./pages/VerifyEmail.jsx";
+import Pricing from "./pages/Pricing.jsx";
+import Terms from "./pages/legal/Terms.jsx";
+import RefundPolicy from "./pages/legal/RefundPolicy.jsx";
+import Privacy from "./pages/legal/Privacy.jsx";
+import Disclaimer from "./pages/legal/Disclaimer.jsx";
+import Contact from "./pages/legal/Contact.jsx";
 
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
@@ -45,6 +51,12 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify-email" element={<ProtectedRoute allowUnverified><VerifyEmail /></ProtectedRoute>} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/disclaimer" element={<Disclaimer />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:id" element={<ProductDetail />} />
 
