@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Mail, Phone, MessageCircle, MapPin, Clock } from "lucide-react";
 import { LegalPage, Section } from "../../components/LegalPage.jsx";
 import { COMPANY } from "../../utils/company.js";
 
@@ -6,6 +6,7 @@ const Contact = () => {
   const rows = [
     [Mail, "Email", COMPANY.email, `mailto:${COMPANY.email}`],
     [Phone, "Phone", COMPANY.phone, `tel:${COMPANY.phone.replace(/\s/g, "")}`],
+    [MessageCircle, "WhatsApp", COMPANY.whatsapp, `https://wa.me/${COMPANY.whatsapp.replace(/\D/g, "")}`],
     [MapPin, "Address", COMPANY.address],
     [Clock, "Support hours", COMPANY.hours],
   ];

@@ -8,6 +8,7 @@ import {
   RESEND_COOLDOWN_SECONDS,
   CODE_TTL_MINUTES,
 } from "../services/emailVerification.js";
+import * as passwordReset from "../services/passwordReset.js";
 
 const welcome = async (user) => {
   user.crmContactId = await crmService.syncCustomer(user);
@@ -204,6 +205,55 @@ export const markNotificationRead = async (req, res, next) => {
     await req.user.save();
     res.json({ notifications: req.user.notifications });
   } catch (err) {
+    next(err);
+  }
+};
+
+// Forgot password: the response is the same whether or not the email has an account.
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const email = str(req.body.email).toLowerCase();
+    if (!EMAIL_RE.test(email)) return res.status(400).json({ message: "Enter a valid email address." });
+    try {
+      await passwordReset.requestResetCode(email);
+    } catch (err) {
+      if (err.status === 429) return res.status(429).json({ message: err.message, retryAfter: err.retryAfter });
+      console.error("[email] password reset code not sent:", err.message);
+      return res.status(502).json({ message: "We couldn't send the email right now. Please try again in a minute." });
+    }
+    res.json({
+      message: `If an account exists for ${email}, a 6-digit code has been sent.`,
+      codeTtlMinutes: passwordReset.CODE_TTL_MINUTES,
+      resendCooldownSeconds: passwordReset.RESEND_COOLDOWN_SECONDS,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const verifyResetCode = async (req, res, next) => {
+  try {
+    const resetToken = await passwordReset.verifyResetCode(str(req.body.email).toLowerCase(), str(req.body.code));
+    res.json({ resetToken });
+  } catch (err) {
+    if (err.status && err.status < 500) return res.status(err.status).json({ message: err.message });
+    next(err);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const password = typeof req.body.password === "string" ? req.body.password : "";
+    if (password.length < 6 || password.length > 72) {
+      return res.status(400).json({ message: "Password must be 6–72 characters." });
+    }
+    if (req.body.confirmPassword !== undefined && req.body.confirmPassword !== password) {
+      return res.status(400).json({ message: "Passwords don't match." });
+    }
+    await passwordReset.resetPassword(str(req.body.email).toLowerCase(), str(req.body.resetToken), password);
+    res.json({ message: "Your password has been reset. You can sign in now." });
+  } catch (err) {
+    if (err.status && err.status < 500) return res.status(err.status).json({ message: err.message });
     next(err);
   }
 };

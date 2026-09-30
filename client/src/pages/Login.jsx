@@ -93,6 +93,12 @@ const Login = () => {
           }
         />
 
+        <div className="text-right">
+          <Link to="/forgot-password" className="text-sm font-semibold text-cyan-300 hover:text-cyan-200">
+            Forgot password?
+          </Link>
+        </div>
+
         <button type="submit" disabled={loading} className="fs-btn-primary group mt-2 w-full justify-center disabled:opacity-60">
           {loading ? (
             <><Loader2 size={17} className="animate-spin" /> Signing in…</>

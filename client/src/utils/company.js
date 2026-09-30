@@ -6,9 +6,12 @@ const env = import.meta.env;
 export const COMPANY = {
   brand: "Blue Satchel",
   legalName: env.VITE_COMPANY_LEGAL_NAME || "Blue Satchel (legal entity name as per KYC)",
-  email: env.VITE_COMPANY_EMAIL || "support@example.com",
-  phone: env.VITE_COMPANY_PHONE || "+91 00000 00000",
-  address: env.VITE_COMPANY_ADDRESS || "Registered business address as per KYC, City, State, PIN, India",
+  email: env.VITE_COMPANY_EMAIL || "contact@adihuman.com",
+  phone: env.VITE_COMPANY_PHONE || "+91 82968 10381",
+  whatsapp: env.VITE_COMPANY_WHATSAPP || "+91 82968 10381",
+  address:
+    env.VITE_COMPANY_ADDRESS ||
+    "Shop No. 8, Shri Balaji, KKR Complex, 1st Floor, Opposite SCT College, Kaggadasapura, Bangalore - 560075",
   hours: "Monday to Saturday, 10:00 AM to 6:00 PM IST",
   updated: "30 September 2026",
 };

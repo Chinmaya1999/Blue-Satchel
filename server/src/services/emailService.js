@@ -83,3 +83,45 @@ export const sendVerificationEmail = ({ to, name, code, expiresInMinutes, welcom
     html,
   });
 };
+
+/** Email carrying the 6-digit password reset code. */
+export const sendPasswordResetEmail = ({ to, name, code, expiresInMinutes }) => {
+  const firstName = (name || "").trim().split(/\s+/)[0] || "there";
+  const text = [
+    `Hi ${firstName},`,
+    "",
+    "We received a request to reset your Blue Satchel password.",
+    `Your reset code: ${code}`,
+    `It expires in ${expiresInMinutes} minutes. Never share it with anyone.`,
+    "",
+    "If you didn't ask for this, you can ignore this email; your password won't change.",
+  ].join("\n");
+
+  const digits = String(code)
+    .split("")
+    .map(
+      (d) =>
+        `<td style="width:44px;height:54px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;font:700 26px/54px 'Courier New',monospace;color:#0f172a;text-align:center;">${d}</td>`
+    )
+    .join('<td style="width:8px;"></td>');
+
+  const html = `<!doctype html>
+<html><body style="margin:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;">
+        <tr><td style="background:#050814;padding:22px 28px;"><span style="font-size:20px;font-weight:700;color:#ffffff;">Blue Satchel</span></td></tr>
+        <tr><td style="padding:28px;">
+          <h1 style="margin:0 0 12px;font-size:22px;">Reset your password</h1>
+          <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#475569;">Hi ${escapeHtml(firstName)}, enter this code on the reset page to choose a new password.</p>
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>${digits}</tr></table>
+          <p style="margin:18px 0 0;font-size:13px;color:#64748b;">This code expires in ${expiresInMinutes} minutes. Never share it with anyone.</p>
+        </td></tr>
+        <tr><td style="padding:18px 28px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;">If you didn't request this, you can safely ignore this email.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  return sendMail({ to, subject: `Your Blue Satchel password reset code: ${code}`, text, html });
+};

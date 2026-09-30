@@ -25,6 +25,20 @@ const emailVerificationSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Forgot-password flow: a 6-digit code (hashed), then a short-lived reset
+// token (hashed) issued once the code is verified.
+const passwordResetSchema = new mongoose.Schema(
+  {
+    codeHash: String,
+    expiresAt: Date,
+    attempts: { type: Number, default: 0 },
+    lastSentAt: Date,
+    tokenHash: String,
+    tokenExpiresAt: Date,
+  },
+  { _id: false }
+);
+
 // Where the user was when they signed up. `source` records how it was found:
 // "gps" = browser geolocation the user allowed, "ip" = approximate, from the
 // request IP when they didn't.
@@ -66,6 +80,7 @@ const userSchema = new mongoose.Schema(
     // so existing customers aren't locked out.
     emailVerified: { type: Boolean },
     emailVerification: { type: emailVerificationSchema, select: false },
+    passwordReset: { type: passwordResetSchema, select: false },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     skinType: {
       type: String,
@@ -108,6 +123,7 @@ userSchema.methods.toSafeObject = function () {
   const obj = this.toObject();
   delete obj.password;
   delete obj.emailVerification;
+  delete obj.passwordReset;
   return obj;
 };
 
