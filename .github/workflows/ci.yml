@@ -4,7 +4,6 @@ name: CI
 # No deployment happens here — see deploy.yml for that.
 on:
   push:
-    branches-ignore: [main]
   pull_request:
 
 jobs:
@@ -34,6 +33,10 @@ jobs:
       - name: Syntax-check server source
         working-directory: server
         run: find src -name "*.js" -exec node --check {} \;
+
+      - name: Run server tests
+        working-directory: server
+        run: npm test
 
       - uses: docker/setup-buildx-action@v3
 

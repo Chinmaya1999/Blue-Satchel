@@ -13,6 +13,7 @@ import {
   verifyResetCode,
   resetPassword,
 } from "../controllers/authController.js";
+import { exportMyData, deleteMyAccount } from "../controllers/accountController.js";
 import { protect } from "../middleware/auth.js";
 import { authLimiter, verifyLimiter } from "../middleware/security.js";
 
@@ -29,6 +30,9 @@ router.get("/me", protect, getMe);
 router.post("/verify-email", verifyLimiter, protect, verifyEmail);
 router.post("/resend-code", verifyLimiter, protect, resendVerificationCode);
 router.patch("/me", protect, updateMe);
+router.get("/me/export", protect, exportMyData);
+// Password check inside — rate-limited like the other credential endpoints.
+router.delete("/me", authLimiter, protect, deleteMyAccount);
 router.patch("/me/notifications/:id/read", protect, markNotificationRead);
 
 export default router;

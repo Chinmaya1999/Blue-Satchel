@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { User, Bell, ScanFace, Package, Save, CheckCircle2 } from "lucide-react";
+import { User, Bell, ScanFace, Package, Save, CheckCircle2, Download, Trash2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 import api from "../api/axios.js";
@@ -8,7 +8,7 @@ import api from "../api/axios.js";
 const SKIN_TYPES = ["normal", "oily", "dry", "combination", "sensitive", "unknown"];
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
   const { shopEnabled } = useSiteSettings();
   const [form, setForm] = useState({
     name: user.name || "",
@@ -39,6 +39,44 @@ const Profile = () => {
 
   const markRead = async (id) => {
     await api.patch(`/auth/me/notifications/${id}/read`);
+  };
+
+  // Privacy: download everything we hold, or delete the account for good.
+  const isGoogle = user.authProvider === "google";
+  const [confirming, setConfirming] = useState(false);
+  const [confirmValue, setConfirmValue] = useState("");
+  const [privacyError, setPrivacyError] = useState("");
+  const [privacyBusy, setPrivacyBusy] = useState(false);
+
+  const downloadData = async () => {
+    setPrivacyError("");
+    setPrivacyBusy(true);
+    try {
+      const { data } = await api.get("/auth/me/export");
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "blue-satchel-my-data.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setPrivacyError(err.response?.data?.message || "Couldn't download your data. Please try again.");
+    } finally {
+      setPrivacyBusy(false);
+    }
+  };
+
+  const deleteAccount = async (e) => {
+    e.preventDefault();
+    setPrivacyError("");
+    setPrivacyBusy(true);
+    try {
+      await api.delete("/auth/me", { data: isGoogle ? { confirm: confirmValue } : { password: confirmValue } });
+      logout();
+    } catch (err) {
+      setPrivacyError(err.response?.data?.message || "Couldn't delete your account. Please try again.");
+      setPrivacyBusy(false);
+    }
   };
 
   return (
@@ -125,6 +163,46 @@ const Profile = () => {
             <p className="text-sm text-slate-400">No notifications yet.</p>
           )}
         </div>
+      </div>
+
+      <div className="card mt-6 rounded-3xl p-6 sm:p-8">
+        <h2 className="font-display text-lg font-semibold text-white">Your data &amp; privacy</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Download a copy of your account, scans and orders, or delete your account and all scan photos permanently.
+          Payment records are kept as required by law but no longer linked to you.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="button" onClick={downloadData} disabled={privacyBusy} className="btn-secondary rounded-full">
+            <Download size={15} /> Download my data
+          </button>
+          {user.role !== "admin" && !confirming && (
+            <button type="button" onClick={() => setConfirming(true)} className="btn-secondary rounded-full text-rose-300">
+              <Trash2 size={15} /> Delete my account
+            </button>
+          )}
+        </div>
+        {confirming && (
+          <form onSubmit={deleteAccount} className="mt-5 max-w-sm space-y-3">
+            <label className="label">{isGoogle ? 'Type "DELETE" to confirm' : "Enter your password to confirm"}</label>
+            <input
+              className="input"
+              type={isGoogle ? "text" : "password"}
+              autoComplete={isGoogle ? "off" : "current-password"}
+              value={confirmValue}
+              onChange={(e) => setConfirmValue(e.target.value)}
+              required
+            />
+            <div className="flex gap-3">
+              <button type="submit" disabled={privacyBusy} className="btn-primary rounded-full bg-rose-500">
+                {privacyBusy ? "Deleting…" : "Permanently delete"}
+              </button>
+              <button type="button" onClick={() => { setConfirming(false); setConfirmValue(""); setPrivacyError(""); }} className="btn-secondary rounded-full">
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+        {privacyError && <p className="mt-3 text-sm text-rose-300">{privacyError}</p>}
       </div>
     </div>
     </div>
