@@ -62,11 +62,7 @@ const Login = () => {
       title="Welcome back"
       subtitle="Sign in to see your skin scans, reports and orders."
       error={error}
-      footer={
-        <p className="mt-4 text-center font-mono text-[11px] text-slate-500">
-          Admin demo: admin@bluesatchel.com / Admin@123
-        </p>
-      }
+      
     >
       <form onSubmit={submit} className="mt-7 space-y-4">
         <Field
