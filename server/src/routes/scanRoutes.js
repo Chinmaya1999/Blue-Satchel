@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { createScan, listMyScans, getScan, getScanQuota, nearbyDermatologists } from "../controllers/scanController.js";
-import { scanAdvisor } from "../controllers/advisorController.js";
+import { scanAdvisor, scanKBeauty } from "../controllers/advisorController.js";
 import { chatLimiter } from "../middleware/security.js";
 import { protect } from "../middleware/auth.js";
 import { upload } from "../middleware/upload.js";
@@ -21,5 +21,6 @@ router.get("/quota", getScanQuota);
 router.get("/dermatologists", nearbyDermatologists);
 router.get("/:id", getScan);
 router.post("/:id/advisor", chatLimiter, scanAdvisor);
+router.post("/:id/kbeauty", chatLimiter, scanKBeauty);
 
 export default router;

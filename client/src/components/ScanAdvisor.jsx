@@ -1,20 +1,51 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { MessageCircle, Send, Check, RotateCcw, ShoppingBag, Sparkles } from "lucide-react";
+import { Send, Check, RotateCcw, ShoppingBag, Plus } from "lucide-react";
 import api from "../api/axios.js";
 import { useCart } from "../context/CartContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
-import { ProductMini, Typing } from "./ChatWidget.jsx";
+import { Typing } from "./ChatWidget.jsx";
+import { productImageFallback } from "./ProductCard.jsx";
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const THEME = {
+  cyan: { badge: "bg-cyan-300 text-slate-950", head: "from-cyan-400/10 to-violet-500/10", user: "bg-cyan-300 text-slate-950", chip: "ring-cyan-300/30 text-cyan-100 hover:bg-cyan-300/15", on: "bg-cyan-300 text-slate-950 ring-cyan-300", cta: "bg-cyan-300 text-slate-950 hover:bg-cyan-200", link: "text-cyan-300" },
+  rose: { badge: "bg-rose-300 text-slate-950", head: "from-rose-400/10 to-amber-300/10", user: "bg-rose-300 text-slate-950", chip: "ring-rose-300/30 text-rose-100 hover:bg-rose-300/15", on: "bg-rose-300 text-slate-950 ring-rose-300", cta: "bg-rose-300 text-slate-950 hover:bg-rose-200", link: "text-rose-300" },
+};
+
+// A compact product line, small enough for a chat bubble.
+const ProductRow = ({ product, theme, shopEnabled }) => {
+  const { addItem } = useCart();
+  return (
+    <li className="flex items-center gap-3 rounded-xl bg-white/[0.05] p-2 ring-1 ring-white/10">
+      <Link to={`/shop/${product._id}`} className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white">
+        <img src={product.imageUrl} alt="" loading="lazy" onError={(e) => productImageFallback(e, product.category)} className="h-full w-full object-contain p-1" />
+      </Link>
+      <div className="min-w-0 flex-1">
+        <p className={`font-mono text-[9px] font-semibold uppercase tracking-wider ${theme.link}`}>{product.stepLabel}</p>
+        <Link to={`/shop/${product._id}`} className="block truncate text-[13px] font-semibold text-white hover:underline">{product.name}</Link>
+        <p className="truncate text-[11px] text-slate-400">{product.brand} · {product.reason}</p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className="font-display text-sm font-bold text-white">₹{product.price}</span>
+        {shopEnabled && (
+          <button type="button" onClick={() => addItem({ ...product })} aria-label={`Add ${product.name} to bag`} className={`inline-flex h-6 items-center gap-0.5 rounded-full px-2 text-[10px] font-bold ${theme.cta}`}>
+            <Plus size={11} /> Add
+          </button>
+        )}
+      </div>
+    </li>
+  );
+};
+
 /**
- * The "Recommended for you" section of a scan report, as a conversation: it
- * reads the scan, asks what the customer wants and about their routine,
- * explains a plan, and only then — if they ask — shows products or nearby
- * dermatologists.
+ * A guided chat on a scan report. `endpoint` picks the conversation:
+ * "advisor" (general skin plan) or "kbeauty" (Korean skin care). Products and
+ * the dermatologist list only appear when the customer asks for them.
  */
-const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
+const ScanAdvisor = ({ scanId, endpoint = "advisor", title, subtitle, icon: Icon, productsLabel = "Show recommended products", accent = "cyan", onShowDermatologists }) => {
+  const theme = THEME[accent];
   const { addItem } = useCart();
   const { shopEnabled } = useSiteSettings();
   const [messages, setMessages] = useState([]); // { role: bot|user } | { role: "products", products, total }
@@ -28,7 +59,7 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
   const [error, setError] = useState("");
   const [bagged, setBagged] = useState(false);
   const scroller = useRef(null);
-  const run = useRef(0); // ignores replies that belong to an older scan/session
+  const run = useRef(0); // ignores replies that belong to an older conversation
   // Held in a ref so a new callback from the parent never restarts the chat.
   const showDermRef = useRef(onShowDermatologists);
   showDermRef.current = onShowDermatologists;
@@ -38,35 +69,32 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
     return () => cancelAnimationFrame(id);
   }, [messages, busy, quick]);
 
-  const play = useCallback(
-    async (data, token) => {
-      setQuick([]);
-      setSelected([]);
-      setState(data.state);
-      for (let i = 0; i < data.messages.length; i++) {
-        setBusy(true);
-        await wait(i === 0 ? 400 : 700);
-        if (token !== run.current) return;
-        setMessages((m) => [...m, { role: "bot", text: data.messages[i].text }]);
-      }
-      if (data.products?.length) {
-        await wait(400);
-        if (token !== run.current) return;
-        setMessages((m) => [...m, { role: "products", products: data.products, total: data.total }]);
-      }
-      if (data.action === "dermatologists") showDermRef.current?.();
-      setBusy(false);
-      setQuick(data.quickReplies || []);
-      setInputMode(data.input || "text");
-      setPlaceholder(data.placeholder || "Type your message…");
-    },
-    []
-  );
+  const play = useCallback(async (data, token) => {
+    setQuick([]);
+    setSelected([]);
+    setState(data.state);
+    for (let i = 0; i < data.messages.length; i++) {
+      setBusy(true);
+      await wait(i === 0 ? 350 : 600);
+      if (token !== run.current) return;
+      setMessages((m) => [...m, { role: "bot", text: data.messages[i].text }]);
+    }
+    if (data.products?.length) {
+      await wait(300);
+      if (token !== run.current) return;
+      setMessages((m) => [...m, { role: "products", products: data.products, total: data.total }]);
+    }
+    if (data.action === "dermatologists") showDermRef.current?.();
+    setBusy(false);
+    setQuick(data.quickReplies || []);
+    setInputMode(data.input || "text");
+    setPlaceholder(data.placeholder || "Type your message…");
+  }, []);
 
   const call = useCallback(
     async (body, token) => {
       try {
-        const { data } = await api.post(`/scans/${scanId}/advisor`, body);
+        const { data } = await api.post(`/scans/${scanId}/${endpoint}`, body);
         await play(data, token);
       } catch (err) {
         if (token !== run.current) return;
@@ -74,7 +102,7 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
         setError(err.response?.data?.message || "I couldn't reach the assistant. Please try again.");
       }
     },
-    [scanId, play]
+    [scanId, endpoint, play]
   );
 
   const begin = useCallback(() => {
@@ -83,6 +111,7 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
     setState(null);
     setBusy(true);
     setError("");
+    setBagged(false);
     call({ init: true }, token);
   }, [call]);
 
@@ -97,7 +126,6 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
     if (busy) return;
     const shown = label || value || (values || []).join(", ");
     if (!shown?.trim()) return;
-    if (value === "cmd:redo") setBagged(false);
     setMessages((m) => [...m, { role: "user", text: shown }]);
     setText("");
     setBusy(true);
@@ -108,7 +136,7 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
 
   const multi = inputMode === "multi" && quick.length > 0;
   const toggle = (v) => setSelected((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]));
-  const labelOf = (v) => quick.find((q) => q.value === v)?.label.replace(/ · .*/, "") || v;
+  const labelOf = (v) => quick.find((qr) => qr.value === v)?.label.replace(/ · .*/, "") || v;
 
   const submit = (e) => {
     e.preventDefault();
@@ -116,53 +144,41 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
     send({ text: text.trim(), values: multi ? selected : undefined });
   };
 
-  const addAll = (products) => {
-    products.forEach((p) => addItem({ ...p }));
-    setBagged(true);
-  };
-
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)]">
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-cyan-400/10 to-violet-500/10 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-300 text-slate-950">
-            <Sparkles size={18} />
+    <div className="flex h-[560px] flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)]">
+      <div className={`flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r ${theme.head} px-4 py-3`}>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${theme.badge}`}>
+            <Icon size={17} />
           </span>
-          <div>
-            <p className="font-display text-sm font-bold text-white">Your skin advisor</p>
-            <p className="text-[11px] text-slate-400">Built from your scan · not medical advice</p>
+          <div className="min-w-0">
+            <p className="truncate font-display text-sm font-bold text-white">{title}</p>
+            <p className="truncate text-[11px] text-slate-400">{subtitle}</p>
           </div>
         </div>
-        <button type="button" onClick={begin} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 disabled:opacity-40">
-          <RotateCcw size={13} /> Start over
+        <button type="button" onClick={begin} disabled={busy} aria-label="Start over" title="Start over" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 disabled:opacity-40">
+          <RotateCcw size={14} />
         </button>
       </div>
 
-      <div ref={scroller} className="max-h-[560px] min-h-[320px] space-y-3 overflow-y-auto px-4 py-5 sm:px-6" aria-live="polite">
+      <div ref={scroller} className="flex-1 space-y-2.5 overflow-y-auto px-4 py-4" aria-live="polite">
         {messages.map((m, i) =>
           m.role === "products" ? (
-            <div key={i} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div key={i} className="space-y-2">
+              <ul className="space-y-2">
                 {m.products.map((p) => (
-                  <ProductMini key={p._id} product={p} fluid />
+                  <ProductRow key={p._id} product={p} theme={theme} shopEnabled={shopEnabled} />
                 ))}
-              </div>
+              </ul>
               {shopEnabled && (
-                <button type="button" onClick={() => addAll(m.products)} className="btn-primary rounded-full">
-                  <ShoppingBag size={15} /> {bagged ? "Added to bag ✓" : `Add all to bag · ₹${m.total}`}
+                <button type="button" onClick={() => { m.products.forEach((p) => addItem({ ...p })); setBagged(true); }} className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-bold ${theme.cta}`}>
+                  <ShoppingBag size={13} /> {bagged ? "Added to bag ✓" : `Add all to bag · ₹${m.total}`}
                 </button>
               )}
-              <p className="text-xs text-slate-500">
-                Prefer to browse? <Link to="/shop" className="text-cyan-300 hover:underline">See all products</Link>
-              </p>
             </div>
           ) : (
             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              <p
-                className={`max-w-[88%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed sm:max-w-[75%] ${
-                  m.role === "user" ? "rounded-br-md bg-cyan-300 font-medium text-slate-950" : "rounded-bl-md bg-white/[0.07] text-slate-100"
-                }`}
-              >
+              <p className={`max-w-[88%] whitespace-pre-line rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed ${m.role === "user" ? `rounded-br-md font-medium ${theme.user}` : "rounded-bl-md bg-white/[0.07] text-slate-100"}`}>
                 {m.text}
               </p>
             </div>
@@ -171,13 +187,12 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
         {busy && <Typing />}
         {error && (
           <p className="rounded-xl bg-rose-500/10 px-3 py-2 text-xs text-rose-300 ring-1 ring-rose-400/25">
-            {error}{" "}
-            <button type="button" onClick={begin} className="font-semibold underline">Try again</button>
+            {error} <button type="button" onClick={begin} className="font-semibold underline">Try again</button>
           </p>
         )}
 
         {!busy && quick.length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex flex-wrap gap-1.5 pt-1">
             {quick.map((qr) => {
               const active = selected.includes(qr.value);
               return (
@@ -185,47 +200,49 @@ const ScanAdvisor = ({ scanId, onShowDermatologists }) => {
                   key={qr.value}
                   type="button"
                   onClick={() => (multi ? toggle(qr.value) : send({ text: qr.value, label: qr.label }))}
-                  className={`inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium ring-1 transition ${
-                    active ? "bg-cyan-300 text-slate-950 ring-cyan-300" : "bg-white/[0.04] text-cyan-100 ring-cyan-300/30 hover:bg-cyan-300/15"
-                  }`}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition ${active ? theme.on : `bg-white/[0.04] ${theme.chip}`}`}
                 >
-                  {active && <Check size={14} />} {qr.label}
+                  {active && <Check size={12} />} {qr.label}
                 </button>
               );
             })}
             {multi && (
               <button
                 type="button"
-                onClick={() => (selected.length ? send({ values: selected, label: selected.map(labelOf).join(", ") }) : send({ text: "none", label: "None of these" }))}
-                className="inline-flex items-center gap-1 rounded-full bg-violet-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-violet-400"
+                onClick={() => (selected.length ? send({ values: selected, label: selected.map(labelOf).join(", ") }) : send({ text: "you choose", label: "You choose for me" }))}
+                className="inline-flex items-center gap-1 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-400"
               >
-                {selected.length ? `Done (${selected.length})` : "None of these"}
+                {selected.length ? `Done (${selected.length})` : "You choose for me"}
               </button>
             )}
           </div>
         )}
       </div>
 
-      <form onSubmit={submit} className="flex items-center gap-2 border-t border-white/10 bg-black/20 p-3 sm:p-4">
-        <MessageCircle size={18} className="ml-1 hidden shrink-0 text-slate-500 sm:block" />
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          maxLength={500}
-          placeholder={placeholder}
-          aria-label="Type your message"
-          disabled={busy}
-          className="h-11 min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.05] px-4 text-sm text-white placeholder:text-slate-500 focus:border-cyan-300/60 focus:outline-none disabled:opacity-60"
-        />
+      <div className="border-t border-white/10 bg-black/20 p-3">
         <button
-          type="submit"
-          disabled={busy || (!text.trim() && !(multi && selected.length))}
-          aria-label="Send"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cyan-300 text-slate-950 transition hover:bg-cyan-200 disabled:opacity-40"
+          type="button"
+          onClick={() => send({ text: "cmd:products", label: productsLabel })}
+          disabled={busy}
+          className={`mb-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full text-xs font-bold transition disabled:opacity-50 ${theme.cta}`}
         >
-          <Send size={17} />
+          <ShoppingBag size={14} /> {productsLabel}
         </button>
-      </form>
+        <form onSubmit={submit} className="flex items-center gap-2">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={500}
+            placeholder={placeholder}
+            aria-label="Type your message"
+            disabled={busy}
+            className="h-10 min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.05] px-4 text-[13px] text-white placeholder:text-slate-500 focus:border-white/30 focus:outline-none disabled:opacity-60"
+          />
+          <button type="submit" disabled={busy || (!text.trim() && !(multi && selected.length))} aria-label="Send" className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition disabled:opacity-40 ${theme.cta}`}>
+            <Send size={16} />
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

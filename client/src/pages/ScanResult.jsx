@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ScanFace,
@@ -24,6 +24,7 @@ import {
   FlaskConical,
   ChevronDown,
   ShoppingBag,
+  Flower2,
 } from "lucide-react";
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
@@ -218,6 +219,7 @@ const ScanResult = ({ admin = false }) => {
   const [loading, setLoading] = useState(true);
   const [routineAdded, setRoutineAdded] = useState(false);
   const dermRef = useRef(null);
+  const scrollToDerm = useCallback(() => dermRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), []);
   const { addItem } = useCart();
   const { shopEnabled } = useSiteSettings();
 
@@ -388,13 +390,30 @@ const ScanResult = ({ admin = false }) => {
             <p className="fs-eyebrow">Personalized routine</p>
             <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">Recommended <span className="fs-gradient-text">for you</span></h2>
             <p className="mt-2 max-w-xl text-sm text-slate-400">
-              Tell our skin advisor what you want to improve{topConcerns.length > 0 && <> — your report's top concerns are <span className="text-slate-200">{topConcerns.join(", ")}</span></>}. It will explain a plan, and show products whenever you ask.
+              Chat with our advisors{topConcerns.length > 0 && <> about your top concerns — <span className="text-slate-200">{topConcerns.join(", ")}</span></>}. Tap “Show products” in either chat whenever you want picks.
             </p>
           </div>
-          <ScanAdvisor
-            scanId={id}
-            onShowDermatologists={() => dermRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ScanAdvisor
+              scanId={id}
+              endpoint="advisor"
+              title="Your skin advisor"
+              subtitle="A quick plan from your scan"
+              icon={Sparkles}
+              productsLabel="Show recommended products"
+              accent="cyan"
+              onShowDermatologists={scrollToDerm}
+            />
+            <ScanAdvisor
+              scanId={id}
+              endpoint="kbeauty"
+              title="K-beauty guide 🇰🇷"
+              subtitle="Korean skin-care treatment & products"
+              icon={Flower2}
+              productsLabel="Show Korean products"
+              accent="rose"
+            />
+          </div>
         </section>
       ) : (
         <>

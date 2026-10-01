@@ -1,8 +1,10 @@
 import ScanHistory from "../models/ScanHistory.js";
 import { handleAdvisor, initialAdvisorState } from "../services/scanAdvisor.js";
 import { buildRoutine } from "../services/chatRecommend.js";
+import { handleKBeauty, initialKState } from "../services/kbeauty.js";
+import { koreanPicks } from "../services/kbeautyRecommend.js";
 
-const STEPS = ["goals", "lifestyle", "skin", "sensitivity", "routine", "plan"];
+const STEPS = ["goals", "skin", "plan"];
 const SKIN = ["oily", "dry", "combination", "normal", "sensitive", "unknown"];
 
 // The client keeps the conversation state between messages; accept only the
@@ -15,8 +17,6 @@ const cleanState = (raw) => {
     ...base,
     step: STEPS.includes(raw.step) ? raw.step : base.step,
     goals: list(raw.goals),
-    lifestyle: list(raw.lifestyle),
-    routine: list(raw.routine),
     skinType: SKIN.includes(raw.skinType) ? raw.skinType : null,
     sensitive: typeof raw.sensitive === "boolean" ? raw.sensitive : null,
     planned: raw.planned === true,
@@ -62,6 +62,51 @@ export const scanAdvisor = async (req, res, next) => {
             { label: "Ask a skin question", value: "cmd:ask" },
             { label: "Change my answers", value: "cmd:redo" },
           ],
+        });
+      }
+    }
+
+    const last = turn.replies[turn.replies.length - 1] || {};
+    res.json({
+      state: turn.state,
+      messages: turn.replies.map((r) => ({ text: r.text })),
+      quickReplies: last.quick || [],
+      input: last.input || "text",
+      placeholder: last.placeholder || "Type your message…",
+      action: turn.action,
+      products,
+      total,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// The K-beauty guide: same conversation shape, Korean products only.
+export const scanKBeauty = async (req, res, next) => {
+  try {
+    const scan = await ScanHistory.findOne({ _id: req.params.id, user: req.user._id });
+    if (!scan) return res.status(404).json({ message: "Scan not found." });
+
+    const text = typeof req.body.text === "string" ? req.body.text : "";
+    const values = Array.isArray(req.body.values) ? req.body.values.filter((v) => typeof v === "string") : [];
+    const init = req.body.init === true;
+    if (!init && !text.trim() && !values.length) return res.status(400).json({ message: "Please type a message." });
+
+    const turn = handleKBeauty(init ? initialKState() : cleanState(req.body.state), { text, values, init }, { scan, profile: { skinType: req.user.skinType } });
+
+    let products = null;
+    let total = 0;
+    if (turn.action === "products") {
+      ({ products, total } = await koreanPicks(scan, turn.state.goals, turn.state.skinType));
+      if (!products.length) {
+        turn.replies.push({ text: "I couldn't find a matching Korean product in stock right now — try the Skin Advisor on the left for other picks.", quick: [] });
+      } else {
+        turn.replies.push({
+          text: `${products.length} Korean products, ₹${total} in total. Add one at a time and patch-test first.${
+            turn.state.goals.some((g) => ["radiance", "spots", "acne", "pores", "texture", "moisture"].includes(g)) ? " For sunscreen, pick any SPF 30–50 from our shop." : ""
+          }`,
+          quick: [{ label: "Ask about K-beauty", value: "cmd:ask" }, { label: "Start over", value: "cmd:redo" }],
         });
       }
     }
