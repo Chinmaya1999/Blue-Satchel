@@ -8,7 +8,7 @@ const creditPlanSchema = new mongoose.Schema(
   {
     code: { type: String, required: true, unique: true, trim: true },
     name: { type: String, required: true, trim: true, maxlength: 40 },
-    priceUsd: { type: Number, required: true, min: 0.5, max: 10000 },
+    priceUsd: { type: Number, required: true, min: 0.05, max: 10000 },
     credits: { type: Number, required: true, min: 1, max: 1000000 },
     popular: { type: Boolean, default: false },
     bestValue: { type: Boolean, default: false },
