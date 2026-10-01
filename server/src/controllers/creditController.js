@@ -9,6 +9,7 @@ import {
   chargeFor,
   createRazorpayOrder,
   verifyRazorpaySignature,
+  findCapturedPaymentId,
 } from "../services/razorpay.js";
 
 export const getPlans = async (req, res, next) => {
@@ -91,26 +92,45 @@ export const verifyCreditPayment = async (req, res, next) => {
       return res.status(400).json({ message: "Payment verification failed. If you were charged, contact support." });
     }
 
-    const txn = await completePurchase(req.user._id, orderId, paymentId);
-    if (!txn) return res.status(404).json({ message: "We couldn't find this order on your account." });
-
-    await User.updateOne(
-      { _id: req.user._id },
-      {
-        $push: {
-          notifications: {
-            title: "Credits added",
-            message: `${txn.plan.credits} credits added (${txn.plan.name} plan, $${txn.amountUsd}). Your balance is ${txn.balanceAfter} credits.`,
-          },
-        },
-      }
-    );
-
-    req.user.credits = txn.balanceAfter;
-    res.json({ credits: creditSummary(req.user), transaction: txn });
+    return grantCredits(req, res, orderId, paymentId);
   } catch (err) {
     next(err);
   }
+};
+
+// Fallback for when Checkout's success callback never reaches the browser
+// (e.g. UPI QR / app payments): ask Razorpay directly whether the order was paid.
+export const getOrderStatus = async (req, res, next) => {
+  try {
+    const orderId = req.params.orderId;
+    const owned = await CreditTransaction.exists({ user: req.user._id, razorpayOrderId: orderId });
+    if (!owned) return res.status(404).json({ message: "We couldn't find this order on your account." });
+    const paymentId = await findCapturedPaymentId(orderId);
+    if (!paymentId) return res.json({ paid: false });
+    return grantCredits(req, res, orderId, paymentId);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const grantCredits = async (req, res, orderId, paymentId) => {
+  const txn = await completePurchase(req.user._id, orderId, paymentId);
+  if (!txn) return res.status(404).json({ message: "We couldn't find this order on your account." });
+
+  await User.updateOne(
+    { _id: req.user._id },
+    {
+      $push: {
+        notifications: {
+          title: "Credits added",
+          message: `${txn.plan.credits} credits added (${txn.plan.name} plan, $${txn.amountUsd}). Your balance is ${txn.balanceAfter} credits.`,
+        },
+      },
+    }
+  );
+
+  req.user.credits = txn.balanceAfter;
+  res.json({ paid: true, credits: creditSummary(req.user), transaction: txn });
 };
 
 // Checkout reported a failed attempt — recorded so admins can see declines.

@@ -68,3 +68,14 @@ export const verifyRazorpaySignature = (orderId, paymentId, signature) => {
   const b = Buffer.from(signature, "utf8");
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
+
+/** Returns the captured payment id for an order, or null if none has been captured yet. */
+export const findCapturedPaymentId = async (orderId) => {
+  const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(orderId)}/payments`, {
+    headers: { Authorization: authHeader() },
+    signal: AbortSignal.timeout(15000),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) return null;
+  return json?.items?.find((p) => p.status === "captured")?.id || null;
+};

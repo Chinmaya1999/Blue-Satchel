@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Coins,
@@ -80,6 +80,29 @@ const Credits = () => {
   }, []);
 
   const plan = plans.find((p) => p.id === selected);
+  const pollRef = useRef(null);
+  const doneRef = useRef(false);
+  const redirectRef = useRef(null);
+
+  useEffect(() => () => {
+    clearInterval(pollRef.current);
+    clearTimeout(redirectRef.current);
+  }, []);
+
+  // Runs once per payment, whether Checkout's callback or our status poll sees it first.
+  const finishPayment = (plan, balance) => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    clearInterval(pollRef.current);
+    setCredits(balance);
+    setSuccess({ plan, balance });
+    setSelected(null);
+    setError("");
+    setPaying(false);
+    loadHistory();
+    // Send them on to their scan (or back to where they were headed).
+    redirectRef.current = setTimeout(() => navigate(next || "/scan", { replace: true }), 2000);
+  };
 
   // Razorpay flow: our server creates the order (price from its own plan
   // list), Checkout takes the payment, and our server verifies Razorpay's
@@ -88,6 +111,8 @@ const Credits = () => {
     if (!plan) return;
     setError("");
     setPaying(true);
+    doneRef.current = false;
+    clearInterval(pollRef.current);
     try {
       if (!(await loadRazorpay())) throw new Error("Couldn't load Razorpay. Check your connection and try again.");
       const { data } = await api.post("/credits/order", { planId: plan.id });
@@ -105,18 +130,22 @@ const Credits = () => {
         handler: async (response) => {
           try {
             const { data: verified } = await api.post("/credits/verify", response);
-            setCredits(verified.credits.balance);
-            setSuccess({ plan, balance: verified.credits.balance });
-            setSelected(null);
+            finishPayment(plan, verified.credits.balance);
           } catch (err) {
-            setError(err.response?.data?.message || "We couldn't confirm your payment. If you were charged, contact support.");
-          } finally {
-            setPaying(false);
-            loadHistory();
+            if (!doneRef.current) {
+              setError(err.response?.data?.message || "We couldn't confirm your payment. If you were charged, contact support.");
+              setPaying(false);
+            }
           }
         },
         modal: {
-          ondismiss: () => setPaying(false),
+          // Keep polling a little after the window closes: UPI payments can land just after.
+          ondismiss: () => {
+            setTimeout(() => {
+              clearInterval(pollRef.current);
+              if (!doneRef.current) setPaying(false);
+            }, 30000);
+          },
         },
       });
       checkout.on("payment.failed", (resp) => {
@@ -127,6 +156,20 @@ const Credits = () => {
           .catch(() => {});
       });
       checkout.open();
+
+      // UPI QR / app payments don't always fire Checkout's callback, so also
+      // ask the server whether Razorpay has captured this order.
+      pollRef.current = setInterval(async () => {
+        try {
+          const { data: status } = await api.get(`/credits/order/${data.order.id}/status`);
+          if (status.paid) {
+            checkout.close?.();
+            finishPayment(plan, status.credits.balance);
+          }
+        } catch {
+          /* keep polling */
+        }
+      }, 3000);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Couldn't start the payment. Please try again.");
       setPaying(false);
@@ -180,7 +223,7 @@ const Credits = () => {
                 <p className="font-semibold text-white">
                   {success.plan.credits} credits added — {success.plan.name} plan
                 </p>
-                <p className="text-sm text-slate-300">Your balance is now {success.balance} credits.</p>
+                <p className="text-sm text-slate-300">Your balance is now {success.balance} credits. Taking you to your scan…</p>
               </div>
             </div>
             {next && nextAffordable ? (
