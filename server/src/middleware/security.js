@@ -48,3 +48,6 @@ export const scanLimiter = limiter(10, 20, "Too many scans in a short time. Plea
 
 // Creating payment orders / checkouts.
 export const paymentLimiter = limiter(15, 40, "Too many payment attempts. Please wait a few minutes and try again.");
+
+// The public skin-care chatbot.
+export const chatLimiter = limiter(1, 40, "You're sending messages too fast. Please wait a moment.");

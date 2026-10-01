@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import ChatWidget from "./components/ChatWidget.jsx";
 import { ProtectedRoute, AdminRoute, CreditRoute, ShopRoute } from "./components/ProtectedRoute.jsx";
 import { useSiteSettings } from "./context/SiteSettingsContext.jsx";
 
@@ -38,6 +39,7 @@ import AdminProducts from "./pages/admin/AdminProducts.jsx";
 import AdminOrders from "./pages/admin/AdminOrders.jsx";
 import AdminScans from "./pages/admin/AdminScans.jsx";
 import AdminPayments from "./pages/admin/AdminPayments.jsx";
+import AdminChatLeads from "./pages/admin/AdminChatLeads.jsx";
 
 function App() {
   const { shopEnabled } = useSiteSettings();
@@ -85,12 +87,14 @@ function App() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="scans" element={<AdminScans />} />
             <Route path="payments" element={<AdminPayments />} />
+            <Route path="chat-leads" element={<AdminChatLeads />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />
+      <ChatWidget />
     </div>
   );
 }

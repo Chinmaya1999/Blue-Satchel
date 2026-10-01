@@ -33,6 +33,7 @@ import ScanReport from "../components/ScanReport.jsx";
 import ApiAnalysisPanel from "../components/ApiAnalysisPanel.jsx";
 import RupamAnalysisPanel from "../components/RupamAnalysisPanel.jsx";
 import NearbyDermatologists from "../components/NearbyDermatologists.jsx";
+import ScanAdvisor from "../components/ScanAdvisor.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
@@ -216,6 +217,8 @@ const ScanResult = ({ admin = false }) => {
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [routineAdded, setRoutineAdded] = useState(false);
+  const [showDerm, setShowDerm] = useState(false);
+  const dermRef = useRef(null);
   const { addItem } = useCart();
   const { shopEnabled } = useSiteSettings();
 
@@ -378,7 +381,27 @@ const ScanResult = ({ admin = false }) => {
       <ApiAnalysisPanel scan={scan} />
       <RupamAnalysisPanel scan={scan} />
 
-      {/* Recommended products */}
+      {/* Recommended: customers get a guided chat (products and clinics appear only when asked for);
+          admins see the plain product list. */}
+      {!admin ? (
+        <section className="container-app py-16">
+          <div className="mb-8">
+            <p className="fs-eyebrow">Personalized routine</p>
+            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">Recommended <span className="fs-gradient-text">for you</span></h2>
+            <p className="mt-2 max-w-xl text-sm text-slate-400">
+              Tell our skin advisor what you want to improve{topConcerns.length > 0 && <> — your report's top concerns are <span className="text-slate-200">{topConcerns.join(", ")}</span></>}. It will explain a plan, and show products or nearby dermatologists whenever you ask.
+            </p>
+          </div>
+          <ScanAdvisor
+            scanId={id}
+            onShowDermatologists={() => {
+              setShowDerm(true);
+              setTimeout(() => dermRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+            }}
+          />
+        </section>
+      ) : (
+        <>
       <section className="container-app py-16">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -415,7 +438,14 @@ const ScanResult = ({ admin = false }) => {
         )}
       </section>
 
-      <NearbyDermatologists fallbackLocation={user?.signupLocation} useFallbackOnly={admin} />
+        </>
+      )}
+
+      {(admin || showDerm) && (
+        <div ref={dermRef}>
+          <NearbyDermatologists fallbackLocation={user?.signupLocation} useFallbackOnly={admin} />
+        </div>
+      )}
 
       <ScanReport scan={scan} user={user} insight={INSIGHT[scan.overallLabel] || INSIGHT.Fair} />
     </div>

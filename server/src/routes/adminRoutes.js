@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { protect, adminOnly } from "../middleware/auth.js";
+import { listChatLeads } from "../controllers/chatController.js";
 import { listPlans, createPlan, updatePlan, deletePlan } from "../controllers/planController.js";
 import {
   getOverview,
@@ -38,6 +39,7 @@ router.delete("/customers/:id", deleteUser);
 router.post("/customers/:id/credits", adjustUserCredits);
 
 router.get("/credits", listCreditTransactions);
+router.get("/chat-leads", listChatLeads);
 
 router.get("/plans", listPlans);
 router.post("/plans", createPlan);
