@@ -192,7 +192,7 @@ export const handleAdvisor = (prev, input = {}, { scan, profile = {} }) => {
   }
   if (t === "cmd:derm" || (/\b(dermatologists?|skin doctor|doctor|clinic)\b/.test(t) && !EMERGENCY.test(t))) {
     out.action = "dermatologists";
-    say(reply("Here are skin clinics near you. Please call ahead to check timings and availability."), reply("Anything else?", MENU(scan)));
+    say(reply("Scrolling to the dermatologists near you below. Please call ahead to check timings and availability."), reply("Anything else?", MENU(scan)));
     return out;
   }
   if (EMERGENCY.test(t)) {

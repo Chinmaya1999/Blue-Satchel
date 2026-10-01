@@ -217,7 +217,6 @@ const ScanResult = ({ admin = false }) => {
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [routineAdded, setRoutineAdded] = useState(false);
-  const [showDerm, setShowDerm] = useState(false);
   const dermRef = useRef(null);
   const { addItem } = useCart();
   const { shopEnabled } = useSiteSettings();
@@ -389,15 +388,12 @@ const ScanResult = ({ admin = false }) => {
             <p className="fs-eyebrow">Personalized routine</p>
             <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">Recommended <span className="fs-gradient-text">for you</span></h2>
             <p className="mt-2 max-w-xl text-sm text-slate-400">
-              Tell our skin advisor what you want to improve{topConcerns.length > 0 && <> — your report's top concerns are <span className="text-slate-200">{topConcerns.join(", ")}</span></>}. It will explain a plan, and show products or nearby dermatologists whenever you ask.
+              Tell our skin advisor what you want to improve{topConcerns.length > 0 && <> — your report's top concerns are <span className="text-slate-200">{topConcerns.join(", ")}</span></>}. It will explain a plan, and show products whenever you ask.
             </p>
           </div>
           <ScanAdvisor
             scanId={id}
-            onShowDermatologists={() => {
-              setShowDerm(true);
-              setTimeout(() => dermRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
-            }}
+            onShowDermatologists={() => dermRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
           />
         </section>
       ) : (
@@ -441,11 +437,9 @@ const ScanResult = ({ admin = false }) => {
         </>
       )}
 
-      {(admin || showDerm) && (
-        <div ref={dermRef}>
-          <NearbyDermatologists fallbackLocation={user?.signupLocation} useFallbackOnly={admin} />
-        </div>
-      )}
+      <div ref={dermRef}>
+        <NearbyDermatologists fallbackLocation={user?.signupLocation} useFallbackOnly={admin} />
+      </div>
 
       <ScanReport scan={scan} user={user} insight={INSIGHT[scan.overallLabel] || INSIGHT.Fair} />
     </div>
