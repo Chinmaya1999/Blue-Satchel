@@ -143,25 +143,6 @@ const ScanReport = ({ scan, user, insight }) => {
         </section>
       )}
 
-      {/* Recommended products */}
-      {scan.recommendedProducts?.length > 0 && (
-        <section className="report-block mt-6">
-          <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate-500">Recommended routine</h2>
-          <ul className="mt-2 grid grid-cols-2 gap-2">
-            {scan.recommendedProducts.map((p) => (
-              <li key={p._id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-2">
-                {p.imageUrl && <img src={p.imageUrl} alt="" className="h-10 w-10 rounded bg-white object-contain" />}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold">{p.name}</p>
-                  <p className="text-[10px] text-slate-500">{p.brand}</p>
-                </div>
-                <p className="text-xs font-bold">₹{p.price}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {/* Full AI analysis: every measurement on the photo with its overlay */}
       {ai.tasks.length > 0 && (
         <section className="report-page-break">
