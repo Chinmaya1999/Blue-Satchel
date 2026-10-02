@@ -25,7 +25,6 @@ import {
   ChevronDown,
   ShoppingBag,
   Flower2,
-  Stethoscope,
 } from "lucide-react";
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
@@ -252,19 +251,6 @@ const ScanResult = ({ admin = false }) => {
 
   return (
     <div className="fs-page fs-page-bg">
-      {/* Medical notice, up front rather than only in the report footer */}
-      <div className="border-b border-amber-300/20 bg-amber-300/[0.07]">
-        <p className="container-app flex items-start gap-2 py-3 text-xs leading-relaxed text-amber-100/90">
-          <Stethoscope size={15} className="mt-0.5 shrink-0 text-amber-300" />
-          <span>
-            This report is AI-generated cosmetic guidance, not a medical diagnosis.{" "}
-            {scan.concerns?.some((c) => c.level === "High")
-              ? "Some of your results are in the High range — we recommend seeing a dermatologist about them. "
-              : "If anything about your skin worries you, see a dermatologist. "}
-            <Link to="/disclaimer" className="font-semibold text-amber-200 underline-offset-2 hover:underline">Medical disclaimer</Link>
-          </span>
-        </p>
-      </div>
       {/* Split hero: face left, key concerns right */}
       <section className="grid border-b border-white/5 lg:grid-cols-2">
         {/* Left: photo + score */}

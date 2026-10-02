@@ -1,5 +1,4 @@
 import { createPortal } from "react-dom";
-import { Briefcase } from "lucide-react";
 import { buildAiAnalysis, OverlayImage, tone } from "./ApiAnalysisPanel.jsx";
 import { buildRupamAnalysis, conditionExtras, GRADE_TONE, severityTone, titleCase } from "./RupamAnalysisPanel.jsx";
 
@@ -40,9 +39,7 @@ const ScanReport = ({ scan, user, insight }) => {
       {/* Header */}
       <header className="flex items-start justify-between border-b-2 border-brand-600 pb-4">
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
-            <Briefcase size={18} strokeWidth={2.4} />
-          </span>
+          <img src="/logo-mark.png" alt="" className="h-10 w-10 object-contain" />
           <div>
             <p className="font-display text-lg font-bold leading-tight text-brand-900">Blue Satchel</p>
             <p className="text-[11px] text-slate-500">AI Skin Analysis Report</p>
