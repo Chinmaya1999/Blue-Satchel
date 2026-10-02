@@ -229,7 +229,7 @@ const Landing = () => {
         <div className="absolute left-1/2 top-1/2 -z-10 h-[46rem] w-[46rem] -translate-y-1/2 rounded-full bg-cyan-500/10 blur-[120px] lg:left-[62%]" />
         <div className="absolute -left-40 bottom-0 -z-10 h-[30rem] w-[30rem] rounded-full bg-indigo-600/20 blur-[120px]" />
 
-        <div className="container-app grid min-h-[calc(100svh-4rem)] items-center gap-6 py-10 lg:grid-cols-[1fr_1.15fr] lg:py-0">
+        <div className="container-app grid min-h-[calc(100svh-4rem)] items-center gap-2 py-4 sm:gap-6 sm:py-10 lg:grid-cols-[1fr_1.15fr] lg:py-0">
           <motion.div {...reveal} className="relative z-10 order-2 lg:order-1">
             <span className="fs-eyebrow inline-flex items-center gap-2">
               <span className="relative flex h-2 w-2">
@@ -238,14 +238,14 @@ const Landing = () => {
               </span>
               {t("hero.eyebrow")}
             </span>
-            <h1 className="mt-5 font-display text-[2.6rem] font-bold leading-[1.05] tracking-tight text-white sm:text-6xl xl:text-[3.9rem]">
+            <h1 className="mt-3 font-display text-[2.1rem] sm:mt-5 sm:text-[2.6rem] font-bold leading-[1.05] tracking-tight text-white sm:text-6xl xl:text-[3.9rem]">
               {t("hero.h1a")} <br className="hidden sm:block" />
               {t("hero.h1b")} <span className="fs-gradient-text">{t("hero.h1c")}</span>
             </h1>
-            <p className="mt-6 max-w-lg text-base text-slate-400 sm:text-lg">
+            <p className="mt-3 max-w-lg text-sm sm:mt-6 sm:text-base text-slate-400 sm:text-lg">
               {t("hero.sub")}
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-3 sm:mt-9">
               <Link to={scanLink} className="fs-btn-primary group">
                 <ScanFace size={18} /> {t("hero.cta")}
                 <ArrowRight size={16} className="transition group-hover:translate-x-1" />
@@ -269,7 +269,7 @@ const Landing = () => {
             </div>
           </motion.div>
 
-          <div className="relative order-1 h-[58svh] min-h-[380px] lg:order-2 lg:h-[calc(100svh-4rem)] lg:max-h-[860px]">
+          <div className="relative order-1 h-[36svh] min-h-[250px] sm:h-[58svh] sm:min-h-[380px] lg:order-2 lg:h-[calc(100svh-4rem)] lg:max-h-[860px]">
             <div className="fs-orbit absolute left-1/2 top-1/2 aspect-square w-[88%] max-w-[640px] -translate-x-1/2 -translate-y-1/2" />
             <div className="fs-orbit fs-orbit-slow absolute left-1/2 top-1/2 aspect-square w-[70%] max-w-[500px] -translate-x-1/2 -translate-y-1/2" />
             <Suspense fallback={null}><FaceScan3D preset="hero" callouts={HERO_CALLOUTS} className="h-full w-full" /></Suspense>
