@@ -7,26 +7,29 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { isUnlimited } from "../utils/credits.js";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
+import CountrySelect from "./CountrySelect.jsx";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { count, setIsOpen } = useCart();
   const { shopEnabled } = useSiteSettings();
+  const { t, formatNumber } = useLocale();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
   const unreadCount = user?.notifications?.filter((n) => !n.read).length || 0;
-  const creditsLabel = isUnlimited(user) ? "Unlimited" : `${user?.credits ?? 0}`;
+  const creditsLabel = isUnlimited(user) ? t("nav.unlimited") : formatNumber(user?.credits ?? 0);
 
   const links = [
-    { to: "/", label: "Home", icon: Home, end: true },
-    { to: "/shop", label: "Shop", icon: LayoutGrid },
-    ...(user ? [{ to: "/credits", label: "Pricing", icon: Coins }] : []),
-    ...(user ? [{ to: "/scan", label: "Skin Scan", icon: ScanFace, end: true }] : []),
-    ...(user ? [{ to: "/scan/history", label: "Scan History", icon: History }] : []),
-    ...(user?.role === "admin" ? [{ to: "/admin", label: "Console", icon: Shield }] : []),
+    { to: "/", label: t("nav.home"), icon: Home, end: true },
+    { to: "/shop", label: t("nav.shop"), icon: LayoutGrid },
+    ...(user ? [{ to: "/credits", label: t("nav.pricing"), icon: Coins }] : []),
+    ...(user ? [{ to: "/scan", label: t("nav.scan"), icon: ScanFace, end: true }] : []),
+    ...(user ? [{ to: "/scan/history", label: t("nav.history"), icon: History }] : []),
+    ...(user?.role === "admin" ? [{ to: "/admin", label: t("nav.console"), icon: Shield }] : []),
   ];
 
   useEffect(() => {
@@ -73,15 +76,16 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-1.5">
+          <CountrySelect />
           {user && (
             <Link
               to="/credits"
-              title="Scan credits — buy more"
+              title={t("nav.creditsTitle")}
               className="flex items-center gap-1.5 rounded-full bg-amber-300/10 px-3 py-1.5 text-xs font-semibold text-amber-100 ring-1 ring-amber-300/30 transition hover:bg-amber-300/20"
             >
               <Coins size={14} className="text-amber-300" />
               <span className="tabular-nums">{creditsLabel}</span>
-              <span className="hidden text-amber-200/70 lg:inline">credits</span>
+              <span className="hidden text-amber-200/70 lg:inline">{t("nav.credits")}</span>
             </Link>
           )}
           {user && (
@@ -117,10 +121,10 @@ const Navbar = () => {
           ) : (
             <div className="hidden items-center gap-1.5 sm:flex">
               <Link to="/login" className="rounded-full px-4 py-2 text-sm font-medium text-slate-300 transition hover:text-white">
-                Sign in
+                {t("nav.signin")}
               </Link>
               <Link to="/register" className="fs-nav-cta group">
-                <ScanFace size={15} /> Free scan
+                <ScanFace size={15} /> {t("nav.freeScan")}
                 <ArrowRight size={14} className="transition group-hover:translate-x-0.5" />
               </Link>
             </div>
@@ -161,22 +165,22 @@ const Navbar = () => {
               {user ? (
                 <>
                   <Link to="/credits" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-white/5">
-                    <Coins size={17} className="text-amber-300" /> {creditsLabel} credits · Buy more
+                    <Coins size={17} className="text-amber-300" /> {creditsLabel} {t("nav.credits")} · {t("nav.buyMore")}
                   </Link>
                   <Link to="/profile" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-white/5">
                     <User size={17} className="text-cyan-300" /> {user.name}
                   </Link>
                   <button onClick={handleLogout} className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-rose-300 hover:bg-rose-500/10">
-                    <LogOut size={17} /> Log out
+                    <LogOut size={17} /> {t("nav.logout")}
                   </button>
                 </>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <Link to="/login" className="flex items-center justify-center rounded-xl px-3 py-3 text-sm font-semibold text-white ring-1 ring-white/15">
-                    Sign in
+                    {t("nav.signin")}
                   </Link>
                   <Link to="/register" className="fs-nav-cta justify-center py-3">
-                    <ScanFace size={15} /> Free scan
+                    <ScanFace size={15} /> {t("nav.freeScan")}
                   </Link>
                 </div>
               )}

@@ -18,7 +18,7 @@ export const razorpayCurrency = () => (process.env.RAZORPAY_CURRENCY || "USD").t
 // Plans are priced in USD. Razorpay only offers UPI / QR / netbanking /
 // wallets for INR orders, so with RAZORPAY_CURRENCY=INR each plan is charged
 // at its rupee equivalent (whole rupees) using USD_INR_RATE.
-export const usdInrRate = () => Number(process.env.USD_INR_RATE) || 88;
+export const usdInrRate = () => Number(process.env.USD_INR_RATE) || 96.07;
 
 export const chargeFor = (priceUsd) => {
   const currency = razorpayCurrency();

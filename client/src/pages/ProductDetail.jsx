@@ -5,10 +5,12 @@ import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
 import { productImageFallback } from "../components/ProductCard.jsx";
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const { formatInr, t } = useLocale();
   const [product, setProduct] = useState(null);
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -66,8 +68,8 @@ const ProductDetail = () => {
           )}
 
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="fs-gradient-text font-display text-4xl font-bold">₹{product.price}</span>
-            {product.compareAtPrice > product.price && <span className="text-base text-slate-400 line-through">₹{product.compareAtPrice}</span>}
+            <span className="fs-gradient-text font-display text-4xl font-bold">{formatInr(product.price)}</span>
+            {product.compareAtPrice > product.price && <span className="text-base text-slate-400 line-through">{formatInr(product.compareAtPrice)}</span>}
           </div>
 
           <p className="mt-5 leading-relaxed text-slate-600">{product.description}</p>
@@ -82,7 +84,7 @@ const ProductDetail = () => {
 
           {product.ingredients?.length > 0 && (
             <div className="card mt-6 rounded-2xl p-4">
-              <p className="fs-eyebrow text-[11px]">Key ingredients</p>
+              <p className="fs-eyebrow text-[11px]">{t("product.keyIngredients")}</p>
               <p className="mt-2 text-sm text-slate-300">{product.ingredients.join(" · ")}</p>
             </div>
           )}
@@ -104,12 +106,12 @@ const ProductDetail = () => {
                 className="btn-primary h-12 flex-1 rounded-full"
                 disabled={product.stock === 0}
               >
-                <ShoppingBag size={16} /> {product.stock === 0 ? "Out of stock" : added ? "Added to bag ✓" : "Add to bag"}
+                <ShoppingBag size={16} /> {product.stock === 0 ? t("product.outOfStock") : added ? t("product.added") : t("product.addToBag")}
               </button>
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4 border-t border-slate-100 pt-6">
-              <div className="flex items-center gap-2 text-sm text-slate-500"><Truck size={16} className="text-brand-500" /> Free shipping over ₹999</div>
+              <div className="flex items-center gap-2 text-sm text-slate-500"><Truck size={16} className="text-brand-500" /> {t("product.freeShipping", { amt: formatInr(999) })}</div>
               <div className="flex items-center gap-2 text-sm text-slate-500"><ShieldCheck size={16} className="text-brand-500" /> Secure checkout</div>
             </div>
             </>

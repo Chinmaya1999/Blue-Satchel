@@ -5,37 +5,39 @@ import { LEGAL_LINKS } from "./LegalPage.jsx";
 import { COMPANY } from "../utils/company.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
 
 const Footer = () => {
   const { user } = useAuth();
   const { shopEnabled } = useSiteSettings();
+  const { t } = useLocale();
   const { pathname } = useLocation();
   // Customer pages are dark and run straight into the footer; the light admin console keeps a gap.
   const flush = !pathname.startsWith("/admin");
 
   const columns = [
     {
-      title: "Explore",
+      title: t("footer.explore"),
       links: [
-        ["Home", "/"],
-        ["Shop skincare", "/shop"],
-        ["Skin scan", user ? "/scan" : "/register"],
-        ["Scan history", user ? "/scan/history" : "/login"],
+        [t("nav.home"), "/"],
+        [t("footer.shopSkincare"), "/shop"],
+        [t("footer.skinScan"), user ? "/scan" : "/register"],
+        [t("footer.scanHistory"), user ? "/scan/history" : "/login"],
       ],
     },
     {
-      title: "Account",
+      title: t("footer.account"),
       links: user
         ? [
-            ["Profile", "/profile"],
-            ...(shopEnabled ? [["Orders", "/orders"]] : []),
+            [t("footer.profile"), "/profile"],
+            ...(shopEnabled ? [[t("footer.orders"), "/orders"]] : []),
           ]
         : [
-            ["Sign in", "/login"],
-            ["Create account", "/register"],
+            [t("nav.signin"), "/login"],
+            [t("footer.createAccount"), "/register"],
           ],
     },
-    { title: "Legal & support", links: LEGAL_LINKS },
+    { title: t("footer.legal"), links: LEGAL_LINKS },
   ];
 
   return (
@@ -49,14 +51,13 @@ const Footer = () => {
           <div className="col-span-2 lg:col-span-1">
             <Logo light />
             <p className="mt-4 max-w-xs text-sm leading-relaxed">
-              AI skin diagnostics that map your face in 3D, score every concern zone by zone, and build the routine
-              your skin actually needs.
+              {t("footer.tagline")}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               {[
-                [Cpu, "On-device mapping"],
-                [ShieldCheck, "Private by design"],
-                [Lock, "Secure checkout"],
+                [Cpu, t("footer.onDevice")],
+                [ShieldCheck, t("footer.private")],
+                [Lock, t("footer.secure")],
               ].map(([Icon, label]) => (
                 <span key={label} className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-slate-300 ring-1 ring-white/10">
                   <Icon size={12} className="text-cyan-300" /> {label}
@@ -87,10 +88,10 @@ const Footer = () => {
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/25">
                 <ScanFace size={22} />
               </span>
-              <p className="mt-4 font-display text-lg font-semibold text-white">Your skin score is 60 seconds away.</p>
-              <p className="mt-1 text-sm">One selfie. A full 3D skin report. Free.</p>
+              <p className="mt-4 font-display text-lg font-semibold text-white">{t("footer.ctaTitle")}</p>
+              <p className="mt-1 text-sm">{t("footer.ctaSub")}</p>
               <Link to={user ? "/scan" : "/register"} className="fs-nav-cta group mt-5 w-fit">
-                Start scan <ArrowRight size={14} className="transition group-hover:translate-x-0.5" />
+                {t("footer.startScan")} <ArrowRight size={14} className="transition group-hover:translate-x-0.5" />
               </Link>
             </div>
           </div>
@@ -104,13 +105,13 @@ const Footer = () => {
       <div className="border-t border-white/5">
         <div className="container-app flex flex-col items-start justify-between gap-3 py-6 text-xs text-slate-500 sm:flex-row sm:items-center">
           <div className="space-y-1">
-            <p>© {new Date().getFullYear()} {COMPANY.legalName}. All rights reserved.</p>
-            <p>Skin analysis is informational only and is not a medical diagnosis.</p>
+            <p>© {new Date().getFullYear()} {COMPANY.legalName}. {t("footer.rights")}</p>
+            <p>{t("footer.disclaimer")}</p>
             <p>{COMPANY.email} · {COMPANY.phone} · {COMPANY.address}</p>
           </div>
           <p className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#5ee7ff]" />
-            Built for every skin tone and type
+            {t("footer.built")}
           </p>
         </div>
       </div>

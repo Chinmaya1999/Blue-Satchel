@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Star, ShoppingBag, ExternalLink } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
 
 // Local illustration per category, shown if a brand's hosted image fails to load.
 const FALLBACK_IMAGE = {
@@ -23,6 +24,7 @@ export const productImageFallback = (e, category) => {
 const ProductCard = ({ product, step, targets }) => {
   const { addItem } = useCart();
   const { shopEnabled } = useSiteSettings();
+  const { formatInr, t } = useLocale();
 
   return (
     <div className="card group flex flex-col overflow-hidden rounded-3xl transition duration-300 hover:-translate-y-1 hover:shadow-soft">
@@ -46,7 +48,7 @@ const ProductCard = ({ product, step, targets }) => {
         )}
         {product.compareAtPrice > product.price && (
           <span className="absolute right-3 top-3 rounded-full bg-rose-500/90 px-2.5 py-1 text-[11px] font-semibold text-white shadow-[0_0_16px_rgba(244,63,94,0.5)]">
-            Save ₹{product.compareAtPrice - product.price}
+            {t("product.save", { amt: formatInr(product.compareAtPrice - product.price) })}
           </span>
         )}
       </Link>
@@ -75,9 +77,9 @@ const ProductCard = ({ product, step, targets }) => {
         ) : null}
         <div className="mt-auto flex items-center justify-between pt-3">
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-lg font-bold text-slate-900">₹{product.price}</span>
+            <span className="font-display text-lg font-bold text-slate-900">{formatInr(product.price)}</span>
             {product.compareAtPrice > product.price && (
-              <span className="text-xs text-slate-400 line-through">₹{product.compareAtPrice}</span>
+              <span className="text-xs text-slate-400 line-through">{formatInr(product.compareAtPrice)}</span>
             )}
           </div>
           <div className="flex items-center gap-1.5">

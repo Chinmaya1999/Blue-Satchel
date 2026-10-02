@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Lock, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import AuthShell, { Field } from "../components/landing/AuthShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
 import GoogleSignIn from "../components/GoogleSignIn.jsx";
 
 const STAGES = [
@@ -18,6 +19,7 @@ const STAGES = [
 ];
 
 const Login = () => {
+  const { t } = useLocale();
   const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -58,16 +60,16 @@ const Login = () => {
   return (
     <AuthShell
       stages={STAGES}
-      eyebrow="Sign in"
-      title="Welcome back"
-      subtitle="Sign in to see your skin scans, reports and orders."
+      eyebrow={t("login.eyebrow")}
+      title={t("login.title")}
+      subtitle={t("login.sub")}
       error={error}
       
     >
       <form onSubmit={submit} className="mt-7 space-y-4">
         <Field
           icon={Mail}
-          label="Email address"
+          label={t("auth.email")}
           type="email"
           required
           autoComplete="email"
@@ -76,7 +78,7 @@ const Login = () => {
         />
         <Field
           icon={Lock}
-          label="Password"
+          label={t("auth.password")}
           type={show ? "text" : "password"}
           required
           autoComplete="current-password"
@@ -91,15 +93,15 @@ const Login = () => {
 
         <div className="text-right">
           <Link to="/forgot-password" className="text-sm font-semibold text-cyan-300 hover:text-cyan-200">
-            Forgot password?
+            {t("login.forgot")}
           </Link>
         </div>
 
         <button type="submit" disabled={loading} className="fs-btn-primary group mt-2 w-full justify-center disabled:opacity-60">
           {loading ? (
-            <><Loader2 size={17} className="animate-spin" /> Signing in…</>
+            <><Loader2 size={17} className="animate-spin" /> {t("login.signingIn")}</>
           ) : (
-            <>Sign in <ArrowRight size={16} className="transition group-hover:translate-x-1" /></>
+            <>{t("login.eyebrow")} <ArrowRight size={16} className="transition group-hover:translate-x-1" /></>
           )}
         </button>
       </form>
@@ -107,11 +109,11 @@ const Login = () => {
       <GoogleSignIn onCredential={onGoogle} />
 
       <div className="my-7 flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-slate-600">
-        <span className="h-px flex-1 bg-white/10" /> New here <span className="h-px flex-1 bg-white/10" />
+        <span className="h-px flex-1 bg-white/10" /> {t("login.newHere")} <span className="h-px flex-1 bg-white/10" />
       </div>
 
       <Link to="/register" className="fs-btn-ghost w-full justify-center">
-        Create a free account
+        {t("login.create")}
       </Link>
     </AuthShell>
   );

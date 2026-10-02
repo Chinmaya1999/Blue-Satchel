@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
 
 const CartDrawer = () => {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, subtotal } = useCart();
   const { user } = useAuth();
+  const { formatInr, t } = useLocale();
 
   if (!isOpen) return null;
 
@@ -16,8 +18,8 @@ const CartDrawer = () => {
         <div className="fs-drawer-line" />
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
           <div>
-            <p className="fs-eyebrow text-[10px]">Your routine</p>
-            <h2 className="mt-1 font-display text-xl font-bold text-white">Shopping Bag</h2>
+            <p className="fs-eyebrow text-[10px]">{t("cart.eyebrow")}</p>
+            <h2 className="mt-1 font-display text-xl font-bold text-white">{t("cart.title")}</h2>
           </div>
           <button onClick={() => setIsOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-full text-slate-300 ring-1 ring-white/10 hover:bg-slate-100">
             <X size={20} />
@@ -27,8 +29,8 @@ const CartDrawer = () => {
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center px-6">
             <span className="flex h-20 w-20 items-center justify-center rounded-full bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-300/25 shadow-[0_0_40px_-8px_rgba(94,231,255,0.5)]"><ShoppingBag size={32} /></span>
-            <p className="font-medium text-slate-500">Your bag is empty.</p>
-            <Link to="/shop" onClick={() => setIsOpen(false)} className="btn-primary mt-2">Browse products</Link>
+            <p className="font-medium text-slate-500">{t("cart.empty")}</p>
+            <Link to="/shop" onClick={() => setIsOpen(false)} className="btn-primary mt-2">{t("cart.browse")}</Link>
           </div>
         ) : (
           <>
@@ -44,7 +46,7 @@ const CartDrawer = () => {
                           <Trash2 size={15} />
                         </button>
                       </div>
-                      <p className="mt-1 text-sm font-bold text-brand-700">₹{item.price}</p>
+                      <p className="mt-1 text-sm font-bold text-brand-700">{formatInr(item.price)}</p>
                       <div className="mt-auto flex items-center gap-2 pt-1">
                         <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 hover:bg-slate-50">
                           <Minus size={12} />
@@ -62,15 +64,15 @@ const CartDrawer = () => {
 
             <div className="border-t border-slate-100 bg-white/[0.02] px-6 py-5">
               <div className="mb-3 flex items-center justify-between text-sm">
-                <span className="text-slate-500">Subtotal</span>
-                <span className="fs-gradient-text font-display text-2xl font-bold">₹{subtotal}</span>
+                <span className="text-slate-500">{t("cart.subtotal")}</span>
+                <span className="fs-gradient-text font-display text-2xl font-bold">{formatInr(subtotal)}</span>
               </div>
               <Link
                 to={user ? "/checkout" : "/login?redirect=/checkout"}
                 onClick={() => setIsOpen(false)}
                 className="btn-primary h-12 w-full rounded-full"
               >
-                Proceed to Checkout
+                {t("cart.checkout")}
               </Link>
             </div>
           </>

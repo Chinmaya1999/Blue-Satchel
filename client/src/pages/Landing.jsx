@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ScanFace, ArrowRight, ShieldCheck, Cpu, Sparkles, Camera, Layers, Activity, ShoppingBag } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
 import FaceScan3D from "../components/landing/FaceScan3D.jsx";
 import SkinLayers3D from "../components/landing/SkinLayers3D.jsx";
 import LiveLandmarks from "../components/landing/LiveLandmarks.jsx";
@@ -201,6 +202,7 @@ const ScoreRing = ({ value, size = 150 }) => {
 
 const Landing = () => {
   const { user } = useAuth();
+  const { t } = useLocale();
   const scanLink = user ? "/scan" : "/register";
   const [stage, setStage] = useState(0);
   const [concern, setConcern] = useState(CONCERNS[0]);
@@ -234,35 +236,34 @@ const Landing = () => {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
               </span>
-              AI skin analysis · on-device face mapping
+              {t("hero.eyebrow")}
             </span>
             <h1 className="mt-5 font-display text-[2.6rem] font-bold leading-[1.05] tracking-tight text-white sm:text-6xl xl:text-[3.9rem]">
-              See your skin <br className="hidden sm:block" />
-              the way <span className="fs-gradient-text">AI sees it.</span>
+              {t("hero.h1a")} <br className="hidden sm:block" />
+              {t("hero.h1b")} <span className="fs-gradient-text">{t("hero.h1c")}</span>
             </h1>
             <p className="mt-6 max-w-lg text-base text-slate-400 sm:text-lg">
-              One selfie. A 3D face map, six skin concerns scored zone by zone, and a routine matched to
-              your results — in under a minute.
+              {t("hero.sub")}
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link to={scanLink} className="fs-btn-primary group">
-                <ScanFace size={18} /> Start free skin scan
+                <ScanFace size={18} /> {t("hero.cta")}
                 <ArrowRight size={16} className="transition group-hover:translate-x-1" />
               </Link>
-              <a href="#how" className="fs-btn-ghost">See how it works</a>
+              <a href="#how" className="fs-btn-ghost">{t("hero.how")}</a>
             </div>
             <div className="mt-12 grid max-w-md grid-cols-3 gap-6">
               {[
-                [68, "", "facial landmarks"],
-                [6, "", "concerns scored"],
-                [60, "s", "to your results"],
+                [68, "", "hero.stat1"],
+                [6, "", "hero.stat2"],
+                [60, "s", "hero.stat3"],
               ].map(([n, s, l], i) => (
                 <div key={l} className={i ? "border-l border-white/10 pl-6" : ""}>
                   <p className="font-display text-3xl font-bold text-white">
                     {i === 2 && "<"}
                     <Counter to={n} suffix={s} />
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">{l}</p>
+                  <p className="mt-1 text-xs text-slate-500">{t(l)}</p>
                 </div>
               ))}
             </div>

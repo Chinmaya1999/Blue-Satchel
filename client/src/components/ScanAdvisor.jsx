@@ -4,6 +4,7 @@ import { Send, Check, RotateCcw, ShoppingBag, Plus } from "lucide-react";
 import api from "../api/axios.js";
 import { useCart } from "../context/CartContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
 import { Typing } from "./ChatWidget.jsx";
 import { productImageFallback } from "./ProductCard.jsx";
 
@@ -17,6 +18,7 @@ const THEME = {
 // A compact product line, small enough for a chat bubble.
 const ProductRow = ({ product, theme, shopEnabled }) => {
   const { addItem } = useCart();
+  const { formatInr } = useLocale();
   return (
     <li className="flex items-center gap-3 rounded-xl bg-white/[0.05] p-2 ring-1 ring-white/10">
       <Link to={`/shop/${product._id}`} className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white">
@@ -28,7 +30,7 @@ const ProductRow = ({ product, theme, shopEnabled }) => {
         <p className="truncate text-[11px] text-slate-400">{product.brand} · {product.reason}</p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
-        <span className="font-display text-sm font-bold text-white">₹{product.price}</span>
+        <span className="font-display text-sm font-bold text-white">{formatInr(product.price)}</span>
         {shopEnabled && (
           <button type="button" onClick={() => addItem({ ...product })} aria-label={`Add ${product.name} to bag`} className={`inline-flex h-6 items-center gap-0.5 rounded-full px-2 text-[10px] font-bold ${theme.cta}`}>
             <Plus size={11} /> Add
@@ -46,6 +48,7 @@ const ProductRow = ({ product, theme, shopEnabled }) => {
  */
 const ScanAdvisor = ({ scanId, endpoint = "advisor", title, subtitle, icon: Icon, productsLabel = "Show recommended products", accent = "cyan", onShowDermatologists }) => {
   const theme = THEME[accent];
+  const { formatInr } = useLocale();
   const { addItem } = useCart();
   const { shopEnabled } = useSiteSettings();
   const [messages, setMessages] = useState([]); // { role: bot|user } | { role: "products", products, total }
@@ -172,7 +175,7 @@ const ScanAdvisor = ({ scanId, endpoint = "advisor", title, subtitle, icon: Icon
               </ul>
               {shopEnabled && (
                 <button type="button" onClick={() => { m.products.forEach((p) => addItem({ ...p })); setBagged(true); }} className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-bold ${theme.cta}`}>
-                  <ShoppingBag size={13} /> {bagged ? "Added to bag ✓" : `Add all to bag · ₹${m.total}`}
+                  <ShoppingBag size={13} /> {bagged ? "Added to bag ✓" : `Add all to bag · ${formatInr(m.total)}`}
                 </button>
               )}
             </div>

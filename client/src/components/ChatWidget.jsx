@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Check, ShoppingBag, RotateCcw } from "lucide-re
 import api from "../api/axios.js";
 import { useCart } from "../context/CartContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
+import { useLocale } from "../context/LocaleContext.jsx";
 import { productImageFallback } from "./ProductCard.jsx";
 
 const SESSION_KEY = "bs_chat_session";
@@ -35,6 +36,7 @@ export const Typing = () => (
 export const ProductMini = ({ product, onNavigate, fluid = false }) => {
   const { addItem } = useCart();
   const { shopEnabled } = useSiteSettings();
+  const { formatInr } = useLocale();
   return (
     <div className={`flex shrink-0 flex-col rounded-2xl bg-white/[0.06] p-2.5 ring-1 ring-white/10 ${fluid ? "w-full" : "w-56"}`}>
       <Link to={`/shop/${product._id}`} onClick={onNavigate} className="block aspect-square overflow-hidden rounded-xl bg-white">
@@ -46,7 +48,7 @@ export const ProductMini = ({ product, onNavigate, fluid = false }) => {
       </Link>
       <p className="mt-1 line-clamp-2 text-[11px] text-slate-400">{product.reason}</p>
       <div className="mt-auto flex items-center justify-between pt-2">
-        <span className="font-display text-sm font-bold text-white">₹{product.price}</span>
+        <span className="font-display text-sm font-bold text-white">{formatInr(product.price)}</span>
         {shopEnabled ? (
           <button
             type="button"

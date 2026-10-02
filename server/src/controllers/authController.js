@@ -34,10 +34,10 @@ export const register = async (req, res, next) => {
     }
     if (name.length > 80) return res.status(400).json({ message: "Name is too long." });
     if (!EMAIL_RE.test(email)) return res.status(400).json({ message: "Please enter a valid email address." });
-    // 10–15 digits (E.164 max), allowing a leading + and spaces/dashes.
+    // Any country: 7–15 digits (E.164 max), allowing a leading + and spaces/dashes.
     const phoneDigits = phone.replace(/\D/g, "");
-    if (!/^\+?[\d\s-]+$/.test(phone) || phoneDigits.length < 10 || phoneDigits.length > 15) {
-      return res.status(400).json({ message: "Please enter a valid phone number (10–15 digits)." });
+    if (!/^\+?[\d\s-]+$/.test(phone) || phoneDigits.length < 7 || phoneDigits.length > 15) {
+      return res.status(400).json({ message: "Please enter a valid phone number with country code (7–15 digits)." });
     }
     // bcrypt only reads the first 72 bytes, so cap it there.
     if (password.length < 6 || password.length > 72) {
