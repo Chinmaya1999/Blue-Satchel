@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import CreditPlan from "../models/CreditPlan.js";
 import CreditTransaction from "../models/CreditTransaction.js";
+import { usdInrRate } from "../services/razorpay.js";
 
 // Admin management of credit plans. Purchases keep their own snapshot of the
 // plan they bought, so editing or deleting a plan never changes history.
@@ -13,10 +14,21 @@ const parsePlanInput = (body, { partial = false } = {}) => {
     if (!name || name.length > 40) errors.push("Name is required (max 40 characters).");
     else out.name = name;
   }
-  if (!partial || body.priceUsd !== undefined) {
+  // Prices are entered in rupees; the dollar value is derived from them.
+  if (body.priceInr !== undefined) {
+    const inr = Number(body.priceInr);
+    if (!Number.isFinite(inr) || inr < 1 || inr > 1000000) errors.push("Price must be between ₹1 and ₹10,00,000.");
+    else {
+      out.priceInr = Math.round(inr * 100) / 100;
+      out.priceUsd = Math.round((out.priceInr / usdInrRate()) * 10000) / 10000;
+    }
+  } else if (!partial || body.priceUsd !== undefined) {
     const price = Number(body.priceUsd);
-    if (!Number.isFinite(price) || price < 0.04 || price > 10000) errors.push("Price must be between $0.04 and $10,000.");
-    else out.priceUsd = Math.round(price * 100) / 100;
+    if (!Number.isFinite(price) || price < 0.01 || price > 10000) errors.push("Price must be between $0.01 and $10,000.");
+    else {
+      out.priceUsd = Math.round(price * 100) / 100;
+      out.priceInr = null; // dollar-priced: converted at checkout
+    }
   }
   if (!partial || body.credits !== undefined) {
     const credits = Number(body.credits);
@@ -51,7 +63,7 @@ export const listPlans = async (req, res, next) => {
       CreditPlan.find().sort({ archived: 1, priceUsd: 1 }),
       CreditTransaction.aggregate([
         { $match: { type: "purchase", paymentStatus: "paid" } },
-        { $group: { _id: "$plan.id", purchases: { $sum: 1 }, revenueUsd: { $sum: "$amountUsd" }, credits: { $sum: "$amount" } } },
+        { $group: { _id: "$plan.id", purchases: { $sum: 1 }, revenueUsd: { $sum: "$amountUsd" }, revenueInr: { $sum: { $cond: [{ $eq: ["$chargedCurrency", "INR"] }, "$chargedAmount", 0] } }, credits: { $sum: "$amount" } } },
       ]),
     ]);
     const byCode = new Map(sales.map((s) => [s._id, s]));
@@ -60,6 +72,9 @@ export const listPlans = async (req, res, next) => {
         ...p.toObject(),
         purchases: byCode.get(p.code)?.purchases || 0,
         revenueUsd: byCode.get(p.code)?.revenueUsd || 0,
+        revenueInr: byCode.get(p.code)?.revenueInr || 0,
+        // Rupee price shown in the editor, also for older dollar-priced plans.
+        priceInrShown: p.priceInr ?? Math.round(p.priceUsd * usdInrRate()),
         creditsSold: byCode.get(p.code)?.credits || 0,
       })),
     });

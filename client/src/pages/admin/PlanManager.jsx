@@ -7,18 +7,18 @@ import { usePricing } from "../../context/PricingContext.jsx";
 // credit plans, with each plan's sales. Purchases keep a snapshot of the plan
 // they bought, so edits never change past transactions.
 
-const EMPTY = { name: "", priceUsd: "", credits: "", badge: "" };
+const EMPTY = { name: "", priceInr: "", credits: "", badge: "" };
 
 const toForm = (p) => ({
   name: p.name,
-  priceUsd: String(p.priceUsd),
+  priceInr: String(p.priceInrShown),
   credits: String(p.credits),
   badge: p.popular ? "popular" : p.bestValue ? "bestValue" : "",
 });
 
 const toPayload = (f) => ({
   name: f.name.trim(),
-  priceUsd: Number(f.priceUsd),
+  priceInr: Number(f.priceInr),
   credits: Number(f.credits),
   popular: f.badge === "popular",
   bestValue: f.badge === "bestValue",
@@ -28,8 +28,8 @@ const PlanForm = ({ form, setForm, onSubmit, onCancel, saving, submitLabel }) =>
   <form onSubmit={onSubmit} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
     <input required maxLength={40} placeholder="Plan name" className="input py-2 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
     <label className="relative">
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
-      <input required type="number" min="0.04" max="10000" step="0.01" placeholder="Price" className="input py-2 pl-6 text-sm" value={form.priceUsd} onChange={(e) => setForm({ ...form, priceUsd: e.target.value })} />
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">₹</span>
+      <input required type="number" min="1" max="1000000" step="1" placeholder="Price in rupees" className="input py-2 pl-6 text-sm" value={form.priceInr} onChange={(e) => setForm({ ...form, priceInr: e.target.value })} />
     </label>
     <input required type="number" min="1" max="1000000" step="1" placeholder="Credits" className="input py-2 text-sm" value={form.credits} onChange={(e) => setForm({ ...form, credits: e.target.value })} />
     <select className="input py-2 text-sm" value={form.badge} onChange={(e) => setForm({ ...form, badge: e.target.value })}>
@@ -131,7 +131,7 @@ const PlanManager = () => {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display font-semibold text-slate-900">Credit plans & sales</h2>
-          <p className="text-xs text-slate-400">Changes apply to new purchases straight away. Past purchases keep what they paid.</p>
+          <p className="text-xs text-slate-400">Enter prices in rupees — customers are charged exactly that. Changes apply to new purchases straight away; past purchases keep what they paid.</p>
         </div>
         {editingId !== "new" && (
           <button
@@ -190,10 +190,10 @@ const PlanManager = () => {
                       {p.bestValue && <span className="badge ml-2 bg-cyan-50 text-cyan-700">Best value</span>}
                       {p.archived && <span className="badge ml-2 bg-slate-100 text-slate-500">Archived</span>}
                     </td>
-                    <td className="py-2.5 pr-4 text-slate-600">${p.priceUsd}</td>
+                    <td className="py-2.5 pr-4 text-slate-600">₹{p.priceInrShown.toLocaleString("en-IN")}</td>
                     <td className="py-2.5 pr-4 text-slate-600">{p.credits.toLocaleString()}</td>
                     <td className="py-2.5 pr-4 text-right tabular-nums text-slate-700">{p.purchases}</td>
-                    <td className="py-2.5 pr-4 text-right font-semibold tabular-nums text-slate-900">${p.revenueUsd.toLocaleString()}</td>
+                    <td className="py-2.5 pr-4 text-right font-semibold tabular-nums text-slate-900">₹{Math.round(p.revenueInr).toLocaleString("en-IN")}</td>
                     <td className="py-2.5 text-right">
                       <div className="inline-flex gap-1">
                         {p.archived ? (

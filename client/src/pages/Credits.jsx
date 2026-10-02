@@ -41,7 +41,7 @@ const describeTxn = (t) => {
 };
 
 const Credits = () => {
-  const { formatUsd, currency } = useLocale();
+  const { formatPlan, currency } = useLocale();
   const { user, setCredits } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -263,7 +263,7 @@ const Credits = () => {
                   </span>
                 )}
                 <p className="text-sm font-semibold text-slate-300">{p.name}</p>
-                <p className="mt-2 font-display text-4xl font-extrabold text-white">{formatUsd(p.priceUsd)}</p>
+                <p className="mt-2 font-display text-4xl font-extrabold text-white">{formatPlan(p)}</p>
                 {p.charge?.currency === "INR" && currency !== "INR" && <p className="text-xs font-medium text-slate-400">Charged ₹{p.charge.amount}</p>}
                 <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-amber-200">
                   <Coins size={14} /> {p.credits} credits
@@ -326,7 +326,7 @@ const Credits = () => {
             <div className="h-fit rounded-2xl bg-white/[0.03] p-5 ring-1 ring-white/10">
               <h3 className="font-display font-semibold text-white">Summary</h3>
               <div className="mt-4 space-y-2 text-sm">
-                <div className="flex justify-between text-slate-400"><span>{plan.name} plan</span><span>{formatUsd(plan.priceUsd)}</span></div>
+                <div className="flex justify-between text-slate-400"><span>{plan.name} plan</span><span>{formatPlan(plan)}</span></div>
                 <div className="flex justify-between text-slate-400"><span>Credits</span><span>+{plan.credits}</span></div>
                 <div className="flex justify-between text-slate-400">
                   <span>Balance after</span>

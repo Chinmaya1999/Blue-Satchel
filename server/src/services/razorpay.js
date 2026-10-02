@@ -20,12 +20,12 @@ export const razorpayCurrency = () => (process.env.RAZORPAY_CURRENCY || "USD").t
 // at its rupee equivalent (whole rupees) using USD_INR_RATE.
 export const usdInrRate = () => Number(process.env.USD_INR_RATE) || 96.07;
 
-export const chargeFor = (priceUsd) => {
+// A plan priced in rupees (priceInr) is charged exactly that in INR; older
+// plans priced only in dollars are converted at USD_INR_RATE.
+export const chargeFor = (priceUsd, priceInr) => {
   const currency = razorpayCurrency();
-  return {
-    currency,
-    amount: currency === "INR" ? Math.round(priceUsd * usdInrRate()) : priceUsd,
-  };
+  if (currency !== "INR") return { currency, amount: priceUsd };
+  return { currency, amount: priceInr ?? Math.round(priceUsd * usdInrRate()) };
 };
 export const isRazorpayConfigured = () => Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
 

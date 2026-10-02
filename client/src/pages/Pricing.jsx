@@ -10,7 +10,7 @@ const SCANS = ["detailed", "quick"];
 const Pricing = () => {
   const { pricing } = usePricing() || {};
   const { user } = useAuth();
-  const { formatUsd, t } = useLocale();
+  const { formatPlan, t } = useLocale();
   // Signed-in users get the full purchase page, which doubles as their pricing page.
   if (user) return <Navigate to="/credits" replace />;
   const plans = pricing?.plans ?? [];
@@ -43,7 +43,7 @@ const Pricing = () => {
                 )}
                 <p className="text-sm font-semibold text-slate-300">{p.name}</p>
                 <p className="mt-2 font-display text-4xl font-extrabold text-white">
-                  {formatUsd(p.priceUsd)}
+                  {formatPlan(p)}
                 </p>
                 <p className="text-xs text-slate-400">{t("pricing.oneTime")}</p>
                 <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-amber-200">

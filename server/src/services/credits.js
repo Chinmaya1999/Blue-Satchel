@@ -32,6 +32,7 @@ export const planView = (p) => ({
   id: p.code,
   name: p.name,
   priceUsd: p.priceUsd,
+  priceInr: p.priceInr ?? null,
   credits: p.credits,
   popular: p.popular,
   bestValue: p.bestValue,

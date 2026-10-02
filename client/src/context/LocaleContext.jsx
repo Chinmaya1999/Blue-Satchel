@@ -40,9 +40,14 @@ export const LocaleProvider = ({ children }) => {
   // Shop prices are stored in INR, plan prices in USD.
   const formatInr = useCallback((n) => convertAndFormat(n, "INR", currency, usdInr, locale), [currency, usdInr, locale]);
   const formatUsd = useCallback((n) => convertAndFormat(n, "USD", currency, usdInr, locale), [currency, usdInr, locale]);
+  // A plan's price in the viewer's currency; rupee-priced plans show their exact rupee amount in INR.
+  const formatPlan = useCallback(
+    (plan) => (currency === "INR" && plan.priceInr ? convertAndFormat(plan.priceInr, "INR", "INR", usdInr, locale) : formatUsd(plan.priceUsd)),
+    [currency, usdInr, locale, formatUsd]
+  );
   const formatNumber = useCallback((n) => new Intl.NumberFormat(locale).format(n), [locale]);
 
-  const value = { country, countryCode, selectCountry, lang, locale, currency, t, formatInr, formatUsd, formatNumber };
+  const value = { country, countryCode, selectCountry, lang, locale, currency, t, formatInr, formatUsd, formatPlan, formatNumber };
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 };
 

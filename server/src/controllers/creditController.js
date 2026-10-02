@@ -17,7 +17,7 @@ export const getPlans = async (req, res, next) => {
     const plans = await listActivePlans();
     res.json({
       // `charge` is what each plan is billed at in the payment currency.
-      plans: plans.map((p) => ({ ...planView(p), charge: chargeFor(p.priceUsd) })),
+      plans: plans.map((p) => ({ ...planView(p), charge: chargeFor(p.priceUsd, p.priceInr) })),
       costs: scanCosts(),
       payment: isRazorpayConfigured()
         ? {
@@ -54,7 +54,7 @@ export const createCreditOrder = async (req, res, next) => {
     if (!planDoc) return res.status(400).json({ message: "That plan isn't available any more. Please choose another." });
     const plan = planView(planDoc);
 
-    const charge = chargeFor(plan.priceUsd);
+    const charge = chargeFor(plan.priceUsd, plan.priceInr);
     const order = await createRazorpayOrder({
       ...charge,
       receipt: `cr_${String(req.user._id).slice(-8)}_${Date.now().toString(36)}`,
