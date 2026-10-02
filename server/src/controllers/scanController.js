@@ -87,6 +87,9 @@ export const createScan = async (req, res, next) => {
     // Quick scan sends only a front selfie and runs on Rupam; detailed adds
     // left/right angles. The mode also selects the AI provider (see analyzeSkin).
     const mode = req.body?.mode === "quick" ? "quick" : "detailed";
+    if (!req.user.photoConsent?.acceptedAt) {
+      return res.status(403).json({ code: "CONSENT_REQUIRED", message: "Please agree to the photo analysis terms before scanning." });
+    }
     if (!req.files?.front?.[0]) return res.status(400).json({ message: "A front-facing selfie is required." });
 
     // Validated and cleaned before any credits are charged.

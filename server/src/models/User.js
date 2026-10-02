@@ -91,6 +91,8 @@ const userSchema = new mongoose.Schema(
     avatarUrl: String,
     address: addressSchema,
     signupLocation: locationSchema,
+    // Explicit OK to analyse face photos (required before any scan).
+    photoConsent: { acceptedAt: Date, version: String },
     // Prepaid scan credits (see services/credits.js). Every change goes
     // through an atomic $inc and is recorded in CreditTransaction.
     credits: { type: Number, default: 0, min: 0 },

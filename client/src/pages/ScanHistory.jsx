@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ScanFace, ChevronRight, Plus } from "lucide-react";
 import api from "../api/axios.js";
 import Loader from "../components/Loader.jsx";
+import ScoreTrend from "../components/ScoreTrend.jsx";
 
 const levelDot = { Low: "bg-emerald-400", Medium: "bg-amber-400", High: "bg-rose-400" };
 
@@ -27,6 +28,8 @@ const ScanHistoryPage = () => {
         </div>
         <Link to="/scan" className="btn-primary hidden rounded-full sm:inline-flex"><Plus size={15} /> New scan</Link>
       </div>
+
+      <ScoreTrend scans={scans} />
 
       {scans.length === 0 ? (
         <div className="card relative flex flex-col items-center gap-3 overflow-hidden rounded-3xl p-14 text-center">

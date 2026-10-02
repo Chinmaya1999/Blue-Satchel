@@ -1,4 +1,6 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
+import Loader from "./components/Loader.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
@@ -7,39 +9,39 @@ import ChatWidget from "./components/ChatWidget.jsx";
 import { ProtectedRoute, AdminRoute, CreditRoute, ShopRoute } from "./components/ProtectedRoute.jsx";
 import { useSiteSettings } from "./context/SiteSettingsContext.jsx";
 
-import Landing from "./pages/Landing.jsx";
-import Login from "./pages/Login.jsx";
-import ForgotPassword from "./pages/ForgotPassword.jsx";
-import Register from "./pages/Register.jsx";
-import Shop from "./pages/Shop.jsx";
-import ProductDetail from "./pages/ProductDetail.jsx";
-import ScanCapture from "./pages/ScanCapture.jsx";
-import ScanOptions from "./pages/ScanOptions.jsx";
-import ScanResult from "./pages/ScanResult.jsx";
-import ScanHistoryPage from "./pages/ScanHistory.jsx";
-import Checkout from "./pages/Checkout.jsx";
-import OrderConfirmation from "./pages/OrderConfirmation.jsx";
-import OrderHistory from "./pages/OrderHistory.jsx";
-import Profile from "./pages/Profile.jsx";
-import NotFound from "./pages/NotFound.jsx";
-import Credits from "./pages/Credits.jsx";
-import VerifyEmail from "./pages/VerifyEmail.jsx";
-import Pricing from "./pages/Pricing.jsx";
-import Terms from "./pages/legal/Terms.jsx";
-import RefundPolicy from "./pages/legal/RefundPolicy.jsx";
-import Privacy from "./pages/legal/Privacy.jsx";
-import Disclaimer from "./pages/legal/Disclaimer.jsx";
-import Contact from "./pages/legal/Contact.jsx";
+const Landing = lazy(() => import("./pages/Landing.jsx"));
+const Login = lazy(() => import("./pages/Login.jsx"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword.jsx"));
+const Register = lazy(() => import("./pages/Register.jsx"));
+const Shop = lazy(() => import("./pages/Shop.jsx"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail.jsx"));
+const ScanCapture = lazy(() => import("./pages/ScanCapture.jsx"));
+const ScanOptions = lazy(() => import("./pages/ScanOptions.jsx"));
+const ScanResult = lazy(() => import("./pages/ScanResult.jsx"));
+const ScanHistoryPage = lazy(() => import("./pages/ScanHistory.jsx"));
+const Checkout = lazy(() => import("./pages/Checkout.jsx"));
+const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation.jsx"));
+const OrderHistory = lazy(() => import("./pages/OrderHistory.jsx"));
+const Profile = lazy(() => import("./pages/Profile.jsx"));
+const NotFound = lazy(() => import("./pages/NotFound.jsx"));
+const Credits = lazy(() => import("./pages/Credits.jsx"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail.jsx"));
+const Pricing = lazy(() => import("./pages/Pricing.jsx"));
+const Terms = lazy(() => import("./pages/legal/Terms.jsx"));
+const RefundPolicy = lazy(() => import("./pages/legal/RefundPolicy.jsx"));
+const Privacy = lazy(() => import("./pages/legal/Privacy.jsx"));
+const Disclaimer = lazy(() => import("./pages/legal/Disclaimer.jsx"));
+const Contact = lazy(() => import("./pages/legal/Contact.jsx"));
 
-import AdminLayout from "./pages/admin/AdminLayout.jsx";
-import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
-import AdminCustomers from "./pages/admin/AdminCustomers.jsx";
-import AdminCustomerDetail from "./pages/admin/AdminCustomerDetail.jsx";
-import AdminProducts from "./pages/admin/AdminProducts.jsx";
-import AdminOrders from "./pages/admin/AdminOrders.jsx";
-import AdminScans from "./pages/admin/AdminScans.jsx";
-import AdminPayments from "./pages/admin/AdminPayments.jsx";
-import AdminChatLeads from "./pages/admin/AdminChatLeads.jsx";
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout.jsx"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
+const AdminCustomers = lazy(() => import("./pages/admin/AdminCustomers.jsx"));
+const AdminCustomerDetail = lazy(() => import("./pages/admin/AdminCustomerDetail.jsx"));
+const AdminProducts = lazy(() => import("./pages/admin/AdminProducts.jsx"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders.jsx"));
+const AdminScans = lazy(() => import("./pages/admin/AdminScans.jsx"));
+const AdminPayments = lazy(() => import("./pages/admin/AdminPayments.jsx"));
+const AdminChatLeads = lazy(() => import("./pages/admin/AdminChatLeads.jsx"));
 
 function App() {
   const { shopEnabled } = useSiteSettings();
@@ -50,6 +52,7 @@ function App() {
       <Navbar />
       {shopEnabled && <CartDrawer />}
       <main className="flex-1">
+        <Suspense fallback={<Loader full />}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
@@ -93,6 +96,7 @@ function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </main>
       {!inAdmin && <Footer />}
       {!inAdmin && <ChatWidget />}

@@ -48,7 +48,7 @@ const OrderConfirmation = () => {
         <div className="mt-5 space-y-1.5 border-t border-slate-100 pt-4 text-sm">
           <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>₹{order.subtotal}</span></div>
           <div className="flex justify-between text-slate-500"><span>Shipping</span><span>{order.shippingFee === 0 ? "Free" : `₹${order.shippingFee}`}</span></div>
-          <div className="flex justify-between text-slate-500"><span>Tax</span><span>₹{order.tax}</span></div>
+          <div className="flex justify-between text-slate-500"><span>{order.taxLabel || "Tax"}</span><span>₹{order.tax}</span></div>
           <div className="flex justify-between border-t border-slate-100 pt-3 font-display text-lg font-bold text-white"><span>Total</span><span className="fs-gradient-text">₹{order.total}</span></div>
         </div>
         <p className="mt-4 text-xs text-slate-400">

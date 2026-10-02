@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Smartphone, Banknote, AlertCircle, ShoppingBag, ShieldCheck } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/axios.js";
 import { loadRazorpay } from "../utils/razorpay.js";
+import { useLocale } from "../context/LocaleContext.jsx";
+import { COUNTRIES, countryByName } from "../utils/countries.js";
 
 const PAYMENT_METHODS = [
   { id: "razorpay", label: "Pay online", hint: "UPI, QR, cards, netbanking", icon: Smartphone },
@@ -15,6 +17,7 @@ const Checkout = () => {
   const { items, subtotal, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { country: localeCountry } = useLocale();
 
   const [address, setAddress] = useState({
     line1: user?.address?.line1 || "",
@@ -22,15 +25,30 @@ const Checkout = () => {
     city: user?.address?.city || "",
     state: user?.address?.state || "",
     postalCode: user?.address?.postalCode || "",
-    country: "India",
+    country: countryByName(user?.address?.country)?.name || countryByName(user?.signupLocation?.country)?.name || localeCountry?.name || "India",
   });
+  // Shipping, tax and Cash-on-Delivery availability for the destination country (priced by the server).
+  const [quote, setQuote] = useState(null);
   const [method, setMethod] = useState("razorpay");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const shippingFee = subtotal > 999 ? 0 : 49;
-  const tax = Math.round(subtotal * 0.18);
-  const total = subtotal + shippingFee + tax;
+  useEffect(() => {
+    if (items.length === 0) return undefined;
+    let cancelled = false;
+    setQuote(null);
+    api
+      .post("/orders/quote", { items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })), country: address.country })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setQuote(data);
+        if (!data.codAvailable) setMethod((m) => (m === "cod" ? "razorpay" : m));
+      })
+      .catch(() => !cancelled && setQuote(null));
+    return () => { cancelled = true; };
+  }, [items, address.country]);
+
+  const { shippingFee = 0, tax = 0, taxLabel = "Tax", total = subtotal } = quote || {};
 
   if (items.length === 0) {
     return (
@@ -134,7 +152,9 @@ const Checkout = () => {
               </div>
               <div>
                 <label className="label">Country</label>
-                <input required className="input" value={address.country} onChange={(e) => setAddress({ ...address, country: e.target.value })} />
+                <select required className="input" value={address.country} onChange={(e) => setAddress({ ...address, country: e.target.value })}>
+                  {COUNTRIES.map((c) => <option key={c.code} value={c.name} className="text-slate-900">{c.name}</option>)}
+                </select>
               </div>
             </div>
           </div>
@@ -142,7 +162,7 @@ const Checkout = () => {
           <div className="card rounded-3xl p-6 sm:p-8">
             <h2 className="mb-6 flex items-center gap-3 font-display text-lg font-semibold text-white"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400/10 font-mono text-xs text-cyan-300 ring-1 ring-cyan-300/30">02</span> Payment Method</h2>
             <div className="grid grid-cols-2 gap-3">
-              {PAYMENT_METHODS.map((m) => (
+              {PAYMENT_METHODS.filter((m) => m.id !== "cod" || quote?.codAvailable !== false).map((m) => (
                 <button
                   type="button"
                   key={m.id}
@@ -160,6 +180,11 @@ const Checkout = () => {
             {method === "razorpay" && (
               <p className="mt-4 flex items-center gap-2 text-sm text-slate-500">
                 <ShieldCheck size={15} className="shrink-0 text-emerald-500" /> You'll pay securely in Razorpay's window — UPI, QR, cards, netbanking or wallets.
+              </p>
+            )}
+            {quote?.international && (
+              <p className="mt-3 text-xs text-slate-500">
+                International order: Cash on Delivery isn't available, and your country may charge import duty or VAT on delivery. Charged in INR.
               </p>
             )}
             {method === "cod" && (
@@ -191,10 +216,10 @@ const Checkout = () => {
           <div className="mt-5 space-y-2 border-t border-slate-100 pt-4 text-sm">
             <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>₹{subtotal}</span></div>
             <div className="flex justify-between text-slate-500"><span>Shipping</span><span>{shippingFee === 0 ? "Free" : `₹${shippingFee}`}</span></div>
-            <div className="flex justify-between text-slate-500"><span>Tax (18%)</span><span>₹{tax}</span></div>
-            <div className="flex justify-between border-t border-slate-100 pt-3 font-display text-lg font-bold text-white"><span>Total</span><span className="fs-gradient-text">₹{total}</span></div>
+            <div className="flex justify-between text-slate-500"><span>{taxLabel}</span><span>₹{tax}</span></div>
+            <div className="flex justify-between border-t border-slate-100 pt-3 font-display text-lg font-bold text-white"><span>Total</span><span className="fs-gradient-text">{quote ? `₹${total}` : "…"}</span></div>
           </div>
-          <button type="submit" disabled={loading} className="btn-primary mt-6 h-12 w-full rounded-full">
+          <button type="submit" disabled={loading || !quote} className="btn-primary mt-6 h-12 w-full rounded-full">
             {loading ? "Processing…" : method === "cod" ? `Place order · ₹${total}` : `Pay ₹${total}`}
           </button>
         </div>

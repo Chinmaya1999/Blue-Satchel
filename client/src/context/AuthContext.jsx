@@ -89,9 +89,16 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
+  // Records the customer's OK to analyse their face photos (needed before any scan).
+  const acceptPhotoConsent = async () => {
+    const { data } = await api.post("/auth/me/consent");
+    persist(data.user);
+    return data.user;
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, googleLogin, logout, updateProfile, refreshMe, setCredits, verifyEmail, resendVerificationCode }}
+      value={{ user, loading, login, register, googleLogin, logout, updateProfile, refreshMe, setCredits, acceptPhotoConsent, verifyEmail, resendVerificationCode }}
     >
       {children}
     </AuthContext.Provider>

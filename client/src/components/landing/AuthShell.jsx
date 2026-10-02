@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
-import FaceScan3D from "./FaceScan3D.jsx";
-import { prefersReducedMotion } from "./three-utils.js";
+const FaceScan3D = lazy(() => import("./FaceScan3D.jsx"));
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 // Dark split-screen used by Login and Register: live 3D face on one side, glass form on the other.
 const AuthShell = ({ stages, eyebrow, title, subtitle, error, children, footer }) => {
@@ -27,7 +29,7 @@ const AuthShell = ({ stages, eyebrow, title, subtitle, error, children, footer }
         <div className="relative h-[250px] sm:h-[320px] lg:h-[calc(100svh-4rem)] lg:max-h-[820px]">
           <div className="fs-orbit absolute left-1/2 top-1/2 aspect-square w-[80%] max-w-[560px] -translate-x-1/2 -translate-y-1/2" />
           <div className="fs-orbit fs-orbit-slow absolute left-1/2 top-1/2 aspect-square w-[62%] max-w-[440px] -translate-x-1/2 -translate-y-1/2" />
-          <FaceScan3D preset={stage.preset} callouts={stage.callouts || []} className="h-full w-full" />
+          <Suspense fallback={null}><FaceScan3D preset={stage.preset} callouts={stage.callouts || []} className="h-full w-full" /></Suspense>
 
           <div className="absolute bottom-2 left-1/2 w-[min(100%,22rem)] -translate-x-1/2 lg:bottom-16">
             <div className="fs-hud flex items-center gap-3 !p-3">

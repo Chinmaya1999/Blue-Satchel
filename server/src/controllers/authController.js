@@ -197,6 +197,20 @@ export const updateMe = async (req, res, next) => {
   }
 };
 
+export const PHOTO_CONSENT_VERSION = "2026-10";
+
+// The customer's explicit OK for analysing their face photos. Scans are
+// refused until this is recorded (see createScan).
+export const acceptPhotoConsent = async (req, res, next) => {
+  try {
+    req.user.photoConsent = { acceptedAt: new Date(), version: PHOTO_CONSENT_VERSION };
+    await req.user.save();
+    res.json({ user: req.user.toSafeObject() });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const markNotificationRead = async (req, res, next) => {
   try {
     const notif = req.user.notifications.id(req.params.id);

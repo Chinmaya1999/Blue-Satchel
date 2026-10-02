@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ScanFace, ArrowRight, ShieldCheck, Cpu, Sparkles, Camera, Layers, Activity, ShoppingBag } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useLocale } from "../context/LocaleContext.jsx";
-import FaceScan3D from "../components/landing/FaceScan3D.jsx";
-import SkinLayers3D from "../components/landing/SkinLayers3D.jsx";
-import LiveLandmarks from "../components/landing/LiveLandmarks.jsx";
-import SkinExpectations from "../components/landing/SkinExpectations.jsx";
+const FaceScan3D = lazy(() => import("../components/landing/FaceScan3D.jsx"));
+const SkinLayers3D = lazy(() => import("../components/landing/SkinLayers3D.jsx"));
+const LiveLandmarks = lazy(() => import("../components/landing/LiveLandmarks.jsx"));
+const SkinExpectations = lazy(() => import("../components/landing/SkinExpectations.jsx"));
 
 const reveal = {
   initial: { opacity: 0, y: 28 },
@@ -272,7 +272,7 @@ const Landing = () => {
           <div className="relative order-1 h-[58svh] min-h-[380px] lg:order-2 lg:h-[calc(100svh-4rem)] lg:max-h-[860px]">
             <div className="fs-orbit absolute left-1/2 top-1/2 aspect-square w-[88%] max-w-[640px] -translate-x-1/2 -translate-y-1/2" />
             <div className="fs-orbit fs-orbit-slow absolute left-1/2 top-1/2 aspect-square w-[70%] max-w-[500px] -translate-x-1/2 -translate-y-1/2" />
-            <FaceScan3D preset="hero" callouts={HERO_CALLOUTS} className="h-full w-full" />
+            <Suspense fallback={null}><FaceScan3D preset="hero" callouts={HERO_CALLOUTS} className="h-full w-full" /></Suspense>
 
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -336,7 +336,7 @@ const Landing = () => {
         <div className="container-app grid gap-0 lg:grid-cols-2 lg:gap-16">
           <div className="sticky top-16 z-0 h-[48svh] lg:top-16 lg:h-[calc(100svh-4rem)]">
             <div className="absolute inset-4 rounded-[2.5rem] bg-gradient-to-b from-cyan-400/[0.06] to-transparent ring-1 ring-white/5 lg:inset-y-10" />
-            <FaceScan3D preset={active.preset} callouts={active.callouts || []} autoRotate className="h-full w-full" />
+            <Suspense fallback={null}><FaceScan3D preset={active.preset} callouts={active.callouts || []} autoRotate className="h-full w-full" /></Suspense>
             <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 gap-2 lg:bottom-14">
               {STAGES.map((s, i) => (
                 <span key={s.tag} className={`h-1.5 rounded-full transition-all duration-500 ${i === stage ? "w-8 bg-cyan-300" : "w-1.5 bg-white/20"}`} />
@@ -392,7 +392,7 @@ const Landing = () => {
       <section className="relative border-t border-white/5 py-24 sm:py-32">
         <div className="absolute right-0 top-1/3 -z-0 h-96 w-96 rounded-full bg-cyan-500/10 blur-[120px]" />
         <div className="container-app relative">
-          <LiveLandmarks />
+          <Suspense fallback={null}><LiveLandmarks /></Suspense>
         </div>
       </section>
 
@@ -437,7 +437,7 @@ const Landing = () => {
             </div>
           </motion.div>
           <motion.div {...reveal} className="relative h-[420px] sm:h-[560px]">
-            <SkinLayers3D activeLayer={layer} className="h-full w-full" />
+            <Suspense fallback={null}><SkinLayers3D activeLayer={layer} className="h-full w-full" /></Suspense>
             <div className="absolute bottom-0 left-1/2 flex -translate-x-1/2 gap-3 whitespace-nowrap rounded-xl bg-slate-950/60 p-2.5 text-[10px] ring-1 ring-white/10 backdrop-blur sm:bottom-auto sm:left-auto sm:right-6 sm:top-6 sm:block sm:translate-x-0 sm:space-y-1.5 sm:p-3 sm:text-[11px]">
               {[
                 ["#b38bff", "Surface light · pigment"],
@@ -634,7 +634,7 @@ const Landing = () => {
         </div>
       </section>
 
-      <SkinExpectations />
+      <Suspense fallback={null}><SkinExpectations /></Suspense>
 
       {/* ───────── CTA ───────── */}
       <section className="container-app pb-24">

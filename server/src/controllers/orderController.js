@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
 import { crmService } from "../services/crmService.js";
+import { quoteTotals } from "../utils/shipping.js";
 import { getSettings } from "../services/settings.js";
 import {
   isRazorpayConfigured,
@@ -21,9 +22,6 @@ import {
  * Prices always come from the database, never from the client.
  */
 
-const SHIPPING_FEE = 49;
-const FREE_SHIPPING_OVER = 999;
-const TAX_RATE = 0.18;
 const MAX_LINES = 50;
 const MAX_QTY = 20;
 
@@ -43,7 +41,7 @@ const cleanAddress = (a = {}) => ({
 const fail = (status, message) => Object.assign(new Error(message), { status });
 
 // Prices, names and availability from the database for the requested items.
-const priceCart = async (items) => {
+const priceCart = async (items, country) => {
   if (!Array.isArray(items) || items.length === 0) throw fail(400, "Your bag is empty.");
   if (items.length > MAX_LINES) throw fail(400, "Too many different items in one order.");
 
@@ -67,9 +65,8 @@ const priceCart = async (items) => {
     orderItems.push({ product: product._id, name: product.name, imageUrl: product.imageUrl, price: product.price, quantity });
   }
 
-  const shippingFee = subtotal > FREE_SHIPPING_OVER ? 0 : SHIPPING_FEE;
-  const tax = Math.round(subtotal * TAX_RATE);
-  return { orderItems, subtotal, shippingFee, tax, total: subtotal + shippingFee + tax };
+  const { shippingFee, tax, taxLabel, total, codAvailable } = quoteTotals(subtotal, country);
+  return { orderItems, subtotal, shippingFee, tax, taxLabel, total, codAvailable };
 };
 
 // Takes stock for every line atomically (a line only decrements if enough is
@@ -97,6 +94,17 @@ const finalizeOrder = async (order, user) => {
   );
 };
 
+// Price preview for checkout: the same totals createOrder would charge for
+// this bag shipped to `country`. Nothing is reserved or created.
+export const quoteOrder = async (req, res, next) => {
+  try {
+    const { subtotal } = await priceCart(req.body.items, str(req.body.country, 100));
+    res.json({ subtotal, ...quoteTotals(subtotal, str(req.body.country, 100)) });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const createOrder = async (req, res, next) => {
   try {
     // Catalog-only mode: nothing can be bought until an admin turns sales on.
@@ -109,9 +117,12 @@ export const createOrder = async (req, res, next) => {
     if (!shippingAddress.line1 || !shippingAddress.city || !shippingAddress.state || !shippingAddress.postalCode) {
       return res.status(400).json({ message: "A complete shipping address is required." });
     }
-    const priced = await priceCart(req.body.items);
+    const priced = await priceCart(req.body.items, shippingAddress.country);
 
     if (paymentMethod === "cod") {
+      if (!priced.codAvailable) {
+        return res.status(400).json({ message: "Cash on Delivery is only available within India. Please pay online." });
+      }
       if (!(await reserveStock(priced.orderItems))) {
         return res.status(409).json({ message: "Some items just sold out. Please review your bag and try again." });
       }

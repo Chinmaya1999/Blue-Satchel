@@ -28,6 +28,7 @@ import api from "../api/axios.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { isUnlimited, buyCreditsPath } from "../utils/credits.js";
 import { usePricing } from "../context/PricingContext.jsx";
+import ScanConsent from "../components/ScanConsent.jsx";
 
 // Escape untrusted vendor text before dropping it into Swal's `html`.
 const escapeHtml = (str) =>
@@ -197,6 +198,55 @@ const normalizeUploadedImage = (file) =>
     img.src = objectUrl;
   });
 
+// Rejects an uploaded photo the AI can't read well — too dark, washed out or
+// blurry — so the customer retakes it before spending credits. Blur is the
+// variance of a Laplacian over a small greyscale copy: sharp photos have lots
+// of edge energy, soft ones very little.
+const MIN_SHARPNESS = 25;
+const assessPhotoQuality = (blob) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const size = 160;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, size, size);
+      const { data } = ctx.getImageData(0, 0, size, size);
+      const grey = new Float32Array(size * size);
+      let sum = 0;
+      for (let i = 0; i < grey.length; i++) {
+        grey[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+        sum += grey[i];
+      }
+      const brightness = sum / grey.length;
+      if (brightness < MIN_BRIGHTNESS) return resolve("too dark");
+      if (brightness > MAX_BRIGHTNESS) return resolve("too bright");
+      let lapSum = 0;
+      let lapSq = 0;
+      let n = 0;
+      for (let y = 1; y < size - 1; y++) {
+        for (let x = 1; x < size - 1; x++) {
+          const i = y * size + x;
+          const lap = 4 * grey[i] - grey[i - 1] - grey[i + 1] - grey[i - size] - grey[i + size];
+          lapSum += lap;
+          lapSq += lap * lap;
+          n++;
+        }
+      }
+      const variance = lapSq / n - (lapSum / n) ** 2;
+      resolve(variance < MIN_SHARPNESS ? "blurry" : null);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+
 const speakText = (text) => {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
@@ -205,7 +255,7 @@ const speakText = (text) => {
   window.speechSynthesis.speak(utter);
 };
 
-const ScanCapture = ({ quick = false }) => {
+const ScanCaptureInner = ({ quick = false }) => {
   const STEP_ORDER = useMemo(() => (quick ? QUICK_STEPS : DETAILED_STEPS), [quick]);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -593,6 +643,12 @@ const ScanCapture = ({ quick = false }) => {
     if (!file) return;
     try {
       const blob = await normalizeUploadedImage(file);
+      const issue = await assessPhotoQuality(blob);
+      if (issue) {
+        e.target.value = "";
+        setError(`That photo looks ${issue}, which can make the results unreliable. Please retake it in even, natural light with your face in focus.`);
+        return;
+      }
       shotsRef.current = { ...shotsRef.current, front: { blob, previewUrl: URL.createObjectURL(blob) } };
       setShots(shotsRef.current);
       submitAllShots();
@@ -1021,6 +1077,13 @@ const ScanCapture = ({ quick = false }) => {
       </div>
     </div>
   );
+};
+
+// No camera or upload until the customer has agreed to the photo terms.
+const ScanCapture = (props) => {
+  const { user } = useAuth();
+  if (!user?.photoConsent?.acceptedAt) return <ScanConsent />;
+  return <ScanCaptureInner {...props} />;
 };
 
 export default ScanCapture;

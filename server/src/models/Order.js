@@ -19,6 +19,7 @@ const orderSchema = new mongoose.Schema(
     subtotal: { type: Number, required: true },
     shippingFee: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
+    taxLabel: String,
     total: { type: Number, required: true },
     shippingAddress: { type: mongoose.Schema.Types.Mixed, required: true },
     // "card"/"upi" only on old orders from before Razorpay (simulated payments).

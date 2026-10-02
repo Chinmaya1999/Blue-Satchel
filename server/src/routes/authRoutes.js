@@ -6,6 +6,7 @@ import {
   getAuthConfig,
   getMe,
   updateMe,
+  acceptPhotoConsent,
   markNotificationRead,
   verifyEmail,
   resendVerificationCode,
@@ -30,6 +31,7 @@ router.get("/me", protect, getMe);
 router.post("/verify-email", verifyLimiter, protect, verifyEmail);
 router.post("/resend-code", verifyLimiter, protect, resendVerificationCode);
 router.patch("/me", protect, updateMe);
+router.post("/me/consent", protect, acceptPhotoConsent);
 router.get("/me/export", protect, exportMyData);
 // Password check inside — rate-limited like the other credential endpoints.
 router.delete("/me", authLimiter, protect, deleteMyAccount);
