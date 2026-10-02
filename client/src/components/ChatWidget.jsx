@@ -4,6 +4,9 @@ import { MessageCircle, X, Send, Check, ShoppingBag, RotateCcw } from "lucide-re
 import api from "../api/axios.js";
 import { useCart } from "../context/CartContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import { usePoll } from "../hooks/usePoll.js";
+import TeamChat from "./TeamChat.jsx";
 import { useLocale } from "../context/LocaleContext.jsx";
 import { productImageFallback } from "./ProductCard.jsx";
 
@@ -70,7 +73,10 @@ export const ProductMini = ({ product, onNavigate, fluid = false }) => {
 
 const ChatWidget = () => {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState("assistant"); // assistant | team
+  const [teamUnread, setTeamUnread] = useState(0); // replies from the team waiting for this customer
   const [messages, setMessages] = useState([]); // { role, text } | { role: "products", products, total }
   const [quick, setQuick] = useState([]);
   const [inputMode, setInputMode] = useState("text"); // text | multi
@@ -170,6 +176,16 @@ const ChatWidget = () => {
     send({ text: "cmd:restart", label: "Start over" });
   };
 
+  // A badge on the chat button when the team has replied. Opening the team tab marks them read.
+  usePoll(
+    () => api.get("/support/me/unread").then(({ data }) => setTeamUnread(data.unread)).catch(() => {}),
+    15000,
+    Boolean(user) && !(open && tab === "team")
+  );
+  useEffect(() => {
+    if (open && tab === "team") setTeamUnread(0);
+  }, [open, tab]);
+
   // Not shown inside the admin console.
   if (pathname.startsWith("/admin")) return null;
 
@@ -190,12 +206,12 @@ const ChatWidget = () => {
                 <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-[#070b1a]" />
               </span>
               <div>
-                <p className="font-display text-sm font-bold leading-tight text-white">Skin Assistant</p>
-                <p className="text-[11px] text-slate-400">Personalised picks · not medical advice</p>
+                <p className="font-display text-sm font-bold leading-tight text-white">{tab === "team" ? "Blue Satchel team" : "Skin Assistant"}</p>
+                <p className="text-[11px] text-slate-400">{tab === "team" ? "Real people · we reply here" : "Personalised picks · not medical advice"}</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={restart} disabled={busy} aria-label="Start over" title="Start over" className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white disabled:opacity-40">
+              <button type="button" onClick={restart} disabled={busy || tab === "team"} aria-label="Start over" title="Start over" className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white disabled:opacity-40">
                 <RotateCcw size={15} />
               </button>
               <button type="button" onClick={() => setOpen(false)} aria-label="Close chat" className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white">
@@ -204,6 +220,28 @@ const ChatWidget = () => {
             </div>
           </header>
 
+          <div className="flex gap-1 border-b border-white/10 bg-black/20 p-1.5" role="tablist">
+            {[["assistant", "Skin assistant"], ["team", "Talk to our team"]].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+                className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition ${tab === id ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}`}
+              >
+                {label}
+                {id === "team" && teamUnread > 0 && tab !== "team" && (
+                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{teamUnread}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {tab === "team" ? (
+            <TeamChat />
+          ) : (
+            <>
           <div ref={scroller} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
             {messages.map((m, i) =>
               m.role === "products" ? (
@@ -279,16 +317,26 @@ const ChatWidget = () => {
               <Send size={17} />
             </button>
           </form>
+            </>
+          )}
         </section>
       )}
 
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!open && teamUnread > 0) setTab("team");
+          setOpen((o) => !o);
+        }}
         aria-label={open ? "Close skin assistant" : "Chat with our skin assistant"}
         className="pointer-events-auto fixed bottom-4 right-4 flex h-14 items-center gap-2 rounded-full bg-cyan-300 px-5 font-semibold text-slate-950 shadow-[0_8px_30px_rgba(94,231,255,0.45)] transition hover:scale-105 hover:bg-cyan-200 active:scale-95 sm:bottom-6 sm:right-6"
       >
-        {open ? <X size={22} /> : <MessageCircle size={22} />}
+        <span className="relative">
+          {open ? <X size={22} /> : <MessageCircle size={22} />}
+          {!open && teamUnread > 0 && (
+            <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-cyan-300">{teamUnread}</span>
+          )}
+        </span>
         <span className="hidden sm:inline">{open ? "Close" : "Ask our skin assistant"}</span>
       </button>
     </div>

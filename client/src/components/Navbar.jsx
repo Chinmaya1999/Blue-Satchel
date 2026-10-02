@@ -9,6 +9,7 @@ import { isUnlimited } from "../utils/credits.js";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 import { useLocale } from "../context/LocaleContext.jsx";
 import CountrySelect from "./CountrySelect.jsx";
+import { useAdminSupportAlerts } from "../hooks/useAdminSupportAlerts.js";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -20,7 +21,12 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const unreadCount = user?.notifications?.filter((n) => !n.read).length || 0;
+  const isAdmin = user?.role === "admin";
+  // Admins: the bell counts customers waiting for a reply, chimes on a new message and opens the chat.
+  const support = useAdminSupportAlerts(isAdmin);
+  const unreadCount = isAdmin ? support.count : user?.notifications?.filter((n) => !n.read).length || 0;
+  const bellTo = isAdmin ? (support.latest[0] ? `/admin/support?thread=${support.latest[0].id}` : "/admin/support") : "/profile";
+  const bellLabel = isAdmin ? (support.count ? `${support.messages} new customer message${support.messages === 1 ? "" : "s"}` : "Customer chat") : "Notifications";
   const creditsLabel = isUnlimited(user) ? t("nav.unlimited") : formatNumber(user?.credits ?? 0);
 
   const links = [
@@ -89,9 +95,13 @@ const Navbar = () => {
             </Link>
           )}
           {user && (
-            <Link to="/profile" className="fs-nav-icon relative hidden sm:flex" aria-label="Notifications">
-              <Bell size={18} />
-              {unreadCount > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-400 ring-2 ring-[#050814]" />}
+            <Link to={bellTo} className={`fs-nav-icon relative ${isAdmin ? "flex" : "hidden sm:flex"}`} aria-label={bellLabel} title={bellLabel}>
+              <Bell size={18} className={isAdmin && unreadCount > 0 ? "animate-pulse text-amber-300" : ""} />
+              {unreadCount > 0 && (isAdmin ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-[#050814]">{unreadCount}</span>
+              ) : (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-400 ring-2 ring-[#050814]" />
+              ))}
             </Link>
           )}
 

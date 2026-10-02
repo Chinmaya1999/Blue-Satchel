@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import ScanHistory from "../models/ScanHistory.js";
 import Order from "../models/Order.js";
 import CreditTransaction from "../models/CreditTransaction.js";
+import SupportThread from "../models/SupportThread.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, "..", "..", "uploads");
@@ -39,10 +40,11 @@ const imageUrlsOf = (scan) => {
 // GET /api/auth/me/export — everything we hold about the signed-in user.
 export const exportMyData = async (req, res, next) => {
   try {
-    const [scans, orders, creditTransactions] = await Promise.all([
+    const [scans, orders, creditTransactions, supportChat] = await Promise.all([
       ScanHistory.find({ user: req.user._id }).lean(),
       Order.find({ user: req.user._id }).lean(),
       CreditTransaction.find({ user: req.user._id }).lean(),
+      SupportThread.findOne({ user: req.user._id }).select("-unreadForAdmin -unreadForUser").lean(),
     ]);
     res.setHeader("Content-Disposition", 'attachment; filename="blue-satchel-my-data.json"');
     res.json({
@@ -51,6 +53,7 @@ export const exportMyData = async (req, res, next) => {
       scans,
       orders,
       creditTransactions,
+      supportChat,
     });
   } catch (err) {
     next(err);
@@ -84,6 +87,7 @@ export const deleteMyAccount = async (req, res, next) => {
     removeUpload(user.avatarUrl);
 
     await ScanHistory.deleteMany({ user: user._id });
+    await SupportThread.deleteMany({ user: user._id });
     await User.deleteOne({ _id: user._id });
 
     res.json({ message: "Your account and scans have been deleted." });

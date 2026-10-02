@@ -42,6 +42,7 @@ const AdminOrders = lazy(() => import("./pages/admin/AdminOrders.jsx"));
 const AdminScans = lazy(() => import("./pages/admin/AdminScans.jsx"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments.jsx"));
 const AdminChatLeads = lazy(() => import("./pages/admin/AdminChatLeads.jsx"));
+const AdminSupport = lazy(() => import("./pages/admin/AdminSupport.jsx"));
 
 function App() {
   const { shopEnabled } = useSiteSettings();
@@ -91,6 +92,7 @@ function App() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="scans" element={<AdminScans />} />
             <Route path="payments" element={<AdminPayments />} />
+            <Route path="support" element={<AdminSupport />} />
             <Route path="chat-leads" element={<AdminChatLeads />} />
           </Route>
 

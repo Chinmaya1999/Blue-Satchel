@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import ScanHistory from "../models/ScanHistory.js";
+import SupportThread from "../models/SupportThread.js";
 import CRMSyncLog from "../models/CRMSyncLog.js";
 import CreditTransaction from "../models/CreditTransaction.js";
 import { creditSummary, grantCredits, scanCosts, BASE_SCAN_COSTS } from "../services/credits.js";
@@ -180,6 +181,7 @@ export const deleteUser = async (req, res, next) => {
       deleteUploadedFile(scan.rightImageUrl);
     }
     await ScanHistory.deleteMany({ user: user._id });
+    await SupportThread.deleteMany({ user: user._id });
     res.json({ message: "User deleted.", scansDeleted: scans.length });
   } catch (err) {
     next(err);

@@ -1,6 +1,7 @@
 import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Package, ShoppingCart, ScanFace, Coins, MessageCircle, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Users, Package, ShoppingCart, ScanFace, Coins, MessageCircle, MessagesSquare, ExternalLink } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useAdminSupportAlerts } from "../../hooks/useAdminSupportAlerts.js";
 
 const groups = [
   {
@@ -12,6 +13,7 @@ const groups = [
     links: [
       { to: "/admin/customers", label: "Users", icon: Users, desc: "Manage customer accounts and credits" },
       { to: "/admin/scans", label: "Scan History", icon: ScanFace, desc: "Every skin scan run on the platform" },
+      { to: "/admin/support", label: "Customer Chat", icon: MessagesSquare, desc: "Live messages from customers — reply to their skin-care questions", badge: true },
       { to: "/admin/chat-leads", label: "Chatbot Leads", icon: MessageCircle, desc: "Enquiries captured by the chatbot" },
     ],
   },
@@ -37,6 +39,7 @@ const linkClass = ({ isActive }) =>
 const AdminLayout = () => {
   const { pathname } = useLocation();
   const { user } = useAuth();
+  const waiting = useAdminSupportAlerts(true, { alert: false }).count; // chime + tab title come from the navbar bell
   const current =
     [...all].sort((a, b) => b.to.length - a.to.length).find((l) => (l.end ? pathname === l.to : pathname.startsWith(l.to))) ||
     all[0];
@@ -65,6 +68,7 @@ const AdminLayout = () => {
                   {g.links.map((l) => (
                     <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
                       <l.icon size={17} /> {l.label}
+                      {l.badge && waiting > 0 && <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">{waiting}</span>}
                     </NavLink>
                   ))}
                 </div>
@@ -83,6 +87,7 @@ const AdminLayout = () => {
             {all.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
                 <l.icon size={16} /> {l.label}
+                {l.badge && waiting > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">{waiting}</span>}
               </NavLink>
             ))}
           </nav>

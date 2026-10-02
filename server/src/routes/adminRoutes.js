@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { protect, adminOnly } from "../middleware/auth.js";
 import { listChatLeads } from "../controllers/chatController.js";
+import { adminUnread, adminListThreads, adminGetThread, adminReply, adminSetStatus } from "../controllers/supportController.js";
 import { listPlans, createPlan, updatePlan, deletePlan } from "../controllers/planController.js";
 import {
   getOverview,
@@ -30,6 +31,13 @@ const router = Router();
 router.use(protect, adminOnly);
 
 router.get("/overview", getOverview);
+
+// Live customer chat
+router.get("/support/unread", adminUnread);
+router.get("/support", adminListThreads);
+router.get("/support/:id", adminGetThread);
+router.post("/support/:id/messages", adminReply);
+router.patch("/support/:id", adminSetStatus);
 
 router.get("/customers", listCustomers);
 router.get("/customers/locations", listUserLocations);

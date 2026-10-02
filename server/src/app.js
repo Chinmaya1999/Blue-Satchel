@@ -12,6 +12,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import creditRoutes from "./routes/creditRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import supportRoutes from "./routes/supportRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import { sanitizeBody, apiLimiter } from "./middleware/security.js";
 import { getSettings } from "./services/settings.js";
@@ -59,6 +60,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/credits", creditRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/support", supportRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
