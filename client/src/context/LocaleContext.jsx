@@ -1,31 +1,24 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useAuth } from "./AuthContext.jsx";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { usePricing } from "./PricingContext.jsx";
-import { countryByCode, countryByName, guessCountryCode } from "../utils/countries.js";
+import { countryByCode } from "../utils/countries.js";
 import { convertAndFormat, USD_RATES } from "../utils/currency.js";
 import { languageForCountry, RTL_LANGS, translate } from "../i18n/index.js";
 
 const KEY = "bs_country";
+// Until a visitor picks a country in the navbar, the site is English / United States.
+const DEFAULT_COUNTRY = "US";
 const read = () => {
   try { return localStorage.getItem(KEY); } catch { return null; }
 };
 
 // The visitor's country drives the site language, currency and number format.
-// Priority: the country they picked in the navbar, then the country they
-// signed up from, then a guess from the browser.
 const LocaleContext = createContext(null);
 
 export const LocaleProvider = ({ children }) => {
-  const { user } = useAuth();
   const { pricing } = usePricing() || {};
   const [picked, setPicked] = useState(() => (countryByCode(read()) ? read() : null));
 
-  const defaultCode = useMemo(() => {
-    const loc = user?.signupLocation?.country;
-    return (countryByName(loc) || countryByCode(loc))?.code || guessCountryCode();
-  }, [user]);
-
-  const countryCode = picked || defaultCode;
+  const countryCode = picked || DEFAULT_COUNTRY;
   const country = countryByCode(countryCode);
   const lang = languageForCountry(countryCode);
   const currency = country?.currency || "USD";

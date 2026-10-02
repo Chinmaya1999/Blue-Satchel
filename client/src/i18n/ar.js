@@ -1,7 +1,7 @@
 export default {
   "nav.home": "الرئيسية", "nav.shop": "المتجر", "nav.pricing": "الأسعار", "nav.scan": "فحص البشرة", "nav.history": "سجل الفحوصات",
   "nav.console": "لوحة التحكم", "nav.signin": "تسجيل الدخول", "nav.freeScan": "فحص مجاني", "nav.logout": "تسجيل الخروج",
-  "nav.credits": "رصيد", "nav.buyMore": "اشترِ المزيد", "nav.unlimited": "غير محدود", "nav.country": "الدولة",
+  "nav.credits": "رصيد", "nav.buyMore": "اشترِ المزيد", "nav.unlimited": "غير محدود", "nav.language": "اللغة", "nav.country": "الدولة",
   "nav.selectCountry": "اختر دولتك", "nav.searchCountry": "ابحث عن دولة…", "nav.creditsTitle": "رصيد الفحص — اشترِ المزيد",
   "footer.explore": "استكشف", "footer.shopSkincare": "تسوق العناية بالبشرة", "footer.skinScan": "فحص البشرة", "footer.scanHistory": "سجل الفحوصات",
   "footer.account": "الحساب", "footer.profile": "الملف الشخصي", "footer.orders": "الطلبات", "footer.createAccount": "إنشاء حساب",

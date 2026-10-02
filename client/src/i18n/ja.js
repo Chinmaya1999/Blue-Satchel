@@ -1,7 +1,7 @@
 export default {
   "nav.home": "ホーム", "nav.shop": "ショップ", "nav.pricing": "料金", "nav.scan": "肌スキャン", "nav.history": "スキャン履歴",
   "nav.console": "管理画面", "nav.signin": "ログイン", "nav.freeScan": "無料スキャン", "nav.logout": "ログアウト",
-  "nav.credits": "クレジット", "nav.buyMore": "追加購入", "nav.unlimited": "無制限", "nav.country": "国",
+  "nav.credits": "クレジット", "nav.buyMore": "追加購入", "nav.unlimited": "無制限", "nav.language": "言語", "nav.country": "国",
   "nav.selectCountry": "お住まいの国を選択", "nav.searchCountry": "国を検索…", "nav.creditsTitle": "スキャンクレジット — 追加購入",
   "footer.explore": "探す", "footer.shopSkincare": "スキンケアを買う", "footer.skinScan": "肌スキャン", "footer.scanHistory": "スキャン履歴",
   "footer.account": "アカウント", "footer.profile": "プロフィール", "footer.orders": "注文", "footer.createAccount": "アカウント作成",

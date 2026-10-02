@@ -1,7 +1,7 @@
 export default {
   "nav.home": "Accueil", "nav.shop": "Boutique", "nav.pricing": "Tarifs", "nav.scan": "Scan de peau", "nav.history": "Historique",
   "nav.console": "Console", "nav.signin": "Se connecter", "nav.freeScan": "Scan gratuit", "nav.logout": "Se déconnecter",
-  "nav.credits": "crédits", "nav.buyMore": "En acheter", "nav.unlimited": "Illimité", "nav.country": "Pays",
+  "nav.credits": "crédits", "nav.buyMore": "En acheter", "nav.unlimited": "Illimité", "nav.language": "Langue", "nav.country": "Pays",
   "nav.selectCountry": "Choisissez votre pays", "nav.searchCountry": "Rechercher un pays…", "nav.creditsTitle": "Crédits de scan — en acheter",
   "footer.explore": "Explorer", "footer.shopSkincare": "Boutique soin de la peau", "footer.skinScan": "Scan de peau", "footer.scanHistory": "Historique des scans",
   "footer.account": "Compte", "footer.profile": "Profil", "footer.orders": "Commandes", "footer.createAccount": "Créer un compte",

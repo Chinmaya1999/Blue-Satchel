@@ -1,7 +1,7 @@
 export default {
   "nav.home": "होम", "nav.shop": "शॉप", "nav.pricing": "कीमतें", "nav.scan": "स्किन स्कैन", "nav.history": "स्कैन इतिहास",
   "nav.console": "कंसोल", "nav.signin": "साइन इन", "nav.freeScan": "मुफ़्त स्कैन", "nav.logout": "लॉग आउट",
-  "nav.credits": "क्रेडिट", "nav.buyMore": "और खरीदें", "nav.unlimited": "असीमित", "nav.country": "देश",
+  "nav.credits": "क्रेडिट", "nav.buyMore": "और खरीदें", "nav.unlimited": "असीमित", "nav.language": "भाषा", "nav.country": "देश",
   "nav.selectCountry": "अपना देश चुनें", "nav.searchCountry": "देश खोजें…", "nav.creditsTitle": "स्कैन क्रेडिट — और खरीदें",
   "footer.explore": "खोजें", "footer.shopSkincare": "स्किनकेयर खरीदें", "footer.skinScan": "स्किन स्कैन", "footer.scanHistory": "स्कैन इतिहास",
   "footer.account": "खाता", "footer.profile": "प्रोफ़ाइल", "footer.orders": "ऑर्डर", "footer.createAccount": "खाता बनाएँ",

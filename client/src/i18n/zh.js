@@ -1,7 +1,7 @@
 export default {
   "nav.home": "首页", "nav.shop": "商店", "nav.pricing": "价格", "nav.scan": "皮肤扫描", "nav.history": "扫描记录",
   "nav.console": "控制台", "nav.signin": "登录", "nav.freeScan": "免费扫描", "nav.logout": "退出登录",
-  "nav.credits": "积分", "nav.buyMore": "购买更多", "nav.unlimited": "无限", "nav.country": "国家/地区",
+  "nav.credits": "积分", "nav.buyMore": "购买更多", "nav.unlimited": "无限", "nav.language": "语言", "nav.country": "国家/地区",
   "nav.selectCountry": "选择您的国家/地区", "nav.searchCountry": "搜索国家/地区…", "nav.creditsTitle": "扫描积分 — 购买更多",
   "footer.explore": "探索", "footer.shopSkincare": "选购护肤品", "footer.skinScan": "皮肤扫描", "footer.scanHistory": "扫描记录",
   "footer.account": "账户", "footer.profile": "个人资料", "footer.orders": "订单", "footer.createAccount": "创建账户",
