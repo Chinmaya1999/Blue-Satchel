@@ -28,7 +28,7 @@ export default {
   "pricing.sub": "Kaufe ein Credit-Paket einmalig. Kein Abo, keine automatische Verlängerung, kein Abrechnungszyklus. Credits verfallen nie.",
   "pricing.loading": "Tarife werden geladen…", "pricing.unavailable": "Die Tarife sind derzeit nicht verfügbar. Bitte versuche es gleich noch einmal.",
   "pricing.oneTime": "Einmalzahlung", "pricing.credits": "{n} Credits", "pricing.detailed": "{n} detaillierte Scans",
-  "pricing.quick": "oder {n} Schnellscans", "pricing.quickFree": "+ unbegrenzt kostenlose Schnellscans", "pricing.never": "Credits verfallen nie",
+  "pricing.detailedFree": "Unbegrenzt kostenlose detaillierte Scans", "pricing.quick": "oder {n} Schnellscans", "pricing.quickFree": "+ unbegrenzt kostenlose Schnellscans", "pricing.never": "Credits verfallen nie",
   "pricing.popular": "Beliebt", "pricing.best": "Bestes Angebot", "pricing.start": "Loslegen",
   "pricing.detailedName": "Detaillierter Scan", "pricing.detailedDesc": "Vollständige 3D-Gesichtserfassung, Werte pro Zone und eine persönliche Routine.",
   "pricing.quickName": "Schnellscan", "pricing.quickDesc": "Ein schneller Hautwert aus einem Foto mit den wichtigsten Problemen.",

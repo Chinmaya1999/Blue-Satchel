@@ -50,7 +50,7 @@ const Pricing = () => {
                   <Coins size={14} /> {t("pricing.credits", { n: p.credits })}
                 </p>
                 <ul className="mt-4 flex-1 space-y-1.5 text-xs text-slate-400">
-                  <li className="flex items-center gap-1.5"><Check size={13} className="text-emerald-300" /> {t("pricing.detailed", { n: Math.floor(p.credits / costs.detailed) })}</li>
+                  <li className="flex items-center gap-1.5"><Check size={13} className="text-emerald-300" /> {costs.detailed === 0 ? t("pricing.detailedFree") : t("pricing.detailed", { n: Math.floor(p.credits / costs.detailed) })}</li>
                   <li className="flex items-center gap-1.5">
                     <Check size={13} className="text-emerald-300" />
                     {costs.quick === 0 ? t("pricing.quickFree") : t("pricing.quick", { n: Math.floor(p.credits / costs.quick) })}

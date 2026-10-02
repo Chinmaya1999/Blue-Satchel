@@ -28,7 +28,7 @@ export default {
   "pricing.sub": "一次性购买扫描积分包。无订阅、无自动续费、无账单周期。积分永不过期。",
   "pricing.loading": "正在加载套餐…", "pricing.unavailable": "套餐暂时不可用，请稍后再试。",
   "pricing.oneTime": "一次性付款", "pricing.credits": "{n} 积分", "pricing.detailed": "{n} 次详细扫描",
-  "pricing.quick": "或 {n} 次快速扫描", "pricing.quickFree": "+ 无限次免费快速扫描", "pricing.never": "积分永不过期",
+  "pricing.detailedFree": "无限次免费详细扫描", "pricing.quick": "或 {n} 次快速扫描", "pricing.quickFree": "+ 无限次免费快速扫描", "pricing.never": "积分永不过期",
   "pricing.popular": "热门", "pricing.best": "超值之选", "pricing.start": "立即开始",
   "pricing.detailedName": "详细扫描", "pricing.detailedDesc": "完整 3D 面部建模、分区评分以及个性化护肤流程。",
   "pricing.quickName": "快速扫描", "pricing.quickDesc": "单张照片快速获得皮肤评分及主要问题。",

@@ -28,7 +28,7 @@ export default {
   "pricing.sub": "Compre um pacote de créditos uma única vez. Sem assinatura, sem renovação automática, sem ciclo de cobrança. Os créditos nunca expiram.",
   "pricing.loading": "Carregando planos…", "pricing.unavailable": "Os planos estão indisponíveis no momento. Tente novamente em breve.",
   "pricing.oneTime": "pagamento único", "pricing.credits": "{n} créditos", "pricing.detailed": "{n} scans detalhados",
-  "pricing.quick": "ou {n} scans rápidos", "pricing.quickFree": "+ scans rápidos grátis ilimitados", "pricing.never": "Os créditos nunca expiram",
+  "pricing.detailedFree": "Scans detalhados grátis ilimitados", "pricing.quick": "ou {n} scans rápidos", "pricing.quickFree": "+ scans rápidos grátis ilimitados", "pricing.never": "Os créditos nunca expiram",
   "pricing.popular": "Popular", "pricing.best": "Melhor custo-benefício", "pricing.start": "Começar",
   "pricing.detailedName": "Scan detalhado", "pricing.detailedDesc": "Mapeamento facial 3D completo, pontuações por zona e uma rotina personalizada.",
   "pricing.quickName": "Scan rápido", "pricing.quickDesc": "Uma pontuação de pele rápida com uma única foto e os principais problemas.",

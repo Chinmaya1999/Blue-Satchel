@@ -271,7 +271,8 @@ const Credits = () => {
                 <p className="mt-1 text-[11px] text-slate-500">{((p.priceUsd / p.credits) * 100).toFixed(1)}¢ per credit</p>
                 <ul className="mt-4 flex-1 space-y-1.5 text-xs text-slate-400">
                   <li className="flex items-center gap-1.5">
-                    <Check size={13} className="text-emerald-300" /> {Math.floor(p.credits / costs.detailed)} detailed scans
+                    <Check size={13} className="text-emerald-300" />{" "}
+                    {costs.detailed === 0 ? "Unlimited free detailed scans" : `${Math.floor(p.credits / costs.detailed)} detailed scans`}
                   </li>
                   <li className="flex items-center gap-1.5">
                     <Check size={13} className="text-emerald-300" />{" "}

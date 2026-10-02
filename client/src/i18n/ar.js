@@ -28,7 +28,7 @@ export default {
   "pricing.sub": "اشترِ باقة رصيد فحص مرة واحدة. بلا اشتراك ولا تجديد تلقائي ولا دورة فوترة. الرصيد لا تنتهي صلاحيته أبداً.",
   "pricing.loading": "جارٍ تحميل الباقات…", "pricing.unavailable": "الباقات غير متاحة الآن. يرجى المحاولة بعد قليل.",
   "pricing.oneTime": "دفعة واحدة", "pricing.credits": "{n} رصيد", "pricing.detailed": "{n} فحوصات مفصلة",
-  "pricing.quick": "أو {n} فحوصات سريعة", "pricing.quickFree": "+ فحوصات سريعة مجانية غير محدودة", "pricing.never": "الرصيد لا تنتهي صلاحيته",
+  "pricing.detailedFree": "فحوصات مفصلة مجانية غير محدودة", "pricing.quick": "أو {n} فحوصات سريعة", "pricing.quickFree": "+ فحوصات سريعة مجانية غير محدودة", "pricing.never": "الرصيد لا تنتهي صلاحيته",
   "pricing.popular": "شائع", "pricing.best": "أفضل قيمة", "pricing.start": "ابدأ الآن",
   "pricing.detailedName": "فحص مفصل", "pricing.detailedDesc": "رسم ثلاثي الأبعاد كامل للوجه ونتائج لكل منطقة وروتين مخصص.",
   "pricing.quickName": "فحص سريع", "pricing.quickDesc": "نتيجة سريعة للبشرة من صورة واحدة مع أبرز المشاكل.",

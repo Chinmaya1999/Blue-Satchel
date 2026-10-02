@@ -28,7 +28,7 @@ export default {
   "pricing.sub": "Buy a scan-credit pack once. No subscription, no auto-renewal, no billing cycle. Credits never expire.",
   "pricing.loading": "Loading plans…", "pricing.unavailable": "Plans are unavailable right now. Please try again shortly.",
   "pricing.oneTime": "one-time payment", "pricing.credits": "{n} credits", "pricing.detailed": "{n} detailed scans",
-  "pricing.quick": "or {n} quick scans", "pricing.quickFree": "+ unlimited free quick scans", "pricing.never": "Credits never expire",
+  "pricing.detailedFree": "Unlimited free detailed scans", "pricing.quick": "or {n} quick scans", "pricing.quickFree": "+ unlimited free quick scans", "pricing.never": "Credits never expire",
   "pricing.popular": "Popular", "pricing.best": "Best value", "pricing.start": "Get started",
   "pricing.detailedName": "Detailed Scan", "pricing.detailedDesc": "Full 3D face mapping, zone-by-zone scores and a personalised routine.",
   "pricing.quickName": "Quick Scan", "pricing.quickDesc": "A fast single-photo skin score with the top concerns.",

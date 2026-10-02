@@ -28,7 +28,7 @@ export default {
   "pricing.sub": "स्कैन-क्रेडिट पैक एक बार खरीदें। कोई सब्सक्रिप्शन नहीं, ऑटो-रिन्यूअल नहीं, बिलिंग साइकिल नहीं। क्रेडिट कभी समाप्त नहीं होते।",
   "pricing.loading": "प्लान लोड हो रहे हैं…", "pricing.unavailable": "प्लान अभी उपलब्ध नहीं हैं। कृपया थोड़ी देर बाद प्रयास करें।",
   "pricing.oneTime": "एकमुश्त भुगतान", "pricing.credits": "{n} क्रेडिट", "pricing.detailed": "{n} डिटेल्ड स्कैन",
-  "pricing.quick": "या {n} क्विक स्कैन", "pricing.quickFree": "+ असीमित मुफ़्त क्विक स्कैन", "pricing.never": "क्रेडिट कभी समाप्त नहीं होते",
+  "pricing.detailedFree": "असीमित मुफ़्त डिटेल्ड स्कैन", "pricing.quick": "या {n} क्विक स्कैन", "pricing.quickFree": "+ असीमित मुफ़्त क्विक स्कैन", "pricing.never": "क्रेडिट कभी समाप्त नहीं होते",
   "pricing.popular": "लोकप्रिय", "pricing.best": "सबसे किफ़ायती", "pricing.start": "शुरू करें",
   "pricing.detailedName": "डिटेल्ड स्कैन", "pricing.detailedDesc": "पूरा 3D फ़ेस मैपिंग, ज़ोन-दर-ज़ोन स्कोर और आपके लिए बना रूटीन।",
   "pricing.quickName": "क्विक स्कैन", "pricing.quickDesc": "एक फ़ोटो से मुख्य समस्याओं के साथ तेज़ स्किन स्कोर।",

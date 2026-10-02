@@ -28,7 +28,7 @@ export default {
   "pricing.sub": "スキャンクレジットのパックを1回購入するだけ。サブスクリプションも自動更新も請求サイクルもありません。クレジットに有効期限はありません。",
   "pricing.loading": "プランを読み込み中…", "pricing.unavailable": "現在プランをご利用いただけません。しばらくしてからもう一度お試しください。",
   "pricing.oneTime": "一括払い", "pricing.credits": "{n}クレジット", "pricing.detailed": "詳細スキャン{n}回",
-  "pricing.quick": "またはクイックスキャン{n}回", "pricing.quickFree": "+ クイックスキャン無料・無制限", "pricing.never": "クレジットは期限なし",
+  "pricing.detailedFree": "詳細スキャン無料・無制限", "pricing.quick": "またはクイックスキャン{n}回", "pricing.quickFree": "+ クイックスキャン無料・無制限", "pricing.never": "クレジットは期限なし",
   "pricing.popular": "人気", "pricing.best": "お得", "pricing.start": "始める",
   "pricing.detailedName": "詳細スキャン", "pricing.detailedDesc": "3D顔マッピング、ゾーン別スコア、パーソナライズされたルーティン。",
   "pricing.quickName": "クイックスキャン", "pricing.quickDesc": "写真1枚で主な悩みと肌スコアをすばやく確認。",
