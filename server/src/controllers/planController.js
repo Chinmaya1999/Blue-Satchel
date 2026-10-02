@@ -15,7 +15,7 @@ const parsePlanInput = (body, { partial = false } = {}) => {
   }
   if (!partial || body.priceUsd !== undefined) {
     const price = Number(body.priceUsd);
-    if (!Number.isFinite(price) || price < 0.05 || price > 10000) errors.push("Price must be between $0.05 and $10,000.");
+    if (!Number.isFinite(price) || price < 0.04 || price > 10000) errors.push("Price must be between $0.04 and $10,000.");
     else out.priceUsd = Math.round(price * 100) / 100;
   }
   if (!partial || body.credits !== undefined) {

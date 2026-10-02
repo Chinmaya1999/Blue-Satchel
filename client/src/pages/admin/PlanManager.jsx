@@ -29,7 +29,7 @@ const PlanForm = ({ form, setForm, onSubmit, onCancel, saving, submitLabel }) =>
     <input required maxLength={40} placeholder="Plan name" className="input py-2 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
     <label className="relative">
       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
-      <input required type="number" min="0.5" max="10000" step="0.01" placeholder="Price" className="input py-2 pl-6 text-sm" value={form.priceUsd} onChange={(e) => setForm({ ...form, priceUsd: e.target.value })} />
+      <input required type="number" min="0.04" max="10000" step="0.01" placeholder="Price" className="input py-2 pl-6 text-sm" value={form.priceUsd} onChange={(e) => setForm({ ...form, priceUsd: e.target.value })} />
     </label>
     <input required type="number" min="1" max="1000000" step="1" placeholder="Credits" className="input py-2 text-sm" value={form.credits} onChange={(e) => setForm({ ...form, credits: e.target.value })} />
     <select className="input py-2 text-sm" value={form.badge} onChange={(e) => setForm({ ...form, badge: e.target.value })}>
