@@ -48,8 +48,8 @@ app.use("/api", apiLimiter);
 // Switches the storefront needs (no auth): whether the shop sells, and
 // whether Quick Scan is free.
 app.get("/api/settings", (req, res) => {
-  const { shopEnabled, quickScanFree, detailedScanFree } = getSettings();
-  res.json({ shopEnabled, quickScanFree, detailedScanFree });
+  const { shopEnabled, quickScanFree, detailedScanFree, focusScanFree } = getSettings();
+  res.json({ shopEnabled, quickScanFree, detailedScanFree, focusScanFree });
 });
 
 app.use("/api/auth", authRoutes);

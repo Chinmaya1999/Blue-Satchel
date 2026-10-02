@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
@@ -43,6 +43,7 @@ import AdminChatLeads from "./pages/admin/AdminChatLeads.jsx";
 
 function App() {
   const { shopEnabled } = useSiteSettings();
+  const inAdmin = useLocation().pathname.startsWith("/admin");
   return (
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />
@@ -93,8 +94,8 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      <Footer />
-      <ChatWidget />
+      {!inAdmin && <Footer />}
+      {!inAdmin && <ChatWidget />}
     </div>
   );
 }

@@ -170,8 +170,14 @@ const AdminPayments = () => {
 
   return (
     <div className="space-y-6">
-      <ScanPricing mode="quick" label="Quick Scan" settingKey="quickScanFree" otherLabel="Detailed Scan" />
-      <ScanPricing mode="detailed" label="Detailed Scan" settingKey="detailedScanFree" otherLabel="Quick Scan" />
+      <section>
+        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-slate-400">Scan pricing</h2>
+        <div className="space-y-3">
+        <ScanPricing mode="quick" label="Quick Scan" settingKey="quickScanFree" otherLabel="Detailed Scan" />
+        <ScanPricing mode="detailed" label="Detailed Scan" settingKey="detailedScanFree" otherLabel="Quick Scan" />
+        <ScanPricing mode="focus" label="Focus Scan" settingKey="focusScanFree" otherLabel="Other scans" />
+        </div>
+      </section>
 
       {/* Totals */}
       {stats && (

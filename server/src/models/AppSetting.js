@@ -9,6 +9,8 @@ const appSettingSchema = new mongoose.Schema(
     quickScanFree: { type: Boolean, default: false },
     // Same for Detailed Scan.
     detailedScanFree: { type: Boolean, default: false },
+    // Same for Focus Scan.
+    focusScanFree: { type: Boolean, default: false },
     // When false the shop is a catalog only: products can be viewed but not
     // bought (no bag, checkout or orders). Admins switch it on to sell.
     shopEnabled: { type: Boolean, default: false },
