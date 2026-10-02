@@ -65,8 +65,8 @@ const details = (t) => {
   );
 };
 
-// Admin switch: make Quick Scan free for everyone, or charge credits for it.
-const QuickScanPricing = () => {
+// Admin switch: make a scan mode free for everyone, or charge credits for it.
+const ScanPricing = ({ mode, label, settingKey, otherLabel }) => {
   const { refreshPricing } = usePricing();
   const [state, setState] = useState(null); // { settings, baseCosts }
   const [saving, setSaving] = useState(false);
@@ -76,13 +76,13 @@ const QuickScanPricing = () => {
     api.get("/admin/settings").then(({ data }) => setState(data)).catch(() => setError("Couldn't load settings."));
   }, []);
 
-  const setFree = async (quickScanFree) => {
-    const verb = quickScanFree ? "FREE for everyone" : `PAID (${state.baseCosts.quick} credits per scan)`;
-    if (!window.confirm(`Make Quick Scan ${verb}? This applies to all customers straight away.`)) return;
+  const setFree = async (isFree) => {
+    const verb = isFree ? "FREE for everyone" : `PAID (${state.baseCosts[mode]} credits per scan)`;
+    if (!window.confirm(`Make ${label} ${verb}? This applies to all customers straight away.`)) return;
     setSaving(true);
     setError("");
     try {
-      const { data } = await api.patch("/admin/settings", { quickScanFree });
+      const { data } = await api.patch("/admin/settings", { [settingKey]: isFree });
       setState(data);
       refreshPricing();
     } catch (err) {
@@ -93,10 +93,10 @@ const QuickScanPricing = () => {
   };
 
   if (!state) {
-    return <div className="card p-5 text-sm text-slate-400">{error || "Loading Quick Scan pricing…"}</div>;
+    return <div className="card p-5 text-sm text-slate-400">{error || `Loading ${label} pricing…`}</div>;
   }
 
-  const free = state.settings.quickScanFree;
+  const free = state.settings[settingKey];
   return (
     <div className="card flex flex-wrap items-center justify-between gap-4 p-5">
       <div className="flex items-start gap-3">
@@ -105,12 +105,12 @@ const QuickScanPricing = () => {
         </span>
         <div>
           <h2 className="font-display font-semibold text-slate-900">
-            Quick Scan is {free ? <span className="text-emerald-600">free</span> : <span className="text-amber-600">paid</span>}
+            {label} is {free ? <span className="text-emerald-600">free</span> : <span className="text-amber-600">paid</span>}
           </h2>
           <p className="text-sm text-slate-500">
             {free
-              ? "Any signed-in customer can run Quick Scan without credits. Detailed Scan still needs credits."
-              : `Quick Scan costs ${state.baseCosts.quick} credits; customers without enough credits are sent to buy some.`}
+              ? `Any signed-in customer can run ${label} without credits. ${otherLabel} still needs credits.`
+              : `${label} costs ${state.baseCosts[mode]} credits; customers without enough credits are sent to buy some.`}
           </p>
           {state.settings.updatedAt && (
             <p className="mt-0.5 text-xs text-slate-400">
@@ -121,10 +121,10 @@ const QuickScanPricing = () => {
           {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
         </div>
       </div>
-      <div className="flex rounded-xl bg-slate-100 p-1" role="radiogroup" aria-label="Quick Scan pricing">
+      <div className="flex rounded-xl bg-slate-100 p-1" role="radiogroup" aria-label={`${label} pricing`}>
         {[
           { value: true, label: "Free" },
-          { value: false, label: `Paid · ${state.baseCosts.quick} credits` },
+          { value: false, label: `Paid · ${state.baseCosts[mode]} credits` },
         ].map((opt) => (
           <button
             key={opt.label}
@@ -170,7 +170,8 @@ const AdminPayments = () => {
 
   return (
     <div className="space-y-6">
-      <QuickScanPricing />
+      <ScanPricing mode="quick" label="Quick Scan" settingKey="quickScanFree" otherLabel="Detailed Scan" />
+      <ScanPricing mode="detailed" label="Detailed Scan" settingKey="detailedScanFree" otherLabel="Quick Scan" />
 
       {/* Totals */}
       {stats && (

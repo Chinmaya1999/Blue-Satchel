@@ -424,7 +424,7 @@ export const getAppSettings = async (req, res, next) => {
 
 export const updateAppSettings = async (req, res, next) => {
   try {
-    for (const key of ["quickScanFree", "shopEnabled"]) {
+    for (const key of ["quickScanFree", "detailedScanFree", "shopEnabled"]) {
       if (req.body[key] !== undefined && typeof req.body[key] !== "boolean") {
         return res.status(400).json({ message: `${key} must be true or false.` });
       }

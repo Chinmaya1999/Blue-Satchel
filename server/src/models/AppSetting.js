@@ -7,6 +7,8 @@ const appSettingSchema = new mongoose.Schema(
     key: { type: String, required: true, unique: true, default: "global" },
     // When true, Quick Scan costs no credits and anyone signed in can run it.
     quickScanFree: { type: Boolean, default: false },
+    // Same for Detailed Scan.
+    detailedScanFree: { type: Boolean, default: false },
     // When false the shop is a catalog only: products can be viewed but not
     // bought (no bag, checkout or orders). Admins switch it on to sell.
     shopEnabled: { type: Boolean, default: false },

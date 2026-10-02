@@ -48,6 +48,7 @@ export const BASE_SCAN_COSTS = { detailed: 100, quick: 50, focus: 50 };
 
 export const scanCosts = () => ({
   ...BASE_SCAN_COSTS,
+  detailed: getSettings().detailedScanFree ? 0 : BASE_SCAN_COSTS.detailed,
   quick: getSettings().quickScanFree ? 0 : BASE_SCAN_COSTS.quick,
 });
 
