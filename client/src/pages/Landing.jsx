@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ScanFace, ArrowRight, ShieldCheck, Cpu, Sparkles, Camera, Layers, Activity, ShoppingBag } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useLocale } from "../context/LocaleContext.jsx";
+import FeaturedSalons from "../components/FeaturedSalons.jsx";
 const FaceScan3D = lazy(() => import("../components/landing/FaceScan3D.jsx"));
 const SkinLayers3D = lazy(() => import("../components/landing/SkinLayers3D.jsx"));
 const LiveLandmarks = lazy(() => import("../components/landing/LiveLandmarks.jsx"));
@@ -463,7 +464,7 @@ const Landing = () => {
           </motion.div>
 
           <div className="mt-14 grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
-            <motion.div {...reveal} className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-[2rem] ring-1 ring-white/10">
+            <motion.div {...reveal} className="fs-keep-dark relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-[2rem] ring-1 ring-white/10">
               <img
                 src="/landing/freckles.jpg"
                 alt="Face showing freckles and natural skin texture"
@@ -537,7 +538,7 @@ const Landing = () => {
                 key={f.src}
                 {...reveal}
                 transition={{ ...reveal.transition, delay: i * 0.08 }}
-                className="group relative aspect-[3/4] overflow-hidden rounded-3xl ring-1 ring-white/10"
+                className="fs-keep-dark group relative aspect-[3/4] overflow-hidden rounded-3xl ring-1 ring-white/10"
               >
                 <img src={f.src} alt="" loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" style={{ objectPosition: f.pos }} />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
@@ -636,9 +637,11 @@ const Landing = () => {
 
       <Suspense fallback={null}><SkinExpectations /></Suspense>
 
+      <FeaturedSalons />
+
       {/* ───────── CTA ───────── */}
       <section className="container-app pb-24">
-        <motion.div {...reveal} className="relative overflow-hidden rounded-[2.5rem] ring-1 ring-white/10">
+        <motion.div {...reveal} className="fs-keep-dark relative overflow-hidden rounded-[2.5rem] ring-1 ring-white/10">
           <img src="/landing/facial.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#050814] via-[#050814]/85 to-[#050814]/30" />
           <div className="fs-photo-scan" />

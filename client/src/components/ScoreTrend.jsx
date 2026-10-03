@@ -66,7 +66,7 @@ const ScoreTrend = ({ scans }) => {
         </svg>
         {h && (
           <div
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-xl bg-[#0a1020] px-3 py-2 text-xs shadow-xl ring-1 ring-white/15"
+            className="fs-keep-dark pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-xl bg-[#0a1020] px-3 py-2 text-xs shadow-xl ring-1 ring-white/15"
             style={{ left: `${(x(hover) / W) * 100}%`, top: `${(y(h.overallScore) / H) * 100}%`, marginTop: -10 }}
           >
             <p className="font-display text-base font-bold text-white">{h.overallScore}<span className="text-slate-500">/100</span></p>

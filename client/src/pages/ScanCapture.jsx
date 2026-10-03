@@ -255,7 +255,10 @@ const speakText = (text) => {
   window.speechSynthesis.speak(utter);
 };
 
-const ScanCaptureInner = ({ quick = false }) => {
+// `quick` = single-selfie flow; `focus` is the same flow billed/analysed as Focus Scan.
+const ScanCaptureInner = ({ quick: quickProp = false, focus = false }) => {
+  const quick = quickProp || focus;
+  const mode = focus ? "focus" : quick ? "quick" : "detailed";
   const STEP_ORDER = useMemo(() => (quick ? QUICK_STEPS : DETAILED_STEPS), [quick]);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -271,7 +274,7 @@ const ScanCaptureInner = ({ quick = false }) => {
   const [error, setError] = useState("");
   const { user, setCredits } = useAuth();
   const { costs, refreshPricing } = usePricing();
-  const scanCost = costs[quick ? "quick" : "detailed"];
+  const scanCost = costs[mode];
 
   const [modelsReady, setModelsReady] = useState(false);
   const [detectorError, setDetectorError] = useState("");
@@ -374,7 +377,7 @@ const ScanCaptureInner = ({ quick = false }) => {
     setError("");
     try {
       const formData = new FormData();
-      formData.append("mode", quick ? "quick" : "detailed");
+      formData.append("mode", mode);
       formData.append("front", front.blob, "front.jpg");
       if (left?.blob) formData.append("left", left.blob, "left.jpg");
       if (right?.blob) formData.append("right", right.blob, "right.jpg");
@@ -389,8 +392,8 @@ const ScanCaptureInner = ({ quick = false }) => {
         // free scan back to paid) — go buy more.
         setCredits(err.response.data.credits?.balance);
         refreshPricing();
-        const cost = err.response.data.credits?.costs?.[quick ? "quick" : "detailed"] ?? scanCost;
-        navigate(buyCreditsPath(cost, quick ? "/scan/quick" : "/scan/detailed"));
+        const cost = err.response.data.credits?.costs?.[mode] ?? scanCost;
+        navigate(buyCreditsPath(cost, `/scan/${mode}`));
         return;
       }
       const data = err.response?.data;
@@ -400,7 +403,7 @@ const ScanCaptureInner = ({ quick = false }) => {
       // Pop the vendor's actual response (e.g. low-credits/rate-limit).
       showApiErrorAlert(data);
     }
-  }, [navigate, quick, STEP_ORDER, setCredits, scanCost, refreshPricing]);
+  }, [navigate, mode, STEP_ORDER, setCredits, scanCost, refreshPricing]);
 
   const advanceStage = useCallback(
     (fromStage) => {
@@ -707,7 +710,7 @@ const ScanCaptureInner = ({ quick = false }) => {
   );
 
   return (
-    <div className="fs-page flex h-[calc(100vh-4rem)] w-full flex-col overflow-hidden bg-[#050814] lg:flex-row">
+    <div className="fs-page fs-keep-dark flex h-[calc(100vh-4rem)] w-full flex-col overflow-hidden bg-[#050814] lg:flex-row">
       {/* Camera pane — full bleed */}
       <div className="relative flex-1 overflow-hidden bg-slate-950 lg:flex-[1.4]">
         {cameraError ? (
@@ -837,7 +840,7 @@ const ScanCaptureInner = ({ quick = false }) => {
                 <ScanFace size={24} />
               </span>
               <p className="fs-eyebrow text-[10px]">{quick ? "1 selfie · instant" : "3 angles · voice guided"}</p>
-              <h2 className="mt-2 font-display text-xl font-bold text-white">{quick ? "Quick AI Skin Scan" : "Guided AI Skin Scan"}</h2>
+              <h2 className="mt-2 font-display text-xl font-bold text-white">{focus ? "Focus AI Skin Scan" : quick ? "Quick AI Skin Scan" : "Guided AI Skin Scan"}</h2>
               <p className="mt-2 inline-flex rounded-full bg-amber-300/10 px-3 py-1 font-mono text-[11px] font-semibold text-amber-100 ring-1 ring-amber-300/30">
                 {isUnlimited(user) ? "Free for admins" : scanCost === 0 ? "Free scan" : `Uses ${scanCost} credits · ${user?.credits ?? 0} available`}
               </p>
@@ -869,7 +872,7 @@ const ScanCaptureInner = ({ quick = false }) => {
                     disabled={!cameraReady || !modelsReady}
                     className="btn-primary mt-6 h-12 w-full rounded-full"
                   >
-                    {!cameraReady ? "Starting camera…" : !modelsReady ? "Loading face detector…" : quick ? "Start quick scan" : "Start guided scan"}
+                    {!cameraReady ? "Starting camera…" : !modelsReady ? "Loading face detector…" : focus ? "Start focus scan" : quick ? "Start quick scan" : "Start guided scan"}
                   </button>
                 </>
               )}

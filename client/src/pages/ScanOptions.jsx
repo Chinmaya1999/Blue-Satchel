@@ -4,9 +4,9 @@ import { ScanFace, Zap, Crosshair, Clock, Check, ArrowRight, Lock, Coins } from 
 import { useAuth } from "../context/AuthContext.jsx";
 import { canAfford, isUnlimited, buyCreditsPath } from "../utils/credits.js";
 import { usePricing } from "../context/PricingContext.jsx";
+import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
-// Scan modes offered on "Skin Scan". Only the detailed scan is live; the
-// other two are listed as coming soon.
+// Scan modes offered on "Skin Scan". All three scans are live.
 const MODES = [
   {
     key: "detailed",
@@ -32,18 +32,21 @@ const MODES = [
   },
   {
     key: "focus",
+    to: "/scan/focus",
     icon: Crosshair,
     name: "Focus Scan",
     tagline: "Zoom in on one concern",
     time: "~20 sec",
-    features: ["Pick one area: acne, eyes, spots…", "Close-up, single-concern check", "Track one issue over time", "Targeted product picks"],
-    available: false,
+    features: ["Single front-facing photo", "15 metrics, each with confidence", "Spots, wrinkles, eye bags & more", "Targeted product picks"],
+    badge: "Precise",
+    available: true,
   },
 ];
 
 const ScanOptions = () => {
   const { user, refreshMe } = useAuth();
   const { costs, refreshPricing } = usePricing();
+  const siteSettings = useSiteSettings();
 
   // Pick up credits spent or bought in another tab, and any pricing change
   // an admin made (e.g. Quick Scan switched free/paid).
@@ -75,7 +78,9 @@ const ScanOptions = () => {
         </div>
 
         <div className="grid gap-5 md:grid-cols-3">
-          {MODES.map((m) => {
+          {MODES.map((base) => {
+            const enabled = siteSettings[`${base.key}ScanEnabled`] !== false;
+            const m = { ...base, available: base.available && enabled, unavailable: !enabled };
             const Icon = m.icon;
             const cost = costs[m.key];
             const free = cost === 0;
@@ -100,7 +105,7 @@ const ScanOptions = () => {
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400 ring-1 ring-white/10">
-                      <Lock size={10} /> Coming soon
+                      <Lock size={10} /> {m.unavailable ? "Unavailable" : "Coming soon"}
                     </span>
                   )}
                 </div>
@@ -130,7 +135,7 @@ const ScanOptions = () => {
 
                 <div className="mt-6">
                   {!m.available ? (
-                    <span className="btn-secondary pointer-events-none h-12 w-full rounded-full opacity-70">Coming soon</span>
+                    <span className="btn-secondary pointer-events-none h-12 w-full rounded-full opacity-70">{m.unavailable ? "Temporarily unavailable" : "Coming soon"}</span>
                   ) : !affordable ? (
                     <span className="btn-secondary h-12 w-full rounded-full">
                       <Coins size={15} /> Buy credits · need {cost - balance} more

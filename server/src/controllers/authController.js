@@ -9,6 +9,8 @@ import {
   CODE_TTL_MINUTES,
 } from "../services/emailVerification.js";
 import * as passwordReset from "../services/passwordReset.js";
+import Salon from "../models/Salon.js";
+import { createSalonFor } from "../services/salonService.js";
 
 const welcome = async (user) => {
   user.crmContactId = await crmService.syncCustomer(user);
@@ -43,6 +45,11 @@ export const register = async (req, res, next) => {
     if (password.length < 6 || password.length > 72) {
       return res.status(400).json({ message: "Password must be 6–72 characters." });
     }
+    // Salon owners register with the same form plus their salon's name.
+    const isSalon = req.body.accountType === "salon";
+    const salonName = str(req.body.salonName).slice(0, 80);
+    if (isSalon && !salonName) return res.status(400).json({ message: "Please enter your salon's name." });
+    const role = isSalon ? "salon" : "customer";
     const signupLocation = await resolveSignupLocation(req, location);
     const existing = await User.findOne({ email });
     let user;
@@ -50,13 +57,23 @@ export const register = async (req, res, next) => {
       // Never-verified sign-up for this email (a typo'd retry, or someone who
       // entered an address they don't own). It could do nothing without
       // verifying, so the new sign-up replaces it and gets a fresh code.
-      Object.assign(existing, { name, password, phone, signupLocation });
+      Object.assign(existing, { name, password, phone, signupLocation, role });
       user = await existing.save();
     } else if (existing) {
       return res.status(409).json({ message: "An account with this email already exists." });
     } else {
-      user = await User.create({ name, email, password, phone, signupLocation, emailVerified: false });
+      user = await User.create({ name, email, password, phone, signupLocation, emailVerified: false, role });
       await welcome(user);
+    }
+
+    if (isSalon) {
+      const mine = await Salon.findOne({ owner: user._id });
+      if (mine) {
+        mine.name = salonName;
+        await mine.save();
+      } else {
+        await createSalonFor(user, salonName);
+      }
     }
 
     // The account exists either way; if the email fails to send, the verify

@@ -7,7 +7,7 @@ import AppSetting from "../models/AppSetting.js";
  * server containers run briefly, and the periodic refresh keeps the other
  * one in step.
  */
-const DEFAULTS = { quickScanFree: false, detailedScanFree: false, focusScanFree: false, shopEnabled: false };
+const DEFAULTS = { quickScanFree: false, detailedScanFree: false, focusScanFree: false, shopEnabled: false, quickScanEnabled: true, detailedScanEnabled: true, focusScanEnabled: true };
 let cache = { ...DEFAULTS };
 
 const toPlain = (doc) => ({
@@ -15,6 +15,10 @@ const toPlain = (doc) => ({
   detailedScanFree: Boolean(doc?.detailedScanFree),
   focusScanFree: Boolean(doc?.focusScanFree),
   shopEnabled: Boolean(doc?.shopEnabled),
+  // Services are on unless an admin has switched them off.
+  quickScanEnabled: doc?.quickScanEnabled !== false,
+  detailedScanEnabled: doc?.detailedScanEnabled !== false,
+  focusScanEnabled: doc?.focusScanEnabled !== false,
   updatedAt: doc?.updatedAt ?? null,
   updatedBy: doc?.updatedBy ?? null,
 });
@@ -29,7 +33,7 @@ export const getSettings = () => cache;
 
 export const updateSettings = async (patch, adminId) => {
   const update = { updatedBy: adminId };
-  for (const key of ["quickScanFree", "detailedScanFree", "focusScanFree", "shopEnabled"]) {
+  for (const key of ["quickScanFree", "detailedScanFree", "focusScanFree", "shopEnabled", "quickScanEnabled", "detailedScanEnabled", "focusScanEnabled"]) {
     if (typeof patch[key] === "boolean") update[key] = patch[key];
   }
   await AppSetting.findOneAndUpdate({ key: "global" }, update, { upsert: true, setDefaultsOnInsert: true });

@@ -52,7 +52,7 @@ const CountrySelect = () => {
       </button>
 
       {open && (
-        <div className="absolute end-0 top-11 z-50 w-56 overflow-hidden rounded-2xl bg-[#0a1020] p-1.5 shadow-2xl ring-1 ring-white/15">
+        <div className="fs-keep-dark absolute end-0 top-11 z-50 w-56 overflow-hidden rounded-2xl bg-[#0a1020] p-1.5 shadow-2xl ring-1 ring-white/15">
           <p className="px-3 pb-1 pt-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">{t("nav.language")}</p>
           <ul role="listbox">
             {LANGUAGES.map((l) => (

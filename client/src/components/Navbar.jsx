@@ -1,10 +1,11 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ShoppingBag, User, Menu, X, ScanFace, LayoutGrid, LogOut, Bell, History, Home, Shield, ArrowRight, Coins } from "lucide-react";
+import { ShoppingBag, User, Menu, X, ScanFace, LayoutGrid, LogOut, Bell, History, Home, Shield, ArrowRight, Coins, Store, Sun, Moon } from "lucide-react";
 import Logo from "./Logo.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import { isUnlimited } from "../utils/credits.js";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 import { useLocale } from "../context/LocaleContext.jsx";
@@ -19,6 +20,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const { pathname } = useLocation();
 
   const isAdmin = user?.role === "admin";
@@ -32,9 +34,11 @@ const Navbar = () => {
   const links = [
     { to: "/", label: t("nav.home"), icon: Home, end: true },
     { to: "/shop", label: t("nav.shop"), icon: LayoutGrid },
-    ...(user ? [{ to: "/credits", label: t("nav.pricing"), icon: Coins }] : []),
-    ...(user ? [{ to: "/scan", label: t("nav.scan"), icon: ScanFace, end: true }] : []),
-    ...(user ? [{ to: "/scan/history", label: t("nav.history"), icon: History }] : []),
+    ...(user?.role === "salon" ? [] : [{ to: "/salons", label: "Salons", icon: Store }]),
+    ...(user?.role === "salon" ? [{ to: "/salon", label: "My Salon", icon: Store }] : []),
+    ...(user && !isAdmin ? [{ to: "/credits", label: t("nav.pricing"), icon: Coins }] : []),
+    ...(user && user.role !== "salon" && !isAdmin ? [{ to: "/scan", label: t("nav.scan"), icon: ScanFace, end: true }] : []),
+    ...(user && user.role !== "salon" && !isAdmin ? [{ to: "/scan/history", label: t("nav.history"), icon: History }] : []),
     ...(user?.role === "admin" ? [{ to: "/admin", label: t("nav.console"), icon: Shield }] : []),
   ];
 
@@ -60,11 +64,11 @@ const Navbar = () => {
       }`}
     >
       <div className="container-app flex h-16 items-center justify-between gap-4">
-        <Link to="/" aria-label="Blue Satchel home"><Logo light /></Link>
+        <Link to="/" aria-label="Blue Satchel home" className="shrink-0 whitespace-nowrap"><Logo light /></Link>
 
         <nav className="hidden items-center rounded-full bg-white/[0.03] p-1 ring-1 ring-white/10 md:flex">
           {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} className="relative rounded-full px-4 py-1.5 text-sm font-medium">
+            <NavLink key={l.to} to={l.to} end={l.end} className="relative whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium">
               {({ isActive }) => (
                 <>
                   {isActive && (
@@ -83,6 +87,14 @@ const Navbar = () => {
 
         <div className="flex items-center gap-1.5">
           <CountrySelect />
+          <button
+            onClick={toggleTheme}
+            className="fs-nav-icon"
+            aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+            title={theme === "light" ? "Dark theme" : "Light theme"}
+          >
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
           {user && (
             <Link
               to="/credits"

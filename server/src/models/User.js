@@ -81,7 +81,7 @@ const userSchema = new mongoose.Schema(
     emailVerified: { type: Boolean },
     emailVerification: { type: emailVerificationSchema, select: false },
     passwordReset: { type: passwordResetSchema, select: false },
-    role: { type: String, enum: ["customer", "admin"], default: "customer" },
+    role: { type: String, enum: ["customer", "salon", "admin"], default: "customer" },
     skinType: {
       type: String,
       enum: ["normal", "oily", "dry", "combination", "sensitive", "unknown"],

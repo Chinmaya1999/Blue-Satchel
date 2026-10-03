@@ -18,3 +18,11 @@ export const upload = multer({
   fileFilter,
   limits: { fileSize: 8 * 1024 * 1024, files: 3, fields: 5 },
 });
+
+// Salon dashboard uploads: logo/cover/product photo, and customer scans
+// (which carry a few extra form fields).
+export const salonUpload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 8 * 1024 * 1024, files: 3, fields: 12 },
+});

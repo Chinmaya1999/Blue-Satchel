@@ -13,6 +13,8 @@ import adminRoutes from "./routes/adminRoutes.js";
 import creditRoutes from "./routes/creditRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import salonRoutes from "./routes/salonRoutes.js";
+import publicSalonRoutes from "./routes/publicSalonRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import { sanitizeBody, apiLimiter } from "./middleware/security.js";
 import { getSettings } from "./services/settings.js";
@@ -49,8 +51,16 @@ app.use("/api", apiLimiter);
 // Switches the storefront needs (no auth): whether the shop sells, and
 // whether Quick Scan is free.
 app.get("/api/settings", (req, res) => {
-  const { shopEnabled, quickScanFree, detailedScanFree, focusScanFree } = getSettings();
-  res.json({ shopEnabled, quickScanFree, detailedScanFree, focusScanFree });
+  const s = getSettings();
+  res.json({
+    shopEnabled: s.shopEnabled,
+    quickScanFree: s.quickScanFree,
+    detailedScanFree: s.detailedScanFree,
+    focusScanFree: s.focusScanFree,
+    quickScanEnabled: s.quickScanEnabled,
+    detailedScanEnabled: s.detailedScanEnabled,
+    focusScanEnabled: s.focusScanEnabled,
+  });
 });
 
 app.use("/api/auth", authRoutes);
@@ -61,6 +71,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/credits", creditRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/support", supportRoutes);
+app.use("/api/salon", salonRoutes);
+app.use("/api/salons", publicSalonRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -26,11 +26,30 @@ import {
   updateAppSettings,
 } from "../controllers/adminController.js";
 
+import {
+  listSalonsAdmin,
+  getSalonAdmin,
+  updateSalonAdmin,
+  deleteSalonAdmin,
+  setSalonProductActive,
+  deleteSalonProductAdmin,
+  deleteSalonReviewAdmin,
+} from "../controllers/adminSalonController.js";
+
 const router = Router();
 
 router.use(protect, adminOnly);
 
 router.get("/overview", getOverview);
+
+// Salons
+router.get("/salons", listSalonsAdmin);
+router.get("/salons/:id", getSalonAdmin);
+router.patch("/salons/:id", updateSalonAdmin);
+router.delete("/salons/:id", deleteSalonAdmin);
+router.patch("/salons/:id/products/:productId", setSalonProductActive);
+router.delete("/salons/:id/products/:productId", deleteSalonProductAdmin);
+router.delete("/salons/:id/reviews/:reviewId", deleteSalonReviewAdmin);
 
 // Live customer chat
 router.get("/support/unread", adminUnread);

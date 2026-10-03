@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Package, ShoppingCart, ScanFace, Coins, MessageCircle, MessagesSquare, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Users, Package, ShoppingCart, ScanFace, Coins, MessageCircle, MessagesSquare, ExternalLink, Store } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useAdminSupportAlerts } from "../../hooks/useAdminSupportAlerts.js";
 
@@ -14,6 +14,7 @@ const groups = [
       { to: "/admin/customers", label: "Users", icon: Users, desc: "Manage customer accounts and credits" },
       { to: "/admin/scans", label: "Scan History", icon: ScanFace, desc: "Every skin scan run on the platform" },
       { to: "/admin/support", label: "Customer Chat", icon: MessagesSquare, desc: "Live messages from customers — reply to their skin-care questions", badge: true },
+      { to: "/admin/salons", label: "Salons", icon: Store, desc: "Approve salons and manage their profiles, products, reviews and bills" },
       { to: "/admin/chat-leads", label: "Chatbot Leads", icon: MessageCircle, desc: "Enquiries captured by the chatbot" },
     ],
   },

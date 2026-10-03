@@ -54,6 +54,14 @@ export const scanCosts = () => ({
   quick: getSettings().quickScanFree ? 0 : BASE_SCAN_COSTS.quick,
 });
 
+// False while an admin has switched this scan service off.
+export const isScanEnabled = (mode) => getSettings()[`${mode}ScanEnabled`] !== false;
+
+export const SERVICE_OFF = (mode) => ({
+  code: "SERVICE_DISABLED",
+  message: `${mode[0].toUpperCase()}${mode.slice(1)} Scan is unavailable right now. Please try another scan or check back later.`,
+});
+
 export const isUnlimited = (user) => user.role === "admin";
 
 export const creditSummary = (user) => ({

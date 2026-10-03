@@ -619,10 +619,98 @@ const analyzeWithRupam = async ({ front }) => {
   };
 };
 
+/**
+ * Focus Scan provider — single front selfie sent to the Focus API
+ * (POST {FOCUS_API_BASE}/v1/analyze, multipart `image`, `X-API-Key` header).
+ * Returns 15 metrics, each with score 0-100 (higher = better), so we invert
+ * into this app's `severity`. Bad-photo errors (422) are not billed upstream.
+ */
+const FOCUS_BASE_URL = () => (process.env.FOCUS_API_BASE || "http://localhost:5173").replace(/\/$/, "");
+const FOCUS_ANALYZE_TIMEOUT_MS = 60000;
+
+const FOCUS_CONCERN_MAP = {
+  dark_circles: "dark-circles",
+  "dark-circles": "dark-circles",
+  "upper-eyelid-droopiness": "droopy-upper-eyelid",
+  "lower-eyelid-droopiness": "droopy-lower-eyelid",
+  "under-eye-hollows": "tear-trough",
+};
+
+const focusError = (json, status) => {
+  const err = new Error(json?.message || json?.error || `Focus API error (${status}).`);
+  // 422 = bad photo (shown to the user to retake). Anything else on the
+  // vendor side is surfaced as 503 — never 402/429, which the client treats
+  // as "out of credits" / rate limited.
+  err.status = status === 422 ? 422 : 503;
+  err.provider = "focus";
+  err.providerStatus = status;
+  err.providerResponse = json;
+  return err;
+};
+
+const analyzeWithFocus = async ({ front }) => {
+  const apiKey = process.env.FOCUS_API_KEY;
+  if (!apiKey) throw new Error("FOCUS_API_KEY is not configured.");
+
+  const form = new FormData();
+  form.append("image", new Blob([front], { type: "image/jpeg" }), "front.jpg");
+
+  let res;
+  try {
+    res = await fetch(`${FOCUS_BASE_URL()}/v1/analyze`, {
+      method: "POST",
+      headers: { "X-API-Key": apiKey }, // let fetch set the multipart boundary
+      body: form,
+      signal: AbortSignal.timeout(FOCUS_ANALYZE_TIMEOUT_MS),
+    });
+  } catch (err) {
+    console.error("[focus] request failed:", err.message);
+    throw focusError({ message: "The Focus Scan service is unreachable. Please try again." }, 502);
+  }
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    console.error(`[focus] ${res.status} on /v1/analyze:`, json);
+    throw focusError(json, res.status);
+  }
+
+  const metrics = Object.values(json?.metrics || {});
+  if (!metrics.length) {
+    // e.g. FOCUS_API_BASE points at a web app that answered with HTML.
+    console.error("[focus] unexpected response from", FOCUS_BASE_URL(), json);
+    throw focusError({ message: "The Focus Scan service returned an unexpected response. Please try again." }, 502);
+  }
+  const concerns = metrics.map((m) => {
+    const rawKey = String(m.key || m.label || "").toLowerCase().replace(/[_\s]+/g, "-");
+    const key = FOCUS_CONCERN_MAP[rawKey] || rawKey;
+    const severity = Math.round(clamp(typeof m.concern === "number" ? m.concern : 100 - (m.score ?? 50)));
+    return { key, label: m.label || key, severity, level: levelFor(severity) };
+  });
+
+  const overallScore = Math.round(clamp(json?.overall_score ?? 50));
+  const overallLabel =
+    overallScore >= 85 ? "Excellent" : overallScore >= 70 ? "Good" : overallScore >= 50 ? "Fair" : "Needs Care";
+
+  return {
+    provider: "focus",
+    overallScore,
+    overallLabel,
+    concerns,
+    rawMetrics: {
+      anglesUsed: ["front"],
+      imageQuality: json?.quality,
+      focusOutput: json,
+    },
+  };
+};
+
 // Provider used for a given scan mode. Quick Scan is wired to Rupam by
-// default; everything else follows AI_PROVIDER.
+// default, Focus Scan to the Focus API; everything else follows AI_PROVIDER.
 const providerForMode = (mode) =>
-  mode === "quick" ? process.env.QUICK_SCAN_PROVIDER || "rupam" : process.env.AI_PROVIDER || "mock";
+  mode === "quick"
+    ? process.env.QUICK_SCAN_PROVIDER || "rupam"
+    : mode === "focus"
+    ? "focus"
+    : process.env.AI_PROVIDER || "mock";
 
 /**
  * @param {{ front: Buffer, left?: Buffer, right?: Buffer }} buffers
@@ -633,6 +721,7 @@ export const analyzeSkin = async (buffers, { mode } = {}) => {
   if (provider === "mock") return analyzeWithMockProvider(buffers);
   if (provider === "perfectcorp") return analyzeWithPerfectCorp(buffers);
   if (provider === "rupam") return analyzeWithRupam(buffers);
+  if (provider === "focus") return analyzeWithFocus(buffers);
   throw new Error(`Unsupported AI provider "${provider}"`);
 };
 

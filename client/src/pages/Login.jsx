@@ -34,9 +34,9 @@ const Login = () => {
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
-      const redirect = params.get("redirect") || "/";
+      const redirect = params.get("redirect") || (user.role === "salon" ? "/salon" : "/");
       // Signed up but never entered the email code — finish that first.
-      navigate(user.emailVerified === false ? `/verify-email?next=${encodeURIComponent(redirect === "/" ? "/scan" : redirect)}` : redirect);
+      navigate(user.emailVerified === false ? `/verify-email?next=${encodeURIComponent(redirect === "/" ? (user.role === "salon" ? "/salon" : "/scan") : redirect)}` : redirect);
     } catch (err) {
       setError(err.response?.data?.message || "Unable to sign in. Please try again.");
     } finally {

@@ -11,6 +11,11 @@ const appSettingSchema = new mongoose.Schema(
     detailedScanFree: { type: Boolean, default: false },
     // Same for Focus Scan.
     focusScanFree: { type: Boolean, default: false },
+    // Availability of each scan service. When false the scan is switched off
+    // for everyone (customers and salons) until an admin turns it back on.
+    quickScanEnabled: { type: Boolean, default: true },
+    detailedScanEnabled: { type: Boolean, default: true },
+    focusScanEnabled: { type: Boolean, default: true },
     // When false the shop is a catalog only: products can be viewed but not
     // bought (no bag, checkout or orders). Admins switch it on to sell.
     shopEnabled: { type: Boolean, default: false },

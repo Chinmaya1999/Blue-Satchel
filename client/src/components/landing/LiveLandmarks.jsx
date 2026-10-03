@@ -197,7 +197,7 @@ const LiveLandmarks = () => {
 
   return (
     <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
-      <div ref={wrapRef} className="relative mx-auto w-full max-w-md overflow-hidden rounded-[2rem] ring-1 ring-white/10 shadow-[0_40px_120px_-30px_rgba(56,189,248,0.35)]">
+      <div ref={wrapRef} className="fs-keep-dark relative mx-auto w-full max-w-md overflow-hidden rounded-[2rem] ring-1 ring-white/10 shadow-[0_40px_120px_-30px_rgba(56,189,248,0.35)]">
         <img ref={imgRef} src={PHOTO} alt="Portrait being analysed" className="block w-full" crossOrigin="anonymous" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/10 via-transparent to-slate-950/50" />
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />

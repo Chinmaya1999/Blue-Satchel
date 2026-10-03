@@ -33,6 +33,7 @@ import ProductCard from "../components/ProductCard.jsx";
 import ScanReport from "../components/ScanReport.jsx";
 import ApiAnalysisPanel from "../components/ApiAnalysisPanel.jsx";
 import RupamAnalysisPanel from "../components/RupamAnalysisPanel.jsx";
+import FocusAnalysisPanel from "../components/FocusAnalysisPanel.jsx";
 import NearbyDermatologists from "../components/NearbyDermatologists.jsx";
 import ScanAdvisor from "../components/ScanAdvisor.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -106,7 +107,7 @@ const downloadJson = (scan) => {
     skinAge: scan.rawMetrics?.skinAge ?? null,
     concerns: scan.concerns,
     faceRegions: scan.faceRegions,
-    apiResponse: scan.rawMetrics?.perfectCorpOutput ?? scan.rawMetrics?.rupamOutput ?? null,
+    apiResponse: scan.rawMetrics?.perfectCorpOutput ?? scan.rawMetrics?.rupamOutput ?? scan.rawMetrics?.focusOutput ?? null,
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
   const a = document.createElement("a");
@@ -143,7 +144,7 @@ const printReport = async (scan) => {
 const DownloadMenu = ({ scan }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const hasApiData = Boolean(scan.rawMetrics?.perfectCorpOutput || scan.rawMetrics?.rupamOutput);
+  const hasApiData = Boolean(scan.rawMetrics?.perfectCorpOutput || scan.rawMetrics?.rupamOutput || scan.rawMetrics?.focusOutput);
 
   useEffect(() => {
     if (!open) return;
@@ -175,7 +176,7 @@ const DownloadMenu = ({ scan }) => {
         <FileDown size={15} /> Download <ChevronDown size={14} className={`transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div role="menu" className="absolute bottom-full left-0 z-20 mb-2 w-64 overflow-hidden rounded-2xl bg-[#0b1224]/95 p-1.5 shadow-2xl ring-1 ring-white/15 backdrop-blur-xl">
+        <div role="menu" className="fs-keep-dark absolute bottom-full left-0 z-20 mb-2 w-64 overflow-hidden rounded-2xl bg-[#0b1224]/95 p-1.5 shadow-2xl ring-1 ring-white/15 backdrop-blur-xl">
           <button
             type="button"
             role="menuitem"
@@ -200,7 +201,7 @@ const DownloadMenu = ({ scan }) => {
               <span className="block text-sm font-semibold text-slate-800">API data (JSON)</span>
               <span className="block text-xs text-slate-500">
                 {hasApiData
-                  ? `Raw ${scan.provider === "rupam" ? "Rupam.ai" : "Perfect Corp"} response for this scan`
+                  ? `Raw ${scan.provider === "rupam" ? "Rupam.ai" : scan.provider === "focus" ? "Focus" : "Perfect Corp"} response for this scan`
                   : "Not available for demo scans"}
               </span>
             </span>
@@ -254,7 +255,7 @@ const ScanResult = ({ admin = false }) => {
       {/* Split hero: face left, key concerns right */}
       <section className="grid border-b border-white/5 lg:grid-cols-2">
         {/* Left: photo + score */}
-        <div className="relative min-h-[420px] overflow-hidden bg-slate-950 lg:min-h-[600px]">
+        <div className="fs-keep-dark relative min-h-[420px] overflow-hidden bg-slate-950 lg:min-h-[600px]">
           <img src={scan.imageUrl} alt="Your scan" className="h-full w-full object-cover opacity-90" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#050814] via-[#050814]/40 to-[#050814]/10" />
           <div className="fs-photo-scan" />
@@ -381,6 +382,7 @@ const ScanResult = ({ admin = false }) => {
 
       <ApiAnalysisPanel scan={scan} />
       <RupamAnalysisPanel scan={scan} />
+      <FocusAnalysisPanel scan={scan} />
 
       {/* Recommended: customers get a guided chat (products and clinics appear only when asked for);
           admins see the plain product list. */}

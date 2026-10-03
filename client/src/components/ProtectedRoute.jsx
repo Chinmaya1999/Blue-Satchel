@@ -44,6 +44,14 @@ export const ShopRoute = ({ children }) => {
   return children;
 };
 
+// A scan page only opens while the admin has that service switched on.
+export const ServiceRoute = ({ mode, children }) => {
+  const settings = useSiteSettings();
+  if (!settings.loaded) return <div className="fs-page fs-page-bg"><Loader full label="Loading…" /></div>;
+  if (settings[`${mode}ScanEnabled`] === false) return <Navigate to="/scan" replace />;
+  return children;
+};
+
 export const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -51,5 +59,16 @@ export const AdminRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (user.emailVerified === false) return <Navigate to={verifyEmailPath("/admin")} replace />;
   if (user.role !== "admin") return <Navigate to="/" replace />;
+  return children;
+};
+
+// Salon owners' dashboard (admins may look in too).
+export const SalonRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <Loader full label="Loading…" />;
+  if (!user) return <Navigate to="/login?redirect=/salon" replace />;
+  if (user.emailVerified === false) return <Navigate to={verifyEmailPath("/salon")} replace />;
+  if (user.role !== "salon") return <Navigate to="/" replace />;
   return children;
 };

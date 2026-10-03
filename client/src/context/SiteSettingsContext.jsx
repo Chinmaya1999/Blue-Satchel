@@ -8,7 +8,7 @@ import api from "../api/axios.js";
 const SiteSettingsContext = createContext(null);
 
 export const SiteSettingsProvider = ({ children }) => {
-  const [settings, setSettings] = useState({ shopEnabled: false, quickScanFree: false, detailedScanFree: false, focusScanFree: false, loaded: false });
+  const [settings, setSettings] = useState({ shopEnabled: false, quickScanFree: false, detailedScanFree: false, focusScanFree: false, quickScanEnabled: true, detailedScanEnabled: true, focusScanEnabled: true, loaded: false });
 
   const refreshSettings = useCallback(
     () =>

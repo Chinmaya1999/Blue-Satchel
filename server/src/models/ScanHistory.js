@@ -27,6 +27,16 @@ const scanHistorySchema = new mongoose.Schema(
     // Per-region wrinkle breakdown (forehead/glabellar/etc.) for the face
     // overlay on the results page — empty for providers that don't support it.
     faceRegions: { type: [concernSchema], default: [] },
+    // Set when a salon owner scanned one of their customers (user = the owner,
+    // who pays the credits). Salon-recommended products are SalonProduct ids.
+    salon: { type: mongoose.Schema.Types.ObjectId, ref: "Salon", index: true },
+    salonCustomer: {
+      name: String,
+      phone: String,
+      email: String,
+      consentAt: Date,
+    },
+    salonRecommended: [{ type: mongoose.Schema.Types.ObjectId, ref: "SalonProduct" }],
     recommendedProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     rawMetrics: { type: mongoose.Schema.Types.Mixed },
   },

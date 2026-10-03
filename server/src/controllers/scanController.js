@@ -7,14 +7,14 @@ import ScanHistory from "../models/ScanHistory.js";
 import User from "../models/User.js";
 import { analyzeSkin } from "../services/aiDiagnosticsService.js";
 import { recommendProducts } from "../services/recommendationEngine.js";
-import { scanCosts, chargeScan, refundScan, linkScanCharge, creditSummary } from "../services/credits.js";
+import { scanCosts, isScanEnabled, SERVICE_OFF, chargeScan, refundScan, linkScanCharge, creditSummary } from "../services/credits.js";
 import { findDermatologists } from "../services/geoService.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, "..", "..", "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-const saveUpload = (buffer) => {
+export const saveUpload = (buffer) => {
   if (!buffer) return null;
   const filename = `${crypto.randomUUID()}.jpg`;
   fs.writeFileSync(path.join(uploadsDir, filename), buffer);
@@ -26,7 +26,7 @@ const saveUpload = (buffer) => {
 // camera rotation, caps the size, and drops all metadata — including the GPS
 // location phones embed — before anything is stored or sent to a provider.
 const MAX_SIDE = 2048;
-const normalizePhoto = async (file) => {
+export const normalizePhoto = async (file) => {
   if (!file) return null;
   try {
     return await sharp(file.buffer, { limitInputPixels: 40_000_000 })
@@ -45,7 +45,7 @@ const normalizePhoto = async (file) => {
 // stays exactly as the API returned it; the saved copies go alongside it.
 const PROVIDER_IMAGE_TIMEOUT_MS = 15000;
 
-const saveRemoteImage = async (url) => {
+export const saveRemoteImage = async (url) => {
   const res = await fetch(url, { signal: AbortSignal.timeout(PROVIDER_IMAGE_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   // Perfect Corp serves everything as binary/octet-stream, so take the
@@ -56,7 +56,7 @@ const saveRemoteImage = async (url) => {
   return `/uploads/${filename}`;
 };
 
-const saveProviderImages = async (output = []) => {
+export const saveProviderImages = async (output = []) => {
   // Both analysis tasks return the same resized photo; download it once.
   const firstResize = output.find((entry) => entry.type === "resize_image");
   const jobs = output.flatMap((entry) => {
@@ -86,7 +86,9 @@ export const createScan = async (req, res, next) => {
   try {
     // Quick scan sends only a front selfie and runs on Rupam; detailed adds
     // left/right angles. The mode also selects the AI provider (see analyzeSkin).
-    const mode = req.body?.mode === "quick" ? "quick" : "detailed";
+    // Focus scan is likewise a single front selfie, run on the Focus API.
+    const mode = ["quick", "focus"].includes(req.body?.mode) ? req.body.mode : "detailed";
+    if (!isScanEnabled(mode)) return res.status(403).json(SERVICE_OFF(mode));
     if (!req.user.photoConsent?.acceptedAt) {
       return res.status(403).json({ code: "CONSENT_REQUIRED", message: "Please agree to the photo analysis terms before scanning." });
     }
@@ -181,7 +183,7 @@ export const createScan = async (req, res, next) => {
 
 export const listMyScans = async (req, res, next) => {
   try {
-    const scans = await ScanHistory.find({ user: req.user._id })
+    const scans = await ScanHistory.find({ user: req.user._id, salon: null })
       .sort({ createdAt: -1 })
       .populate("recommendedProducts");
     res.json({ scans });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DollarSign, Coins, Users, XCircle, ScanFace, Wallet, Search, Zap, Loader2 } from "lucide-react";
+import { useSiteSettings } from "../../context/SiteSettingsContext.jsx";
 import api from "../../api/axios.js";
 import Loader from "../../components/Loader.jsx";
 import { usePricing } from "../../context/PricingContext.jsx";
@@ -68,6 +69,7 @@ const details = (t) => {
 // Admin switch: make a scan mode free for everyone, or charge credits for it.
 const ScanPricing = ({ mode, label, settingKey, otherLabel }) => {
   const { refreshPricing } = usePricing();
+  const { refreshSettings } = useSiteSettings();
   const [state, setState] = useState(null); // { settings, baseCosts }
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -92,13 +94,31 @@ const ScanPricing = ({ mode, label, settingKey, otherLabel }) => {
     }
   };
 
+  const enabledKey = `${mode}ScanEnabled`;
+  const setEnabled = async (on) => {
+    if (!window.confirm(on ? `Make ${label} available again?` : `Make ${label} UNAVAILABLE? Customers and salons won't be able to run it until you turn it back on.`)) return;
+    setSaving(true);
+    setError("");
+    try {
+      const { data } = await api.patch("/admin/settings", { [enabledKey]: on });
+      setState(data);
+      refreshSettings();
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't save the change.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!state) {
     return <div className="card p-5 text-sm text-slate-400">{error || `Loading ${label} pricing…`}</div>;
   }
+  const enabled = state.settings[enabledKey] !== false;
 
   const free = state.settings[settingKey];
   return (
-    <div className="card flex flex-wrap items-center justify-between gap-4 p-5">
+    <div className={`card p-5 ${enabled ? "" : "border-rose-200 bg-rose-50/40"}`}>
+    <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-start gap-3">
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${free ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
           <Zap size={18} />
@@ -145,6 +165,29 @@ const ScanPricing = ({ mode, label, settingKey, otherLabel }) => {
           </button>
         ))}
       </div>
+    </div>
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+      <p className="text-sm text-slate-500">
+        Service status:{" "}
+        {enabled ? <span className="font-semibold text-emerald-600">Available</span> : <span className="font-semibold text-rose-600">Unavailable — hidden from customers and salons</span>}
+      </p>
+      <div className="flex rounded-xl bg-slate-100 p-1" role="radiogroup" aria-label={`${label} availability`}>
+        {[{ value: true, label: "Available" }, { value: false, label: "Unavailable" }].map((opt) => (
+          <button
+            key={opt.label}
+            role="radio"
+            aria-checked={enabled === opt.value}
+            disabled={saving || enabled === opt.value}
+            onClick={() => setEnabled(opt.value)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              enabled === opt.value ? (opt.value ? "bg-emerald-600 text-white shadow-sm" : "bg-rose-600 text-white shadow-sm") : "text-slate-600 hover:bg-white"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
     </div>
   );
 };

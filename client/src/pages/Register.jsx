@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, Loader2, Check, MapPin } from "lucide-react";
+import { Mail, Lock, User, Phone, Store, ArrowRight, Eye, EyeOff, Loader2, Check, MapPin } from "lucide-react";
 import AuthShell, { Field } from "../components/landing/AuthShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import GoogleSignIn from "../components/GoogleSignIn.jsx";
@@ -45,6 +45,8 @@ const Register = () => {
   const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [isSalon, setIsSalon] = useState(false);
+  const [salonName, setSalonName] = useState("");
   const [dialCode, setDialCode] = useState(countryCode);
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
@@ -62,9 +64,9 @@ const Register = () => {
       const location = await getBrowserLocation();
       const digits = form.phone.replace(/\D/g, "").replace(/^0+/, "");
       const phone = form.phone.trim().startsWith("+") ? `+${form.phone.replace(/\D/g, "")}` : `+${countryByCode(dialCode).dial}${digits}`;
-      const data = await register({ ...form, phone, location });
+      const data = await register({ ...form, phone, location, ...(isSalon ? { accountType: "salon", salonName } : {}) });
       // New accounts must enter the 6-digit code from their welcome email.
-      navigate("/verify-email?next=/scan", { state: { emailSent: data.verification?.emailSent } });
+      navigate(`/verify-email?next=${isSalon ? "/salon" : "/scan"}`, { state: { emailSent: data.verification?.emailSent } });
     } catch (err) {
       setError(err.response?.data?.message || "Unable to create your account.");
     } finally {
@@ -105,6 +107,19 @@ const Register = () => {
       </ul>
 
       <form onSubmit={submit} className="mt-6 space-y-4">
+        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
+          {[[false, "I'm a customer", User], [true, "I own a salon", Store]].map(([val, label, Icon]) => (
+            <button
+              type="button"
+              key={label}
+              onClick={() => setIsSalon(val)}
+              className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isSalon === val ? "bg-cyan-300 text-slate-950" : "text-slate-300 hover:text-white"}`}
+            >
+              <Icon size={15} /> {label}
+            </button>
+          ))}
+        </div>
+        {isSalon && <Field icon={Store} label="Salon name" required maxLength={80} value={salonName} onChange={(e) => setSalonName(e.target.value)} />}
         <Field icon={User} label={t("register.name")} required autoComplete="name" value={form.name} onChange={set("name")} />
         <Field icon={Mail} label={t("auth.email")} type="email" required autoComplete="email" value={form.email} onChange={set("email")} />
         <div className="flex gap-2">
