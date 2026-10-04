@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X, RotateCcw } from "lucide-react";
 import api from "../../api/axios.js";
 import ShopSalesToggle from "./ShopSalesToggle.jsx";
+import ImageUpload from "../../components/salon/ImageUpload.jsx";
 import Loader from "../../components/Loader.jsx";
 
 const emptyForm = {
@@ -143,7 +144,14 @@ const AdminProducts = () => {
                 <input type="number" placeholder="Compare-at price (optional)" className="input" value={form.compareAtPrice} onChange={(e) => setForm({ ...form, compareAtPrice: e.target.value })} />
                 <input type="number" placeholder="Stock" className="input" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
               </div>
-              <input required placeholder="Image URL" className="input" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
+              <ImageUpload
+                value={form.imageUrl}
+                onChange={(url) => setForm({ ...form, imageUrl: url })}
+                endpoint="/admin/upload"
+                label="Upload product photo"
+                className="h-20 w-20"
+              />
+              <input required placeholder="Image URL (or upload a photo above)" className="input" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
               <input type="url" placeholder="Brand product page URL (optional)" className="input" value={form.productUrl} onChange={(e) => setForm({ ...form, productUrl: e.target.value })} />
               <input placeholder="Tags (comma separated, e.g. spots, pores)" className="input" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
               <input placeholder="Skin types (comma separated)" className="input" value={form.skinTypes} onChange={(e) => setForm({ ...form, skinTypes: e.target.value })} />

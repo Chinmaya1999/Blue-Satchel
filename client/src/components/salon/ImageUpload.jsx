@@ -3,7 +3,7 @@ import { ImagePlus, Loader2, X } from "lucide-react";
 import api from "../../api/axios.js";
 
 // Uploads one image to the server and reports its URL. `shape` only changes the preview.
-const ImageUpload = ({ value, onChange, label = "Upload image", shape = "square", className = "h-24 w-24" }) => {
+const ImageUpload = ({ value, onChange, label = "Upload image", shape = "square", endpoint = "/salon/upload", className = "h-24 w-24" }) => {
   const input = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +17,7 @@ const ImageUpload = ({ value, onChange, label = "Upload image", shape = "square"
     try {
       const form = new FormData();
       form.append("image", file);
-      const { data } = await api.post("/salon/upload", form);
+      const { data } = await api.post(endpoint, form);
       onChange(data.url);
     } catch (err) {
       setError(err.response?.data?.message || "Upload failed.");

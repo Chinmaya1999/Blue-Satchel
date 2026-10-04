@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { protect, adminOnly } from "../middleware/auth.js";
+import { salonUpload } from "../middleware/upload.js";
+import { uploadImage } from "../controllers/salonController.js";
 import { listChatLeads } from "../controllers/chatController.js";
 import { adminUnread, adminListThreads, adminGetThread, adminReply, adminSetStatus } from "../controllers/supportController.js";
 import { listPlans, createPlan, updatePlan, deletePlan } from "../controllers/planController.js";
@@ -80,6 +82,7 @@ router.get("/scans", listAllScans);
 router.get("/scans/:id", getScanAdmin);
 router.delete("/scans/:id", deleteScan);
 
+router.post("/upload", salonUpload.single("image"), uploadImage);
 router.get("/products", listProductsAdmin);
 router.post("/products", createProduct);
 router.patch("/products/:id", updateProduct);
