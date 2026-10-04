@@ -5,7 +5,12 @@ name: Enable HTTPS (one-time)
 # and switches nginx to HTTPS. DNS for all five names must already point at
 # the server, and the Security Group must allow inbound TCP 80 and 443.
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      domains:
+        description: "Space-separated domains for the certificate (dxbbeauty.com first)"
+        default: "dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com dxb-beauty.com www.dxb-beauty.com"
+        required: true
 
 jobs:
   https:
@@ -30,7 +35,7 @@ jobs:
       - name: Issue certificate and enable HTTPS
         run: |
           ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "bash /opt/blue-satchel/deploy/enable-https.sh"
+            "DXB_DOMAINS='${{ inputs.domains }}' bash /opt/blue-satchel/deploy/enable-https.sh"
 
       - name: Verify
         run: |

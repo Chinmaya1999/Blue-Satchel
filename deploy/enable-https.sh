@@ -10,7 +10,10 @@
 set -euo pipefail
 
 EMAIL="pradipta@uuoinnovation.com"
-DOMAINS=(dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com dxb-beauty.com www.dxb-beauty.com)
+# Space-separated override, e.g. DXB_DOMAINS="dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com"
+# to issue only for names whose DNS already points here. The first name must be
+# dxbbeauty.com (it names the certificate). Re-run with the full list later.
+read -r -a DOMAINS <<< "${DXB_DOMAINS:-dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com dxb-beauty.com www.dxb-beauty.com}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if command -v dnf >/dev/null 2>&1; then PKG=dnf; else PKG=yum; fi
@@ -37,7 +40,7 @@ ARGS=()
 for d in "${DOMAINS[@]}"; do ARGS+=(-d "$d"); done
 sudo certbot certonly --webroot -w /var/www/certbot "${ARGS[@]}" \
   --cert-name dxbbeauty.com --email "$EMAIL" --agree-tos --no-eff-email \
-  --non-interactive --keep-until-expiring
+  --non-interactive --expand
 
 # --- Switch nginx to the HTTPS config ----------------------------------------
 sudo cp "$SCRIPT_DIR/nginx/site-ssl.conf" /etc/nginx/conf.d/blue-satchel.conf
