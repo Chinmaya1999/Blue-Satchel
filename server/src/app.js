@@ -33,11 +33,15 @@ app.set("query parser", "simple");
 // scan photos in /uploads.
 app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
 
-// The site calls the API on its own origin (nginx in production, the Vite
-// proxy in development), so cross-origin access is off unless CLIENT_URL
-// lists extra origins (comma-separated).
-const allowedOrigins = (process.env.CLIENT_URL || "").split(",").map((o) => o.trim()).filter(Boolean);
-app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
+// The production site (dxbbeauty.com) calls this API from api.dxbbeauty.com, so
+// those origins are always allowed; CLIENT_URL (comma-separated) adds more, e.g.
+// http://localhost:5173 in development.
+const allowedOrigins = [
+  "https://dxbbeauty.com",
+  "https://www.dxbbeauty.com",
+  ...(process.env.CLIENT_URL || "").split(",").map((o) => o.trim()).filter(Boolean),
+];
+app.use(cors({ origin: allowedOrigins }));
 
 app.use(express.json({ limit: "2mb" }));
 app.use(sanitizeBody);
