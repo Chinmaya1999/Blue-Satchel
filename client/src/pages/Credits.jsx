@@ -124,7 +124,7 @@ const Credits = () => {
         order_id: data.order.id,
         amount: data.order.amount,
         currency: data.order.currency,
-        name: "Blue Satchel",
+        name: "DXB BEAUTY",
         description: `${plan.name} plan · ${plan.credits} scan credits`,
         prefill: { name: user?.name, email: user?.email, contact: user?.phone },
         notes: { planId: plan.id },
@@ -299,7 +299,7 @@ const Credits = () => {
                 Your credits are added the moment the payment is confirmed.
               </p>
               <ul className="mt-4 space-y-2 text-sm text-slate-300">
-                <li className="flex items-center gap-2"><ShieldCheck size={15} className="text-emerald-300" /> Card details go to Razorpay only — never to Blue Satchel</li>
+                <li className="flex items-center gap-2"><ShieldCheck size={15} className="text-emerald-300" /> Card details go to Razorpay only — never to DXB BEAUTY</li>
                 <li className="flex items-center gap-2"><ShieldCheck size={15} className="text-emerald-300" /> Every payment is verified on our server before credits are added</li>
               </ul>
               {payment === null && (

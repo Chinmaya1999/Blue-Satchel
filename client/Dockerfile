@@ -1,4 +1,4 @@
-# Blue Satchel — Consumer Web App
+# DXB BEAUTY — Consumer Web App
 # Multi-stage: build the Vite app with Node, then serve the static output
 # with a lightweight Nginx image. This container is deployed and
 # blue/green-swapped the same way as the server (see deploy/deploy-app.sh).
@@ -8,6 +8,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# Public API origin baked into the bundle (e.g. https://api.dxbbeauty.com/api).
+ARG VITE_API_URL=
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 FROM nginx:1.27-alpine

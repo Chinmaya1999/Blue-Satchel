@@ -48,7 +48,7 @@ const ScanConsent = () => {
         <label className="mt-6 flex cursor-pointer items-start gap-3 text-sm text-slate-300">
           <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1 h-4 w-4 accent-cyan-300" />
           <span>
-            I agree to Blue Satchel analysing my face photos as described above, and I've read the{" "}
+            I agree to DXB BEAUTY analysing my face photos as described above, and I've read the{" "}
             <Link to="/privacy" className="text-cyan-300 hover:underline">Privacy Policy</Link>.
           </span>
         </label>

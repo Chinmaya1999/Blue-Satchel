@@ -73,7 +73,7 @@ const SalonProfile = () => {
         <p className="mt-1 text-sm text-slate-500">
           {firstSetup
             ? "Add your salon's details so customers can find you. Name, phone, address and map location are required."
-            : "This is what customers see on your Blue Satchel page."}
+            : "This is what customers see on your DXB BEAUTY page."}
         </p>
       </div>
 

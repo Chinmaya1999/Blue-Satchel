@@ -56,7 +56,7 @@ const Profile = () => {
       const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
       const a = document.createElement("a");
       a.href = url;
-      a.download = "blue-satchel-my-data.json";
+      a.download = "dxb-beauty-my-data.json";
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

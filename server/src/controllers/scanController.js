@@ -221,7 +221,7 @@ export const getScan = async (req, res, next) => {
 
     // Recommendations are picked when the scan is saved. Rebuild them from
     // the current catalogue if the scan has none (catalogue was empty then),
-    // any pick has since been retired, or it predates the Blue Satchel
+    // any pick has since been retired, or it predates the DXB BEAUTY
     // products every routine now includes.
     const stale =
       !scan.recommendedProducts?.length ||

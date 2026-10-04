@@ -46,7 +46,7 @@ export const exportMyData = async (req, res, next) => {
       CreditTransaction.find({ user: req.user._id }).lean(),
       SupportThread.findOne({ user: req.user._id }).select("-unreadForAdmin -unreadForUser").lean(),
     ]);
-    res.setHeader("Content-Disposition", 'attachment; filename="blue-satchel-my-data.json"');
+    res.setHeader("Content-Disposition", 'attachment; filename="dxb-beauty-my-data.json"');
     res.json({
       exportedAt: new Date().toISOString(),
       account: req.user.toSafeObject(),

@@ -4,9 +4,9 @@
 const env = import.meta.env;
 
 export const COMPANY = {
-  brand: "Blue Satchel",
-  legalName: env.VITE_COMPANY_LEGAL_NAME || "Blue Satchel (legal entity name as per KYC)",
-  email: env.VITE_COMPANY_EMAIL || "contact@adihuman.com",
+  brand: "DXB BEAUTY",
+  legalName: env.VITE_COMPANY_LEGAL_NAME || "DXB BEAUTY (legal entity name as per KYC)",
+  email: env.VITE_COMPANY_EMAIL || "Pradipta@uuoinnovation.com",
   phone: env.VITE_COMPANY_PHONE || "+91 82968 10381",
   whatsapp: env.VITE_COMPANY_WHATSAPP || "+91 82968 10381",
   address:

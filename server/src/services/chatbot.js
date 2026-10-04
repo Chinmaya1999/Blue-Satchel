@@ -1,5 +1,5 @@
 /**
- * Blue Satchel skin-care assistant — the conversation engine.
+ * DXB BEAUTY skin-care assistant — the conversation engine.
  *
  * A guided interview (name → skin type → concerns → sensitivity → age →
  * budget → contact) that ends in product picks, with a skin-care Q&A layer
@@ -276,7 +276,7 @@ const FAQ = [
     id: "who",
     match: rx("\\b(who are you|are you (a )?(bot|human|real|ai)|your name)\\b"),
     answer:
-      "I'm the Blue Satchel skin assistant — an automated guide, not a doctor. I can build a routine from our products and answer everyday skin-care questions. For medical skin problems please see a dermatologist.",
+      "I'm the DXB BEAUTY skin assistant — an automated guide, not a doctor. I can build a routine from our products and answer everyday skin-care questions. For medical skin problems please see a dermatologist.",
   },
 ];
 
@@ -378,8 +378,8 @@ export const initialState = (profile = {}) => {
 
 export const greeting = (state) => {
   const hi = state.name
-    ? `Hi ${state.name}! 👋 I'm the Blue Satchel skin assistant. I'll ask a few quick questions and recommend products that suit your skin.`
-    : "Hi! 👋 I'm the Blue Satchel skin assistant. I'll ask a few quick questions and recommend products that suit your skin. I'm not a doctor, so for medical skin problems please see a dermatologist.";
+    ? `Hi ${state.name}! 👋 I'm the DXB BEAUTY skin assistant. I'll ask a few quick questions and recommend products that suit your skin.`
+    : "Hi! 👋 I'm the DXB BEAUTY skin assistant. I'll ask a few quick questions and recommend products that suit your skin. I'm not a doctor, so for medical skin problems please see a dermatologist.";
   return { replies: [reply(hi), PROMPTS[state.step](state)] };
 };
 

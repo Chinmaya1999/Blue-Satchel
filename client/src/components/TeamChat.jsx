@@ -7,7 +7,7 @@ import { usePoll } from "../hooks/usePoll.js";
 
 const fmtTime = (d) => new Date(d).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
-// Live chat with the Blue Satchel team inside the chat widget. Customers can
+// Live chat with the DXB BEAUTY team inside the chat widget. Customers can
 // ask about skin care, products, a scan result or anything on the site; an
 // admin answers from the console. New replies are fetched every few seconds.
 const TeamChat = () => {
@@ -94,7 +94,7 @@ const TeamChat = () => {
             >
               {m.text}
             </p>
-            <span className="mt-0.5 px-1 text-[10px] text-slate-500">{m.sender === "admin" ? "Blue Satchel team · " : ""}{fmtTime(m.createdAt)}</span>
+            <span className="mt-0.5 px-1 text-[10px] text-slate-500">{m.sender === "admin" ? "DXB BEAUTY team · " : ""}{fmtTime(m.createdAt)}</span>
           </div>
         ))}
         {error && <p className="rounded-xl bg-rose-500/10 px-3 py-2 text-xs text-rose-300 ring-1 ring-rose-400/25">{error}</p>}

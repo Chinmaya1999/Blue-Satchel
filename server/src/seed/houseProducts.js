@@ -1,10 +1,10 @@
-// Blue Satchel's own products. `featured` puts them first in the shop and
+// DXB BEAUTY's own products. `featured` puts them first in the shop and
 // guarantees each one a slot in every scan's recommended routine (the serum
 // and moisturizer steps are always part of a routine).
 const houseProducts = [
   {
-    name: "Blue Satchel Skin Balance Serum",
-    brand: "Blue Satchel",
+    name: "DXB BEAUTY Skin Balance Serum",
+    brand: "DXB BEAUTY",
     category: "serum",
     price: 799,
     compareAtPrice: 999,
@@ -18,8 +18,8 @@ const houseProducts = [
     featured: true,
   },
   {
-    name: "Blue Satchel Barrier Renew Cream",
-    brand: "Blue Satchel",
+    name: "DXB BEAUTY Barrier Renew Cream",
+    brand: "DXB BEAUTY",
     category: "moisturizer",
     price: 899,
     compareAtPrice: 1099,

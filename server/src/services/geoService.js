@@ -9,7 +9,7 @@
  * and dermatologist results are cached per ~1 km cell.
  */
 
-const USER_AGENT = `BlueSatchel/1.0 (${process.env.CLIENT_URL || "https://bluesatchel.online"})`;
+const USER_AGENT = `DXBBeauty/1.0 (${process.env.CLIENT_URL || "https://dxbbeauty.com"})`;
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const OVERPASS = "https://overpass-api.de/api/interpreter";
 const REQUEST_TIMEOUT_MS = 12000;

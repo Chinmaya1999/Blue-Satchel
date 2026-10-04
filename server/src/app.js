@@ -44,7 +44,7 @@ app.use(sanitizeBody);
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads"), { dotfiles: "deny", index: false }));
 
-app.get("/api/health", (req, res) => res.json({ status: "ok", service: "blue-satchel-business-platform" }));
+app.get("/api/health", (req, res) => res.json({ status: "ok", service: "dxb-beauty-business-platform" }));
 
 app.use("/api", apiLimiter);
 

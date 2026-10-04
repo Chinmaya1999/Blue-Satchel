@@ -1,5 +1,5 @@
 // Shipping and tax rules by destination country. Shop prices and charges are
-// in INR (Blue Satchel ships from India), so every amount here is in rupees.
+// in INR (DXB BEAUTY ships from India), so every amount here is in rupees.
 //
 // These are starting defaults — confirm them with your carrier and accountant
 // before selling abroad. Exports of goods from India are zero-rated for GST;

@@ -1,0 +1,42 @@
+name: Enable HTTPS (one-time)
+
+# Manual trigger. Issues the Let's Encrypt certificate for dxbbeauty.com,
+# www.dxbbeauty.com, api.dxbbeauty.com, dxb-beauty.com and www.dxb-beauty.com
+# and switches nginx to HTTPS. DNS for all five names must already point at
+# the server, and the Security Group must allow inbound TCP 80 and 443.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  https:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+      - name: Copy deploy scripts to server
+        run: |
+          ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "mkdir -p /opt/blue-satchel/deploy"
+          rsync -az -e "ssh -i /tmp/deploy_key" deploy/ \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/blue-satchel/deploy/"
+
+      - name: Issue certificate and enable HTTPS
+        run: |
+          ssh -i /tmp/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "bash /opt/blue-satchel/deploy/enable-https.sh"
+
+      - name: Verify
+        run: |
+          curl -sfI https://dxbbeauty.com/ | head -1
+          curl -sf https://api.dxbbeauty.com/api/health
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f /tmp/deploy_key

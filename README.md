@@ -1,6 +1,6 @@
-# Blue Satchel — AI Skin Diagnostics Platform (MERN)
+# DXB BEAUTY — AI Skin Diagnostics Platform (MERN)
 
-A working implementation of the Blue Satchel POC scope (Section 5 of the proposal) built on the
+A working implementation of the DXB BEAUTY POC scope (Section 5 of the proposal) built on the
 **MERN** stack (MongoDB, Express, React, Node.js) as a responsive web app.
 
 ## What's implemented
@@ -34,7 +34,7 @@ client/   React + Vite + Tailwind (consumer web app + admin console)
 cd server
 cp .env.example .env   # then edit MONGO_URI if not using local Mongo
 npm install
-npm run seed            # creates products + admin user (admin@bluesatchel.com / Admin@123)
+npm run seed            # creates products + admin user (admin@dxbbeauty.com / Admin@123)
 npm run dev              # http://localhost:5000
 ```
 

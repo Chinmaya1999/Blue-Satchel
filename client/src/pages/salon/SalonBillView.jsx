@@ -99,7 +99,7 @@ const SalonBillView = () => {
         </div>
 
         {bill.notes && <p className="mt-6 text-xs text-slate-500">Note: {bill.notes}</p>}
-        <p className="mt-8 text-center text-[11px] text-slate-400">Skin analysis is a cosmetic assessment, not a medical diagnosis. Powered by Blue Satchel.</p>
+        <p className="mt-8 text-center text-[11px] text-slate-400">Skin analysis is a cosmetic assessment, not a medical diagnosis. Powered by DXB BEAUTY.</p>
       </article>
     </div>
   );

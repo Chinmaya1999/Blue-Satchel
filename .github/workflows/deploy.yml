@@ -74,6 +74,8 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           context: client
+          build-args: |
+            VITE_API_URL=https://api.dxbbeauty.com/api
           push: true
           tags: ${{ steps.image.outputs.image }}
           cache-from: type=gha,scope=client

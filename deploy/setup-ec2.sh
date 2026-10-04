@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Blue Satchel — one-time EC2 bootstrap.
+# DXB BEAUTY — one-time EC2 bootstrap.
 #
 # Run this ONCE per server (safe to re-run — every step checks whether it's
 # already done and skips it). It installs Docker + Nginx and wires up the
@@ -15,7 +15,7 @@ set -euo pipefail
 APP_DIR="/opt/blue-satchel"
 NGINX_TEMPLATES="$APP_DIR/nginx-templates"
 
-echo "==> Blue Satchel EC2 bootstrap starting"
+echo "==> DXB BEAUTY EC2 bootstrap starting"
 
 # --- OS package manager detection (Amazon Linux 2 uses yum, AL2023 uses dnf) ---
 if command -v dnf >/dev/null 2>&1; then
@@ -93,7 +93,14 @@ sudo chown -R "$USER":"$USER" "$APP_DIR"
 # Copy this repo's nginx templates onto the box (this script lives inside
 # the checked-out/rsynced deploy/ folder, so its siblings are right here).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp "$SCRIPT_DIR/nginx/site.conf" /tmp/blue-satchel-site.conf
+# HTTPS config once a certificate has been issued (enable-https.sh), else HTTP-only.
+if [ -f /etc/letsencrypt/live/dxbbeauty.com/fullchain.pem ]; then
+  echo "==> Certificate found, installing the HTTPS nginx config"
+  cp "$SCRIPT_DIR/nginx/site-ssl.conf" /tmp/blue-satchel-site.conf
+else
+  cp "$SCRIPT_DIR/nginx/site.conf" /tmp/blue-satchel-site.conf
+fi
+sudo mkdir -p /var/www/certbot
 cp "$SCRIPT_DIR/nginx/upstream-blue.conf" "$NGINX_TEMPLATES/upstream-blue.conf"
 cp "$SCRIPT_DIR/nginx/upstream-green.conf" "$NGINX_TEMPLATES/upstream-green.conf"
 sudo mv /tmp/blue-satchel-site.conf /etc/nginx/conf.d/blue-satchel.conf
@@ -122,6 +129,6 @@ echo ""
 echo "==> Bootstrap complete."
 echo "    Remaining manual steps:"
 echo "    1. Edit $APP_DIR/server.env with real production secrets."
-echo "    2. In the AWS Console, make sure the EC2 instance's Security Group allows inbound TCP 80 (and 443 if you add TLS later)."
+echo "    2. In the AWS Console, make sure the EC2 instance's Security Group allows inbound TCP 80 and 443 (HTTPS), then run enable-https.sh once DNS points here."
 echo "    3. If this was the first time Docker was installed, log out and back in (or run 'newgrp docker') so this user can run docker without sudo."
 echo "    4. Push to main — the CI/CD pipeline handles every deploy from here."

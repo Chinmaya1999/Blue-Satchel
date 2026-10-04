@@ -71,7 +71,7 @@ export const updateSalonAdmin = async (req, res, next) => {
               title: req.body.status === "approved" ? "Your salon is live" : "Your salon was suspended",
               message:
                 req.body.status === "approved"
-                  ? `${salon.name} is now listed on Blue Satchel.`
+                  ? `${salon.name} is now listed on DXB BEAUTY.`
                   : `${salon.name} is no longer listed.${salon.adminNote ? ` Note: ${salon.adminNote}` : ""}`,
             },
           },

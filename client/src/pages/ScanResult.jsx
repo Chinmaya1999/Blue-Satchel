@@ -92,7 +92,7 @@ const INSIGHT = {
 };
 
 const reportFileName = (scan, ext) =>
-  `blue-satchel-skin-report-${new Date(scan.createdAt).toISOString().slice(0, 10)}-${scan._id.slice(-6)}.${ext}`;
+  `dxb-beauty-skin-report-${new Date(scan.createdAt).toISOString().slice(0, 10)}-${scan._id.slice(-6)}.${ext}`;
 
 // Saves the scan as JSON, including the vendor's raw API output
 // (Perfect Corp's perfectCorpOutput or Rupam's rupamOutput) exactly as the

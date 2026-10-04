@@ -1,4 +1,4 @@
-// Blue Satchel mark (public/logo-mark.png) plus the name set in live text, so
+// DXB BEAUTY mark (public/logo-mark.png) plus the name set in live text, so
 // the wordmark stays readable on both the dark site and light pages.
 const Logo = ({ light = false, size = "md" }) => {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
@@ -7,7 +7,7 @@ const Logo = ({ light = false, size = "md" }) => {
     <div className="flex items-center gap-2 select-none">
       <img src="/logo-mark.png" alt="" className={`${marks[size]} object-contain`} />
       <span className={`font-display font-bold tracking-tight ${sizes[size]} ${light ? "text-white" : "text-brand-900"}`}>
-        Blue Satchel
+        DXB BEAUTY
       </span>
     </div>
   );

@@ -28,6 +28,6 @@
   <ellipse cx="300" cy="150" rx="38" ry="34" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
   <rect x="286" y="178" width="28" height="18" fill="#f8fafc"/>
 
-  <text x="300" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="2" fill="#e11d48">BLUE SATCHEL</text>
+  <text x="300" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="2" fill="#e11d48">DXB BEAUTY</text>
   <text x="300" y="583" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" letter-spacing="3" fill="#94a3b8">SERUM</text>
 </svg>

@@ -1,7 +1,7 @@
 {
-  "name": "blue-satchel-server",
+  "name": "dxb-beauty-server",
   "version": "1.0.0",
-  "description": "Blue Satchel - AI Skin Diagnostics Platform - Business Platform API",
+  "description": "DXB BEAUTY - AI Skin Diagnostics Platform - Business Platform API",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

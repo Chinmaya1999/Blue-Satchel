@@ -17,11 +17,11 @@ const run = async () => {
   await Product.insertMany(products);
   console.log(`[seed] Inserted ${products.length} products.`);
 
-  const adminEmail = "admin@bluesatchel.com";
+  const adminEmail = "admin@dxbbeauty.com";
   const existingAdmin = await User.findOne({ email: adminEmail });
   if (!existingAdmin) {
     await User.create({
-      name: "Blue Satchel Admin",
+      name: "DXB BEAUTY Admin",
       email: adminEmail,
       password: "Admin@123",
       role: "admin",

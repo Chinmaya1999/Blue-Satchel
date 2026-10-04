@@ -196,7 +196,7 @@ const ChatWidget = () => {
       {open && (
         <section
           role="dialog"
-          aria-label="Blue Satchel skin assistant"
+          aria-label="DXB BEAUTY skin assistant"
           className="pointer-events-auto mb-16 flex h-[min(640px,calc(100dvh-7rem))] w-full max-w-[400px] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#070b1a]/95 shadow-[0_20px_80px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl animate-fade-up max-sm:fixed max-sm:inset-x-3 max-sm:bottom-20"
         >
           <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-cyan-400/15 to-violet-500/15 px-4 py-3">
@@ -206,7 +206,7 @@ const ChatWidget = () => {
                 <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-[#070b1a]" />
               </span>
               <div>
-                <p className="font-display text-sm font-bold leading-tight text-white">{tab === "team" ? "Blue Satchel team" : "Skin Assistant"}</p>
+                <p className="font-display text-sm font-bold leading-tight text-white">{tab === "team" ? "DXB BEAUTY team" : "Skin Assistant"}</p>
                 <p className="text-[11px] text-slate-400">{tab === "team" ? "Real people · we reply here" : "Personalised picks · not medical advice"}</p>
               </div>
             </div>

@@ -69,7 +69,7 @@ const Salons = () => {
       <div className="container-app py-12">
         <p className="fs-eyebrow">Partner salons</p>
         <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">Find a <span className="fs-gradient-text">salon near you</span></h1>
-        <p className="mt-2 max-w-xl text-sm text-slate-400">Blue Satchel partner salons that offer AI skin scans, personalised reports and professional products.</p>
+        <p className="mt-2 max-w-xl text-sm text-slate-400">DXB BEAUTY partner salons that offer AI skin scans, personalised reports and professional products.</p>
 
         <div className="mt-6 flex flex-wrap gap-3">
           <label className="relative min-w-[240px] flex-1">

@@ -1,7 +1,7 @@
 import SupportThread from "../models/SupportThread.js";
 import User from "../models/User.js";
 
-// Live chat between customers and the Blue Satchel team. The browser polls
+// Live chat between customers and the DXB BEAUTY team. The browser polls
 // these endpoints (no websocket server to run), asking only for messages it
 // hasn't seen yet via `after` = how many it already has.
 
@@ -147,7 +147,7 @@ export const adminReply = async (req, res, next) => {
     if (!thread) return res.status(404).json({ message: "Conversation not found." });
     await User.updateOne(
       { _id: thread.user },
-      { $push: { notifications: { title: "Reply from the Blue Satchel team", message: preview(text) } } }
+      { $push: { notifications: { title: "Reply from the DXB BEAUTY team", message: preview(text) } } }
     );
     res.status(201).json(view(thread, afterSend(req, thread)));
   } catch (err) {
