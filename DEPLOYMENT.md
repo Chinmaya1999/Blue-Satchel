@@ -97,9 +97,8 @@ bash /opt/blue-satchel/deploy/deploy-app.sh \
 | --- | --- |
 | `dxbbeauty.com` | Client front end (canonical site) |
 | `api.dxbbeauty.com` | API / backend / uploads (built into the client as `VITE_API_URL=https://api.dxbbeauty.com/api`) |
-| `dxb-beauty.com`, `www.dxb-beauty.com`, `www.dxbbeauty.com` | 301 redirect to `https://dxbbeauty.com` |
 
-1. Create DNS `A` records pointing at the EC2 public IP for: `dxbbeauty.com`, `www.dxbbeauty.com`, `api.dxbbeauty.com`, `dxb-beauty.com`, `www.dxb-beauty.com`.
-2. Open inbound TCP 80 and 443 in the Security Group, then run the **Enable HTTPS (one-time)** workflow (or `bash /opt/blue-satchel/deploy/enable-https.sh` on the server). It issues one Let's Encrypt certificate covering all five names, switches nginx to `deploy/nginx/site-ssl.conf` (HTTP→HTTPS redirect, HSTS) and sets up auto-renewal. Later runs of the Setup workflow keep the HTTPS config once the certificate exists.
+1. Create DNS `A` records pointing at the EC2 public IP for: `dxbbeauty.com`, `www.dxbbeauty.com`, `api.dxbbeauty.com`.
+2. Open inbound TCP 80 and 443 in the Security Group, then run the **Enable HTTPS (one-time)** workflow (or `bash /opt/blue-satchel/deploy/enable-https.sh` on the server). It issues one Let's Encrypt certificate covering all three names, switches nginx to `deploy/nginx/site-ssl.conf` (HTTP→HTTPS redirect, HSTS) and sets up auto-renewal. Later runs of the Setup workflow keep the HTTPS config once the certificate exists.
 3. On the server, set `CLIENT_URL=https://dxbbeauty.com,https://www.dxbbeauty.com` in `/opt/blue-satchel/server.env` (CORS allows the API to be called from the front end), then re-run the "Setup server" workflow so the new nginx config is installed.
 4. Add `https://dxbbeauty.com` to the Google OAuth "Authorized JavaScript origins" and update Razorpay's allowed domain if used.

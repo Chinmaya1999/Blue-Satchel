@@ -2,7 +2,7 @@
 # DXB BEAUTY — issue a Let's Encrypt certificate and switch nginx to HTTPS.
 #
 # Prerequisites: DNS A records for dxbbeauty.com, www.dxbbeauty.com,
-# api.dxbbeauty.com, dxb-beauty.com and www.dxb-beauty.com all point at this
+# api.dxbbeauty.com, all point at this
 # server, and the Security Group allows inbound TCP 80 and 443.
 # Safe to re-run (certbot keeps the existing cert until it is due for renewal).
 #
@@ -13,7 +13,7 @@ EMAIL="pradipta@uuoinnovation.com"
 # Space-separated override, e.g. DXB_DOMAINS="dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com"
 # to issue only for names whose DNS already points here. The first name must be
 # dxbbeauty.com (it names the certificate). Re-run with the full list later.
-read -r -a DOMAINS <<< "${DXB_DOMAINS:-dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com dxb-beauty.com www.dxb-beauty.com}"
+read -r -a DOMAINS <<< "${DXB_DOMAINS:-dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if command -v dnf >/dev/null 2>&1; then PKG=dnf; else PKG=yum; fi

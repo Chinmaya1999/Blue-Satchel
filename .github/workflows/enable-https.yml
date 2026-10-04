@@ -1,15 +1,15 @@
 name: Enable HTTPS (one-time)
 
 # Manual trigger. Issues the Let's Encrypt certificate for dxbbeauty.com,
-# www.dxbbeauty.com, api.dxbbeauty.com, dxb-beauty.com and www.dxb-beauty.com
-# and switches nginx to HTTPS. DNS for all five names must already point at
+# www.dxbbeauty.com, api.dxbbeauty.com,
+# and switches nginx to HTTPS. DNS for all three names must already point at
 # the server, and the Security Group must allow inbound TCP 80 and 443.
 on:
   workflow_dispatch:
     inputs:
       domains:
         description: "Space-separated domains for the certificate (dxbbeauty.com first)"
-        default: "dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com dxb-beauty.com www.dxb-beauty.com"
+        default: "dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com"
         required: true
 
 jobs:
