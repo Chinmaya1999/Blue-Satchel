@@ -9,7 +9,7 @@
 # Usage (on the EC2 box, as ec2-user): bash enable-https.sh
 set -euo pipefail
 
-EMAIL="Pradipta@uuoinnovation.com"
+EMAIL="pradipta@uuoinnovation.com"
 DOMAINS=(dxbbeauty.com www.dxbbeauty.com api.dxbbeauty.com dxb-beauty.com www.dxb-beauty.com)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
