@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DXB BEAUTY — issue a Let's Encrypt certificate and switch nginx to HTTPS.
+# DXB Beauty — issue a Let's Encrypt certificate and switch nginx to HTTPS.
 #
 # Prerequisites: DNS A records for dxbbeauty.com, www.dxbbeauty.com,
 # api.dxbbeauty.com, all point at this

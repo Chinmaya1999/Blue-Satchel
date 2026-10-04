@@ -29,6 +29,6 @@ connectDB().then(async () => {
   startSettingsRefresh();
   await seedDefaultPlans().catch((err) => console.error("[credits] Plan seed failed:", err.message));
   app.listen(PORT, () => {
-    console.log(`[server] DXB BEAUTY Business Platform running on http://localhost:${PORT}`);
+    console.log(`[server] DXB Beauty Business Platform running on http://localhost:${PORT}`);
   });
 });

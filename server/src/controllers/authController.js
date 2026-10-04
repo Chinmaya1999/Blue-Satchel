@@ -15,7 +15,7 @@ import { createSalonFor } from "../services/salonService.js";
 const welcome = async (user) => {
   user.crmContactId = await crmService.syncCustomer(user);
   user.notifications.push({
-    title: "Welcome to DXB BEAUTY",
+    title: "Welcome to DXB Beauty",
     message: "Your account is ready. Take your first AI skin scan to get personalized recommendations.",
   });
   await user.save();

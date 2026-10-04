@@ -1,4 +1,4 @@
-# DXB BEAUTY — Business Platform API
+# DXB Beauty — Business Platform API
 # Debian-based (not alpine) so sharp's prebuilt binary installs cleanly.
 FROM node:20-bookworm-slim
 

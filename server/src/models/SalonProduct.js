@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { CONCERN_TAGS } from "./Product.js";
 
-// A product the salon sells itself (separate from the DXB BEAUTY shop).
+// A product the salon sells itself (separate from the DXB Beauty shop).
 const salonProductSchema = new mongoose.Schema(
   {
     salon: { type: mongoose.Schema.Types.ObjectId, ref: "Salon", required: true, index: true },

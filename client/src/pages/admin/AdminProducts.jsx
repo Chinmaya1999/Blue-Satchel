@@ -5,7 +5,7 @@ import ShopSalesToggle from "./ShopSalesToggle.jsx";
 import Loader from "../../components/Loader.jsx";
 
 const emptyForm = {
-  name: "", brand: "DXB BEAUTY", description: "", category: "serum", price: "", compareAtPrice: "",
+  name: "", brand: "DXB Beauty", description: "", category: "serum", price: "", compareAtPrice: "",
   imageUrl: "", productUrl: "", tags: "", skinTypes: "", stock: 100, bestseller: false, featured: false,
 };
 
@@ -151,7 +151,7 @@ const AdminProducts = () => {
                 <input type="checkbox" checked={form.bestseller} onChange={(e) => setForm({ ...form, bestseller: e.target.checked })} /> Mark as bestseller
               </label>
               <label className="flex items-center gap-2 text-sm text-slate-600">
-                <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} /> DXB BEAUTY product — always include in scan routines
+                <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} /> DXB Beauty product — always include in scan routines
               </label>
             </div>
             <button type="submit" className="btn-primary mt-5 w-full">{editing ? "Save changes" : "Create product"}</button>

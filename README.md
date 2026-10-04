@@ -1,6 +1,6 @@
-# DXB BEAUTY — AI Skin Diagnostics Platform (MERN)
+# DXB Beauty — AI Skin Diagnostics Platform (MERN)
 
-A working implementation of the DXB BEAUTY POC scope (Section 5 of the proposal) built on the
+A working implementation of the DXB Beauty POC scope (Section 5 of the proposal) built on the
 **MERN** stack (MongoDB, Express, React, Node.js) as a responsive web app.
 
 ## What's implemented

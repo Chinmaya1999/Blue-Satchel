@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DXB BEAUTY — one-time EC2 bootstrap.
+# DXB Beauty — one-time EC2 bootstrap.
 #
 # Run this ONCE per server (safe to re-run — every step checks whether it's
 # already done and skips it). It installs Docker + Nginx and wires up the
@@ -15,7 +15,7 @@ set -euo pipefail
 APP_DIR="/opt/blue-satchel"
 NGINX_TEMPLATES="$APP_DIR/nginx-templates"
 
-echo "==> DXB BEAUTY EC2 bootstrap starting"
+echo "==> DXB Beauty EC2 bootstrap starting"
 
 # --- OS package manager detection (Amazon Linux 2 uses yum, AL2023 uses dnf) ---
 if command -v dnf >/dev/null 2>&1; then

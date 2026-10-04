@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-// One live conversation per customer with the DXB BEAUTY team. The customer
+// One live conversation per customer with the DXB Beauty team. The customer
 // writes from the chat widget, an admin answers from the admin console.
 // `unreadForAdmin` / `unreadForUser` count messages the other side hasn't
 // opened yet; they drive the admin bell and the customer's chat badge.

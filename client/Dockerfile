@@ -1,4 +1,4 @@
-# DXB BEAUTY — Consumer Web App
+# DXB Beauty — Consumer Web App
 # Multi-stage: build the Vite app with Node, then serve the static output
 # with a lightweight Nginx image. This container is deployed and
 # blue/green-swapped the same way as the server (see deploy/deploy-app.sh).

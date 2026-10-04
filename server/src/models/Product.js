@@ -21,7 +21,7 @@ export const PRODUCT_CATEGORIES = ["cleanser", "toner", "serum", "treatment", "e
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    brand: { type: String, default: "DXB BEAUTY" },
+    brand: { type: String, default: "DXB Beauty" },
     description: { type: String, required: true },
     category: {
       type: String,
@@ -46,7 +46,7 @@ const productSchema = new mongoose.Schema(
     rating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0 },
     bestseller: { type: Boolean, default: false },
-    // DXB BEAUTY's own products: always part of a routine and listed first in the shop.
+    // DXB Beauty's own products: always part of a routine and listed first in the shop.
     featured: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
   },

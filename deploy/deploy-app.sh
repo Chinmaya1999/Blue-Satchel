@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DXB BEAUTY — zero-downtime deploy (blue/green swap, client + server together).
+# DXB Beauty — zero-downtime deploy (blue/green swap, client + server together).
 #
 # Starts the new server AND client containers on the currently-inactive
 # color's ports, health-checks both directly (bypassing Nginx), and only

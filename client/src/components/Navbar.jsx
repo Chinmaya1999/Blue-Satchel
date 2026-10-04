@@ -64,7 +64,7 @@ const Navbar = () => {
       }`}
     >
       <div className="container-app flex h-16 items-center justify-between gap-4">
-        <Link to="/" aria-label="DXB BEAUTY home" className="shrink-0 whitespace-nowrap"><Logo light /></Link>
+        <Link to="/" aria-label="DXB Beauty home" className="shrink-0 whitespace-nowrap"><Logo light /></Link>
 
         <nav className="hidden items-center rounded-full bg-white/[0.03] p-1 ring-1 ring-white/10 md:flex">
           {links.map((l) => (

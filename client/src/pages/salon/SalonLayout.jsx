@@ -80,12 +80,12 @@ const SalonLayout = () => {
         <div className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
           {salon.profileComplete && salon.status === "pending" && (
             <div className="mb-5 flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
-              <Clock size={16} className="mt-0.5 shrink-0" /> Your salon is waiting for DXB BEAUTY approval. You can already set up pricing and products — it will appear on the website once approved.
+              <Clock size={16} className="mt-0.5 shrink-0" /> Your salon is waiting for DXB Beauty approval. You can already set up pricing and products — it will appear on the website once approved.
             </div>
           )}
           {salon.status === "suspended" && (
             <div className="mb-5 flex items-start gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800 ring-1 ring-rose-200">
-              <Ban size={16} className="mt-0.5 shrink-0" /> Your salon is not listed on the website right now.{salon.adminNote ? ` ${salon.adminNote}` : " Contact DXB BEAUTY support for details."}
+              <Ban size={16} className="mt-0.5 shrink-0" /> Your salon is not listed on the website right now.{salon.adminNote ? ` ${salon.adminNote}` : " Contact DXB Beauty support for details."}
             </div>
           )}
           <Outlet context={{ ...state, reload }} />

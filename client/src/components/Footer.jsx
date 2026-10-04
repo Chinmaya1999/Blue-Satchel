@@ -99,7 +99,7 @@ const Footer = () => {
       </div>
 
       <div className="relative mt-16 select-none overflow-hidden" aria-hidden="true">
-        <p className="fs-footer-wordmark">DXB BEAUTY</p>
+        <p className="fs-footer-wordmark">DXB Beauty</p>
       </div>
 
       <div className="border-t border-white/5">

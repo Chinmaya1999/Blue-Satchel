@@ -5,7 +5,7 @@ const hoursSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// A salon registered on DXB BEAUTY. `owner` is the User (role "salon") who
+// A salon registered on DXB Beauty. `owner` is the User (role "salon") who
 // runs it and pays for scans with their own credits. All money is in paise.
 // Only salons an admin has approved appear on the public site.
 const salonSchema = new mongoose.Schema(

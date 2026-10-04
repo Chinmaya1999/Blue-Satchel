@@ -4,7 +4,7 @@ import crypto from "crypto";
 /**
  * AI Skin Diagnostics Service
  * ---------------------------------------------------------------------------
- * Section 4.3 / 5.3 / 6 of the DXB BEAUTY proposal specify that skin
+ * Section 4.3 / 5.3 / 6 of the DXB Beauty proposal specify that skin
  * diagnostics are delegated to an "Enterprise AI Skin Diagnostics Platform"
  * reached through a secure API (client-managed licensing, Section 9).
  *

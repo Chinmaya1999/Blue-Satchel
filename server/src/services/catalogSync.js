@@ -33,13 +33,19 @@ const LEGACY_DEMO_NAMES = [
  * doesn't set untouched.
  */
 export const syncProductCatalog = async () => {
-  // One-time rename: the house brand used to be "Blue Satchel". Rewrite existing
-  // rows so the upsert below matches them instead of creating duplicates.
-  await Product.updateMany({ brand: "Blue Satchel" }, [
+  // One-time rename: the house brand used to be "Blue Satchel" (then "DXB BEAUTY").
+  // Rewrite existing rows so the upsert below matches them instead of creating duplicates.
+  await Product.updateMany({ brand: { $in: ["Blue Satchel", "DXB BEAUTY"] } }, [
     {
       $set: {
-        brand: "DXB BEAUTY",
-        name: { $replaceOne: { input: "$name", find: "Blue Satchel", replacement: "DXB BEAUTY" } },
+        brand: "DXB Beauty",
+        name: {
+          $replaceOne: {
+            input: { $replaceOne: { input: "$name", find: "Blue Satchel", replacement: "DXB Beauty" } },
+            find: "DXB BEAUTY",
+            replacement: "DXB Beauty",
+          },
+        },
       },
     },
   ]);
@@ -54,7 +60,7 @@ export const syncProductCatalog = async () => {
   const result = await Product.bulkWrite(ops);
 
   const hidden = await Product.updateMany(
-    { brand: "DXB BEAUTY", name: { $in: LEGACY_DEMO_NAMES }, isActive: true },
+    { brand: "DXB Beauty", name: { $in: LEGACY_DEMO_NAMES }, isActive: true },
     { $set: { isActive: false } }
   );
 

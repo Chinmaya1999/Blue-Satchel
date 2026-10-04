@@ -1,6 +1,6 @@
 # Deployment — CI/CD to AWS EC2
 
-DXB BEAUTY deploys to a single Amazon Linux EC2 instance via GitHub
+DXB Beauty deploys to a single Amazon Linux EC2 instance via GitHub
 Actions. Both the client and server are Docker containers, deployed and
 blue/green-swapped **together as one versioned unit** (health-checked
 before traffic switches, so a broken build never takes the site down and

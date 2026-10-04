@@ -21,7 +21,7 @@ const run = async () => {
   const existingAdmin = await User.findOne({ email: adminEmail });
   if (!existingAdmin) {
     await User.create({
-      name: "DXB BEAUTY Admin",
+      name: "DXB Beauty Admin",
       email: adminEmail,
       password: "Admin@123",
       role: "admin",

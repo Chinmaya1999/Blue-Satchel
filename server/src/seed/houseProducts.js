@@ -1,10 +1,10 @@
-// DXB BEAUTY's own products. `featured` puts them first in the shop and
+// DXB Beauty's own products. `featured` puts them first in the shop and
 // guarantees each one a slot in every scan's recommended routine (the serum
 // and moisturizer steps are always part of a routine).
 const houseProducts = [
   {
-    name: "DXB BEAUTY Skin Balance Serum",
-    brand: "DXB BEAUTY",
+    name: "DXB Beauty Skin Balance Serum",
+    brand: "DXB Beauty",
     category: "serum",
     price: 799,
     compareAtPrice: 999,
@@ -18,8 +18,8 @@ const houseProducts = [
     featured: true,
   },
   {
-    name: "DXB BEAUTY Barrier Renew Cream",
-    brand: "DXB BEAUTY",
+    name: "DXB Beauty Barrier Renew Cream",
+    brand: "DXB Beauty",
     category: "moisturizer",
     price: 899,
     compareAtPrice: 1099,

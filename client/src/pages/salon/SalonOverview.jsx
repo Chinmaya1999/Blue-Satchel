@@ -7,7 +7,7 @@ import { Stars } from "../../components/salon/StarRating.jsx";
 
 const STATUS = {
   pending: { label: "Awaiting approval", cls: "bg-amber-50 text-amber-700" },
-  approved: { label: "Live on DXB BEAUTY", cls: "bg-emerald-50 text-emerald-700" },
+  approved: { label: "Live on DXB Beauty", cls: "bg-emerald-50 text-emerald-700" },
   suspended: { label: "Suspended", cls: "bg-rose-50 text-rose-700" },
 };
 

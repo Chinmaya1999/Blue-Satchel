@@ -29,7 +29,7 @@ const Shop = () => {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    // DXB BEAUTY's own products first, then the catalogue in routine order
+    // DXB Beauty's own products first, then the catalogue in routine order
     // (oldest first: cleanser → sunscreen).
     const params = { limit: 100, sort: "-featured _id" };
     if (q) params.q = q;

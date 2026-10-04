@@ -85,7 +85,7 @@ const Checkout = () => {
         order_id: data.razorpay.orderId,
         amount: data.razorpay.amount,
         currency: data.razorpay.currency,
-        name: "DXB BEAUTY",
+        name: "DXB Beauty",
         description: `Order ${data.order.orderNumber}`,
         prefill: { name: user?.name, email: user?.email, contact: user?.phone },
         theme: { color: "#22d3ee" },
