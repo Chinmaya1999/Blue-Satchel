@@ -5,6 +5,7 @@ import { ScanFace, ArrowRight, ShieldCheck, Cpu, Sparkles, Camera, Layers, Activ
 import { useAuth } from "../context/AuthContext.jsx";
 import { useLocale } from "../context/LocaleContext.jsx";
 import FeaturedSalons from "../components/FeaturedSalons.jsx";
+import { HoloCard, Magnetic, Marquee, Parallax, WordReveal } from "../components/landing/fx.jsx";
 const FaceScan3D = lazy(() => import("../components/landing/FaceScan3D.jsx"));
 const SkinLayers3D = lazy(() => import("../components/landing/SkinLayers3D.jsx"));
 const LiveLandmarks = lazy(() => import("../components/landing/LiveLandmarks.jsx"));
@@ -139,6 +140,8 @@ const FACES = [
   { src: "/landing/freckles.jpg", tag: "Sensitive · Type I", score: 79, pos: "50% 45%" },
 ];
 
+const TICKER = ["68-point face mapping", "7 skin zones", "Skin types I–VI", "Oil · Redness · Pores", "Dark circles · Spots", "Results in 60s", "Private by design", "Routine matched to you"];
+
 const Counter = ({ to, duration = 1.6, suffix = "" }) => {
   const ref = useRef(null);
   const [v, setV] = useState(0);
@@ -229,6 +232,8 @@ const Landing = () => {
         <div className="fs-grid-bg absolute inset-0 -z-10" />
         <div className="absolute left-1/2 top-1/2 -z-10 h-[46rem] w-[46rem] -translate-y-1/2 rounded-full bg-cyan-500/10 blur-[120px] lg:left-[62%]" />
         <div className="absolute -left-40 bottom-0 -z-10 h-[30rem] w-[30rem] rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="fs-aurora -z-10 right-[8%] top-[-8%] h-[26rem] w-[26rem] bg-fuchsia-500/30" />
+        <div className="fs-aurora -z-10 bottom-[-10%] left-[30%] h-[22rem] w-[22rem] bg-cyan-400/25 [animation-delay:-9s]" />
 
         <div className="container-app grid min-h-[calc(100svh-4rem)] items-center gap-2 py-4 sm:gap-6 sm:py-10 lg:grid-cols-[1fr_1.15fr] lg:py-0">
           <motion.div {...reveal} className="relative z-10 order-2 lg:order-1">
@@ -247,10 +252,12 @@ const Landing = () => {
               {t("hero.sub")}
             </p>
             <div className="mt-5 flex flex-wrap gap-3 sm:mt-9">
-              <Link to={scanLink} className="fs-btn-primary group">
-                <ScanFace size={18} /> {t("hero.cta")}
-                <ArrowRight size={16} className="transition group-hover:translate-x-1" />
-              </Link>
+              <Magnetic>
+                <Link to={scanLink} className="fs-btn-primary group">
+                  <ScanFace size={18} /> {t("hero.cta")}
+                  <ArrowRight size={16} className="transition group-hover:translate-x-1" />
+                </Link>
+              </Magnetic>
               <a href="#how" className="fs-btn-ghost">{t("hero.how")}</a>
             </div>
             <div className="mt-12 grid max-w-md grid-cols-3 gap-6">
@@ -273,6 +280,7 @@ const Landing = () => {
           <div className="relative order-1 h-[36svh] min-h-[250px] sm:h-[58svh] sm:min-h-[380px] lg:order-2 lg:h-[calc(100svh-4rem)] lg:max-h-[860px]">
             <div className="fs-orbit absolute left-1/2 top-1/2 aspect-square w-[88%] max-w-[640px] -translate-x-1/2 -translate-y-1/2" />
             <div className="fs-orbit fs-orbit-slow absolute left-1/2 top-1/2 aspect-square w-[70%] max-w-[500px] -translate-x-1/2 -translate-y-1/2" />
+            <div className="fs-projector" />
             <Suspense fallback={null}><FaceScan3D preset="hero" callouts={HERO_CALLOUTS} className="h-full w-full" /></Suspense>
 
             <motion.div
@@ -322,14 +330,14 @@ const Landing = () => {
         </a>
       </section>
 
+      <Marquee items={TICKER} />
+
       {/* ───────── How the analysis happens (scroll-driven 3D) ───────── */}
       <section id="how" className="relative border-t border-white/5">
         <div className="container-app pt-24 text-center">
           <motion.div {...reveal}>
             <p className="fs-eyebrow">Inside the scan</p>
-            <h2 className="mx-auto mt-3 max-w-3xl font-display text-3xl font-bold text-white sm:text-5xl">
-              From a selfie to a skin map in five steps
-            </h2>
+            <WordReveal as="h2" text="From a selfie to a skin map in five steps" className="mx-auto mt-3 block max-w-3xl font-display text-3xl font-bold text-white sm:text-5xl" />
             <p className="mx-auto mt-4 max-w-xl text-slate-400">Scroll to watch each stage of the analysis play out on a real 3D-scanned face.</p>
           </motion.div>
         </div>
@@ -459,7 +467,7 @@ const Landing = () => {
         <div className="container-app">
           <motion.div {...reveal} className="mx-auto max-w-2xl text-center">
             <p className="fs-eyebrow">What we detect</p>
-            <h2 className="mt-3 font-display text-3xl font-bold text-white sm:text-5xl">Five concerns. Pinpointed.</h2>
+            <WordReveal as="h2" text="Five concerns. Pinpointed." className="mt-3 block font-display text-3xl font-bold text-white sm:text-5xl" />
             <p className="mt-4 text-slate-400">Pick a concern to see where the analysis finds it on a real face.</p>
           </motion.div>
 
@@ -528,17 +536,17 @@ const Landing = () => {
           <motion.div {...reveal} className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
             <div>
               <p className="fs-eyebrow">Built for every face</p>
-              <h2 className="mt-3 max-w-xl font-display text-3xl font-bold text-white sm:text-5xl">Every skin tone. Every skin type.</h2>
+              <WordReveal as="h2" text="Every skin tone. Every skin type." className="mt-3 block max-w-xl font-display text-3xl font-bold text-white sm:text-5xl" />
             </div>
             <p className="max-w-sm text-slate-400">The analysis calibrates to your own base tone, so results stay fair across skin types I–VI.</p>
           </motion.div>
           <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {FACES.map((f, i) => (
-              <motion.div
+              <HoloCard
                 key={f.src}
                 {...reveal}
                 transition={{ ...reveal.transition, delay: i * 0.08 }}
-                className="fs-keep-dark group relative aspect-[3/4] overflow-hidden rounded-3xl ring-1 ring-white/10"
+                className="fs-keep-dark group relative aspect-[3/4] rounded-3xl ring-1 ring-white/10"
               >
                 <img src={f.src} alt="" loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" style={{ objectPosition: f.pos }} />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
@@ -551,7 +559,7 @@ const Landing = () => {
                   </div>
                   <span className="font-display text-2xl font-bold text-white">{f.score}</span>
                 </div>
-              </motion.div>
+              </HoloCard>
             ))}
           </div>
         </div>
@@ -561,7 +569,7 @@ const Landing = () => {
       <section className="relative overflow-hidden border-t border-white/5 py-24 sm:py-32">
         <div className="absolute left-1/4 top-1/2 h-[30rem] w-[30rem] -translate-y-1/2 rounded-full bg-indigo-600/15 blur-[120px]" />
         <div className="container-app relative grid items-center gap-14 lg:grid-cols-2">
-          <motion.div {...reveal} className="fs-glass mx-auto w-full max-w-md p-6 sm:p-8">
+          <Parallax from={30} to={-30} className="mx-auto w-full max-w-md"><HoloCard {...reveal} intensity={6} className="fs-glass w-full p-6 sm:p-8">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Your skin report</p>
               <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">+4 since last scan</span>
@@ -608,11 +616,11 @@ const Landing = () => {
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </HoloCard></Parallax>
 
           <motion.div {...reveal}>
             <p className="fs-eyebrow">From analysis to routine</p>
-            <h2 className="mt-3 font-display text-3xl font-bold text-white sm:text-5xl">A report you can act on — instantly.</h2>
+            <WordReveal as="h2" text="A report you can act on — instantly." className="mt-3 block font-display text-3xl font-bold text-white sm:text-5xl" />
             <p className="mt-4 max-w-md text-slate-400">
               Your score, your concerns and the products that target them, side by side. Track progress over time and
               reorder in one tap.
@@ -624,11 +632,11 @@ const Landing = () => {
                 { icon: Activity, t: "Progress tracking", d: "Compare scans over weeks and see what's working." },
                 { icon: ShoppingBag, t: "Shop the routine", d: "Add your matched products to the bag in one tap." },
               ].map((f) => (
-                <div key={f.t} className="rounded-2xl bg-white/[0.02] p-5 ring-1 ring-white/10">
+                <HoloCard key={f.t} intensity={7} className="rounded-2xl bg-white/[0.02] p-5 ring-1 ring-white/10">
                   <f.icon size={20} className="text-cyan-300" />
                   <p className="mt-3 font-semibold text-white">{f.t}</p>
                   <p className="mt-1 text-sm text-slate-400">{f.d}</p>
-                </div>
+                </HoloCard>
               ))}
             </div>
           </motion.div>
@@ -650,10 +658,12 @@ const Landing = () => {
             <h2 className="mt-3 max-w-lg font-display text-3xl font-bold text-white sm:text-5xl">Ready to meet your skin?</h2>
             <p className="mt-4 max-w-md text-slate-300">Take a selfie and get your full 3D skin analysis and personal routine in under a minute. Free.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to={scanLink} className="fs-btn-primary group">
-                <ScanFace size={18} /> Start my skin scan
-                <ArrowRight size={16} className="transition group-hover:translate-x-1" />
-              </Link>
+              <Magnetic>
+                <Link to={scanLink} className="fs-btn-primary group">
+                  <ScanFace size={18} /> Start my skin scan
+                  <ArrowRight size={16} className="transition group-hover:translate-x-1" />
+                </Link>
+              </Magnetic>
               <Link to="/shop" className="fs-btn-ghost">Browse products</Link>
             </div>
           </div>

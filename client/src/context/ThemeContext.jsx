@@ -1,16 +1,16 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-const ThemeContext = createContext({ theme: "dark", toggleTheme: () => {} });
+const ThemeContext = createContext({ theme: "light", toggleTheme: () => {} });
 
 const read = () => {
   try {
-    return localStorage.getItem("bs_theme") === "light" ? "light" : "dark";
+    return localStorage.getItem("bs_theme") === "dark" ? "dark" : "light";
   } catch {
-    return "dark";
+    return "light";
   }
 };
 
-// "dark" is the site's original look; "light" switches the whole site via
+// "light" is the default; "dark" is the original scan look. The theme switches the whole site via
 // <html data-theme="light"> (see the light-theme block in index.css).
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(read);

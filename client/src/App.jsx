@@ -1,11 +1,13 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import Loader from "./components/Loader.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import ChatWidget from "./components/ChatWidget.jsx";
+import { ScrollProgress } from "./components/landing/fx.jsx";
 import { ProtectedRoute, AdminRoute, SalonRoute, ServiceRoute, CreditRoute, ShopRoute } from "./components/ProtectedRoute.jsx";
 import { useSiteSettings } from "./context/SiteSettingsContext.jsx";
 
@@ -61,14 +63,17 @@ const AdminSupport = lazy(() => import("./pages/admin/AdminSupport.jsx"));
 
 function App() {
   const { shopEnabled } = useSiteSettings();
-  const inAdmin = /^\/(admin|salon)(\/|$)/.test(useLocation().pathname);
+  const { pathname } = useLocation();
+  const inAdmin = /^\/(admin|salon)(\/|$)/.test(pathname);
   return (
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />
+      <ScrollProgress />
       <Navbar />
       {shopEnabled && <CartDrawer />}
       <main className="flex-1">
         <Suspense fallback={<Loader full />}>
+        <motion.div key={pathname.split("/")[1]} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.45 }}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
@@ -130,6 +135,7 @@ function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </motion.div>
         </Suspense>
       </main>
       {!inAdmin && <Footer />}

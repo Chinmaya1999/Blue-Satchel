@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Star, ShoppingBag, ExternalLink } from "lucide-react";
+import { HoloCard } from "./landing/fx.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 import { useLocale } from "../context/LocaleContext.jsx";
@@ -27,7 +28,7 @@ const ProductCard = ({ product, step, targets }) => {
   const { formatInr, t } = useLocale();
 
   return (
-    <div className="card group flex flex-col overflow-hidden rounded-3xl transition duration-300 hover:-translate-y-1 hover:shadow-soft">
+    <HoloCard intensity={6} className="card group flex flex-col rounded-3xl">
       <Link to={`/shop/${product._id}`} className="relative m-2 block aspect-square overflow-hidden rounded-2xl bg-white">
         <img
           src={product.imageUrl}
@@ -107,7 +108,7 @@ const ProductCard = ({ product, step, targets }) => {
           </div>
         </div>
       </div>
-    </div>
+    </HoloCard>
   );
 };
 
