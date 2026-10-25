@@ -33,7 +33,7 @@ object Notifier {
     private var loaded = false
 
     fun init(ctx: Context) {
-        createChannel(ctx)
+        runCatching { createChannel(ctx) }
         if (pool == null) {
             pool = SoundPool.Builder().setMaxStreams(2).setAudioAttributes(
                 AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
@@ -65,19 +65,28 @@ object Notifier {
         nm.createNotificationChannel(ch)
     }
 
-    /** Plays the bell inside the app (respects the user's sound setting and silent mode). */
+    /**
+     * Plays the bell inside the app (respects the user's sound setting and silent mode).
+     * Never throws: a missing sound, vibrator or audio service must not take the app down.
+     */
     fun ring(ctx: Context, force: Boolean = false) {
-        if (!force && !Store(ctx).soundOn) return
-        val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        if (am.ringerMode == AudioManager.RINGER_MODE_SILENT) return buzz(ctx)
-        if (loaded) pool?.play(soundId, 1f, 1f, 1, 0, 1f)
-        if (am.ringerMode == AudioManager.RINGER_MODE_VIBRATE) buzz(ctx)
+        runCatching {
+            if (!force && !Store(ctx).soundOn) return
+            val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            when (am.ringerMode) {
+                AudioManager.RINGER_MODE_SILENT -> return
+                AudioManager.RINGER_MODE_VIBRATE -> buzz(ctx)
+                else -> if (loaded) pool?.play(soundId, 1f, 1f, 1, 0, 1f) else buzz(ctx)
+            }
+        }
     }
 
     private fun buzz(ctx: Context) {
-        val v = if (Build.VERSION.SDK_INT >= 31) ctx.getSystemService(VibratorManager::class.java).defaultVibrator
-        else @Suppress("DEPRECATION") ctx.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        v.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
+        runCatching {
+            val v = if (Build.VERSION.SDK_INT >= 31) ctx.getSystemService(VibratorManager::class.java)?.defaultVibrator
+            else @Suppress("DEPRECATION") ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            if (v?.hasVibrator() == true) v.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
+        }
     }
 
     fun canPost(ctx: Context) = Build.VERSION.SDK_INT < 33 ||
