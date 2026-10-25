@@ -59,7 +59,7 @@ suspend fun Api.plans(): Result<List<Plan>> = withContext(Dispatchers.IO) {
         List(a.length()) {
             val p = a.getJSONObject(it)
             val ch = p.optJSONObject("charge")
-            val major = (ch?.optDouble("amount") ?: 0.0) / 100.0
+            val major = ch?.optDouble("amount") ?: 0.0   // already in major units (rupees / dollars)
             val price = if (ch != null) currencySymbol(ch.optString("currency")) + "%,.2f".format(major).removeSuffix(".00") else "$" + p.optDouble("priceUsd")
             Plan(p.optString("id"), p.optString("name"), p.optInt("credits"), price, p.optBoolean("popular"), p.optBoolean("bestValue"))
         }

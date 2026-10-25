@@ -81,3 +81,50 @@ fun VerifyScreen(session: Session, onVerified: () -> Unit, onSkip: () -> Unit) {
         Text("Verify later", color = Dxb.Muted, modifier = Modifier.clickable(onClick = onSkip))
     }
 }
+
+@Composable
+fun ForgotScreen(onBack: () -> Unit) {
+    BackHandler(onBack = onBack)
+    var step by remember { mutableIntStateOf(0) }
+    var email by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var info by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    fun run(block: suspend () -> Result<*>) { busy = true; error = null; scope.launch { block().onFailure { error = it.message }; busy = false } }
+
+    Column(
+        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Dxb.Blush, Dxb.Cream))).statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),
+    ) {
+        ScreenHeader("Reset password", onBack)
+        when (step) {
+            0 -> {
+                Text("Enter your account email and we'll send you a 6-digit code.", color = Dxb.Muted, modifier = Modifier.padding(bottom = 18.dp))
+                FormField(email, { email = it }, "Email", keyboard = KeyboardType.Email)
+            }
+            1 -> {
+                Text(info ?: "Enter the 6-digit code we emailed you.", color = Dxb.Muted, modifier = Modifier.padding(bottom = 18.dp))
+                FormField(code, { code = it.filter(Char::isDigit).take(6) }, "6-digit code", keyboard = KeyboardType.NumberPassword)
+            }
+            else -> {
+                Text("Choose a new password (6+ characters).", color = Dxb.Muted, modifier = Modifier.padding(bottom = 18.dp))
+                FormField(password, { password = it }, "New password", keyboard = KeyboardType.Password)
+            }
+        }
+        error?.let { Text(it, color = Color(0xFFC0392B), modifier = Modifier.padding(bottom = 10.dp)) }
+        Spacer(Modifier.height(8.dp))
+        val label = when (step) { 0 -> "Send code"; 1 -> "Verify code"; else -> "Reset password" }
+        val ready = when (step) { 0 -> email.contains("@"); 1 -> code.length == 6; else -> password.length >= 6 }
+        PrimaryButton(if (busy) "Please wait…" else label, Modifier.fillMaxWidth(), enabled = ready && !busy) {
+            when (step) {
+                0 -> run { Api.forgotPassword(email).onSuccess { info = it; step = 1 } }
+                1 -> run { Api.verifyResetCode(email, code).onSuccess { token = it; step = 2 } }
+                else -> run { Api.resetPassword(email, token, password).onSuccess { onBack() } }
+            }
+        }
+    }
+}

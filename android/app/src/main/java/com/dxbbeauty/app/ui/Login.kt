@@ -34,7 +34,7 @@ import com.dxbbeauty.app.Session
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(onSession: (Session) -> Unit, onGuest: () -> Unit, onRegister: () -> Unit) {
+fun LoginScreen(onSession: (Session) -> Unit, onGuest: () -> Unit, onRegister: () -> Unit, onForgot: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var show by remember { mutableStateOf(false) }
@@ -45,7 +45,7 @@ fun LoginScreen(onSession: (Session) -> Unit, onGuest: () -> Unit, onRegister: (
     fun open(path: String) = ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.SITE_URL + path)))
 
     Column(
-        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Dxb.BlushSoft, Dxb.Cream)))
+        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Dxb.Blush, Dxb.Cream)))
             .statusBarsPadding().navigationBarsPadding().imePadding()
             .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -69,7 +69,7 @@ fun LoginScreen(onSession: (Session) -> Unit, onGuest: () -> Unit, onRegister: (
         )
         Text(
             "Forgot password?", color = Dxb.Rose, fontWeight = FontWeight.Medium,
-            modifier = Modifier.align(Alignment.End).padding(top = 10.dp).clickable { open("/forgot-password") },
+            modifier = Modifier.align(Alignment.End).padding(top = 10.dp).clickable(onClick = onForgot),
         )
         error?.let { Text(it, color = Color(0xFFC0392B), modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodyMedium) }
         Spacer(Modifier.height(22.dp))

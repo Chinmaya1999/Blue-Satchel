@@ -18,6 +18,8 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -66,7 +68,7 @@ private val modes = listOf(
 )
 
 @Composable
-fun ScanTab(session: Session?, settings: StoreSettings, onLogin: () -> Unit, onCredits: () -> Unit, onResult: (Scan) -> Unit) {
+fun ScanTab(session: Session?, settings: StoreSettings, uploadRequest: Boolean, onUploadHandled: () -> Unit, onFullscreen: (Boolean) -> Unit, onLogin: () -> Unit, onCredits: () -> Unit, onResult: (Scan) -> Unit) {
     val ctx = LocalContext.current
     val store = remember { Store(ctx) }
     val scope = rememberCoroutineScope()
@@ -75,6 +77,10 @@ fun ScanTab(session: Session?, settings: StoreSettings, onLogin: () -> Unit, onC
     var credits by remember { mutableStateOf<Credits?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var askConsent by remember { mutableStateOf(false) }
+    // The camera and analysing screens take over the whole display (the tab bar is hidden meanwhile).
+    LaunchedEffect(phase) { onFullscreen(phase != Phase.Idle) }
+    DisposableEffect(Unit) { onDispose { onFullscreen(false) } }
+    var pendingAfterConsent by remember { mutableStateOf<(() -> Unit)?>(null) }
     LaunchedEffect(session?.token, phase) { session?.let { s -> Api.credits(s.token).onSuccess { credits = it } } }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         if (ok) phase = Phase.Camera else error = "Camera permission is needed to scan your skin."
@@ -85,6 +91,34 @@ fun ScanTab(session: Session?, settings: StoreSettings, onLogin: () -> Unit, onC
         if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) phase = Phase.Camera
         else permission.launch(Manifest.permission.CAMERA)
     }
+
+    // Photo-library upload (no storage permission needed: the system picker hands back just the chosen photos).
+    fun fromUris(uris: List<Uri>) {
+        val keys = mode.steps.map { it.first }
+        if (uris.size < keys.size) { error = "Please choose ${keys.size} photo${if (keys.size == 1) "" else "s"} (${keys.joinToString(", ")})."; return }
+        phase = Phase.Analyzing
+        scope.launch {
+            val files = withContext(Dispatchers.IO) { keys.zip(uris).associate { (k, u) -> k to copyToCache(ctx, u) } }
+            if (files.values.any { it == null }) { error = "Could not read that photo."; phase = Phase.Idle; return@launch }
+            @Suppress("UNCHECKED_CAST") val ready = files as Map<String, File>
+            val normalized = withContext(Dispatchers.Default) { ready.mapValues { normalize(it.value) } }
+            Api.scan(session!!.token, mode.key, normalized)
+                .onSuccess { onResult(it); phase = Phase.Idle }
+                .onFailure { error = it.message; phase = Phase.Idle }
+            normalized.values.forEach { it.delete() }
+        }
+    }
+    val pickOne = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { u -> if (u != null) fromUris(listOf(u)) }
+    val pickThree = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { l -> if (l.isNotEmpty()) fromUris(l) }
+    fun startUpload() {
+        error = null
+        val req = androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        if (mode.steps.size > 1) pickThree.launch(req) else pickOne.launch(req)
+    }
+    fun gate(after: () -> Unit) {
+        if (session == null) onLogin() else if (!store.consented) { pendingAfterConsent = after; askConsent = true } else after()
+    }
+    LaunchedEffect(uploadRequest) { if (uploadRequest) { onUploadHandled(); gate(::startUpload) } }
 
     fun analyze(files: Map<String, File>) {
         phase = Phase.Analyzing
@@ -102,11 +136,8 @@ fun ScanTab(session: Session?, settings: StoreSettings, onLogin: () -> Unit, onC
         Phase.Idle -> ScanIntro(
             mode = mode, onMode = { mode = it }, credits = credits, settings = settings, error = error,
             needsLogin = session == null,
-            onStart = {
-                if (session == null) onLogin()
-                else if (!store.consented) askConsent = true
-                else startCamera()
-            },
+            onStart = { gate(::startCamera) },
+            onUpload = { gate(::startUpload) },
             onCredits = { if (session == null) onLogin() else onCredits() },
         )
     }
@@ -121,7 +152,7 @@ fun ScanTab(session: Session?, settings: StoreSettings, onLogin: () -> Unit, onC
                 askConsent = false
                 scope.launch {
                     Api.acceptConsent(session!!.token)
-                        .onSuccess { store.consented = true; startCamera() }
+                        .onSuccess { store.consented = true; (pendingAfterConsent ?: ::startCamera)(); pendingAfterConsent = null }
                         .onFailure { error = it.message }
                 }
             }) { Text("I agree", color = Dxb.Rose, fontWeight = FontWeight.Bold) }
@@ -133,7 +164,7 @@ fun ScanTab(session: Session?, settings: StoreSettings, onLogin: () -> Unit, onC
 @Composable
 private fun ScanIntro(
     mode: ScanMode, onMode: (ScanMode) -> Unit, credits: Credits?, settings: StoreSettings, error: String?,
-    needsLogin: Boolean, onStart: () -> Unit, onCredits: () -> Unit,
+    needsLogin: Boolean, onStart: () -> Unit, onUpload: () -> Unit, onCredits: () -> Unit,
 ) {
     val t by rememberInfiniteTransition(label = "ring").animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "t")
     val sweep by rememberInfiniteTransition(label = "sw").animateFloat(0.15f, 0.85f, infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "s")
@@ -173,7 +204,12 @@ private fun ScanIntro(
         error?.let { Text(it, color = Color(0xFFFFB4AB), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 14.dp), style = MaterialTheme.typography.bodyMedium) }
         if (!enabled) Text("${mode.title} scan is unavailable right now.", color = Color(0xFFFFB4AB), modifier = Modifier.padding(top = 14.dp))
         Spacer(Modifier.height(20.dp))
-        PrimaryButton(if (needsLogin) "Sign in to scan" else "Start ${mode.title.lowercase()} scan", Modifier.fillMaxWidth(), enabled = enabled, onClick = onStart)
+        PrimaryButton(if (needsLogin) "Sign in to scan" else "Scan Your Face", Modifier.fillMaxWidth(), enabled = enabled, leading = { Icon(Icons.Rounded.CameraAlt, null, tint = Color.White, modifier = Modifier.size(20.dp)) }, onClick = onStart)
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth().height(52.dp).clip(CircleShape).background(Color.White).clickable(enabled = enabled, onClick = onUpload), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.PhotoLibrary, null, tint = Dxb.Ink, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
+            Text(if (mode.steps.size > 1) "Upload 3 Photos" else "Upload Photo", color = Dxb.Ink, fontWeight = FontWeight.SemiBold)
+        }
         Text("Buy scan credits", color = Dxb.Gold, modifier = Modifier.padding(top = 14.dp).clickable(onClick = onCredits))
         Spacer(Modifier.height(96.dp))
     }
@@ -203,6 +239,15 @@ private fun CameraScreen(steps: List<Pair<String, String>>, onCancel: () -> Unit
     var step by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
     BackHandler { taken.values.forEach { it.delete() }; onCancel() }
+    val pickStep = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { u ->
+        if (u != null) scope.launch {
+            busy = true
+            val f = withContext(Dispatchers.IO) { copyToCache(ctx, u) }
+            if (f == null) { busy = false; return@launch }
+            taken[steps[step].first] = withContext(Dispatchers.Default) { normalize(f) }
+            if (step + 1 < steps.size) { step++; busy = false } else onCaptured(taken.toMap())
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
@@ -230,6 +275,11 @@ private fun CameraScreen(steps: List<Pair<String, String>>, onCancel: () -> Unit
             if (steps.size > 1) Text("Photo ${step + 1} of ${steps.size}", color = Dxb.Gold, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 8.dp))
             Text(steps[step].second, color = Color.White, modifier = Modifier.clip(CircleShape).background(Color(0x66000000)).padding(horizontal = 16.dp, vertical = 8.dp))
             Spacer(Modifier.height(20.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(52.dp).clip(CircleShape).background(Color(0x66000000)).clickable(enabled = !busy) { pickStep.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.PhotoLibrary, "Choose from gallery", tint = Color.White)
+            }
+            Spacer(Modifier.width(36.dp))
             Box(
                 Modifier.size(78.dp).clip(CircleShape).border(4.dp, Color.White, CircleShape).padding(7.dp).clip(CircleShape).background(if (busy) androidx.compose.ui.graphics.SolidColor(Dxb.Line) else Dxb.RoseGradient)
                     .clickable(enabled = !busy) {
@@ -247,9 +297,17 @@ private fun CameraScreen(steps: List<Pair<String, String>>, onCancel: () -> Unit
                             })
                     },
             )
+            Spacer(Modifier.width(88.dp))
+            }
         }
     }
 }
+
+private fun copyToCache(ctx: android.content.Context, uri: Uri): File? = runCatching {
+    val f = File.createTempFile("pick", ".jpg", ctx.cacheDir)
+    ctx.contentResolver.openInputStream(uri)?.use { i -> f.outputStream().use { o -> i.copyTo(o) } } ?: return null
+    f
+}.getOrNull()
 
 /** Applies the EXIF rotation and shrinks the photo so uploads stay small. */
 private fun normalize(file: File): File {
@@ -291,11 +349,11 @@ private fun AnalyzingScreen() {
 }
 
 @Composable
-fun ResultScreen(scan: Scan, loader: ImageLoader, onBack: () -> Unit, onProduct: (Product) -> Unit) {
+fun ResultScreen(scan: Scan, loader: ImageLoader, onBack: () -> Unit, onProduct: (Product) -> Unit, onChat: (String) -> Unit, onDerms: () -> Unit) {
     BackHandler(onBack = onBack)
     val anim = remember { Animatable(0f) }
     LaunchedEffect(scan.id) { anim.animateTo(1f, tween(1400, easing = FastOutSlowInEasing)) }
-    LazyColumn(Modifier.fillMaxSize().background(Dxb.Cream), contentPadding = PaddingValues(bottom = 40.dp)) {
+    LazyColumn(Modifier.fillMaxSize().background(Dxb.PageGradient), contentPadding = PaddingValues(bottom = 40.dp)) {
         item {
             Column(Modifier.fillMaxWidth().background(Dxb.NightGradient, RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp)).statusBarsPadding().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -316,6 +374,13 @@ fun ResultScreen(scan: Scan, loader: ImageLoader, onBack: () -> Unit, onProduct:
                 }
                 Text(scan.label, color = Color.White, style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(14.dp))
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ResultAction("Skin advisor", Icons.Rounded.SmartToy, Modifier.weight(1f)) { onChat("advisor") }
+                ResultAction("K-beauty", Icons.Rounded.Spa, Modifier.weight(1f)) { onChat("kbeauty") }
+                ResultAction("Derms near me", Icons.Rounded.LocationOn, Modifier.weight(1f), onDerms)
             }
         }
         item { Text("Your concerns", style = MaterialTheme.typography.titleLarge, color = Dxb.Ink, modifier = Modifier.padding(20.dp, 24.dp, 20.dp, 10.dp)) }
@@ -349,13 +414,22 @@ fun ResultScreen(scan: Scan, loader: ImageLoader, onBack: () -> Unit, onProduct:
     }
 }
 
-private fun levelColor(level: String) = when (level) { "High" -> Color(0xFFC0504D); "Medium" -> Color(0xFFD99A4E); else -> Dxb.Sage }
+fun levelColor(level: String) = when (level) { "High" -> Color(0xFFC0504D); "Medium" -> Color(0xFFD99A4E); else -> Dxb.Sage }
 
 @Composable
-fun ProductDetail(p: Product, loader: ImageLoader, shopEnabled: Boolean, onBack: () -> Unit, onBag: () -> Unit) {
+private fun ResultAction(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Column(modifier.clip(RoundedCornerShape(20.dp)).background(Color.White).clickable(onClick = onClick).padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(38.dp).clip(CircleShape).background(Dxb.RoseGradient), contentAlignment = Alignment.Center) { Icon(icon, null, tint = Color.White, modifier = Modifier.size(20.dp)) }
+        Spacer(Modifier.height(6.dp))
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Dxb.Ink)
+    }
+}
+
+@Composable
+fun ProductDetail(p: Product, loader: ImageLoader, shopEnabled: Boolean, onBack: () -> Unit, onBag: () -> Unit, onWeb: (String) -> Unit) {
     val ctx = LocalContext.current
     BackHandler(onBack = onBack)
-    Column(Modifier.fillMaxSize().background(Dxb.Cream).navigationBarsPadding()) {
+    Column(Modifier.fillMaxSize().background(Dxb.PageGradient).navigationBarsPadding()) {
         Box(Modifier.fillMaxWidth().weight(1f)) {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Box(Modifier.fillMaxWidth().height(380.dp).background(Dxb.Blush, RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp)), contentAlignment = Alignment.Center) {
@@ -382,7 +456,7 @@ fun ProductDetail(p: Product, loader: ImageLoader, shopEnabled: Boolean, onBack:
         when {
             shopEnabled && !added -> PrimaryButton("Add to bag", Modifier.fillMaxWidth().padding(20.dp)) { Cart.add(p); added = true }
             shopEnabled -> PrimaryButton("View bag (${Cart.count})", Modifier.fillMaxWidth().padding(20.dp), onClick = onBag)
-            p.productUrl.isNotBlank() -> PrimaryButton("View on brand site", Modifier.fillMaxWidth().padding(20.dp)) { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(p.productUrl))) }
+            p.productUrl.isNotBlank() -> PrimaryButton("View on brand site", Modifier.fillMaxWidth().padding(20.dp)) { onWeb(p.productUrl) }
             else -> Text("Online ordering opens soon.", color = Dxb.Muted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(20.dp))
         }
     }
@@ -394,7 +468,7 @@ fun HistoryScreen(session: Session, onBack: () -> Unit, onOpen: (Scan) -> Unit) 
     var scans by remember { mutableStateOf<List<Scan>?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { Api.scans(session.token).onSuccess { scans = it }.onFailure { err = it.message } }
-    Column(Modifier.fillMaxSize().background(Dxb.Cream).statusBarsPadding().padding(20.dp)) {
+    Column(Modifier.fillMaxSize().background(Dxb.PageGradient).statusBarsPadding().padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onBack, Modifier.clip(CircleShape).background(Color.White)) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = Dxb.Ink) }
             Spacer(Modifier.width(12.dp))

@@ -19,6 +19,8 @@ data class Product(
     val rating: Double,
     val description: String,
     val productUrl: String = "",
+    val tags: List<String> = emptyList(),
+    val skinTypes: List<String> = emptyList(),
 )
 
 data class Concern(val label: String, val severity: Int, val level: String)
@@ -27,11 +29,22 @@ data class Scan(val id: String, val score: Int, val label: String, val createdAt
 
 data class Session(val token: String, val name: String, val email: String, val verified: Boolean = true)
 
+fun org.json.JSONArray?.strings(): List<String> = this?.let { a -> List(a.length()) { a.optString(it) } } ?: emptyList()
+
 class Store(context: Context) {
     private val prefs = context.getSharedPreferences("dxb", Context.MODE_PRIVATE)
     var onboarded: Boolean
         get() = prefs.getBoolean("onboarded", false)
         set(v) = prefs.edit().putBoolean("onboarded", v).apply()
+    var soundOn: Boolean
+        get() = prefs.getBoolean("sound", true)
+        set(v) = prefs.edit().putBoolean("sound", v).apply()
+    var seenNotifs: Set<String>
+        get() = prefs.getStringSet("seen", emptySet()) ?: emptySet()
+        set(v) = prefs.edit().putStringSet("seen", v).apply()
+    var hasSynced: Boolean
+        get() = prefs.getBoolean("synced", false)
+        set(v) = prefs.edit().putBoolean("synced", v).apply()
     var consented: Boolean
         get() = prefs.getBoolean("consent", false)
         set(v) = prefs.edit().putBoolean("consent", v).apply()
@@ -40,17 +53,17 @@ class Store(context: Context) {
             Session(it, prefs.getString("name", "") ?: "", prefs.getString("email", "") ?: "")
         }
         set(v) = prefs.edit().apply {
-            if (v == null) remove("token").remove("name").remove("email")
+            if (v == null) remove("token").remove("name").remove("email").remove("synced").remove("seen")
             else putString("token", v.token).putString("name", v.name).putString("email", v.email)
         }.apply()
 }
 
 object Api {
-    fun call(method: String, path: String, body: JSONObject? = null, token: String? = null): JSONObject {
+    fun call(method: String, path: String, body: JSONObject? = null, token: String? = null, readMs: Int = 15_000): JSONObject {
         val conn = URL(BuildConfig.API_URL + path).openConnection() as HttpURLConnection
         conn.requestMethod = method
         conn.connectTimeout = 10_000
-        conn.readTimeout = 15_000
+        conn.readTimeout = readMs
         conn.setRequestProperty("Accept", "application/json")
         token?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
         if (body != null) {
@@ -94,6 +107,8 @@ object Api {
             rating = p.optDouble("rating", 0.0),
             description = p.optString("description"),
             productUrl = p.optString("productUrl"),
+            tags = p.optJSONArray("tags").strings(),
+            skinTypes = p.optJSONArray("skinTypes").strings(),
         )
     }
 

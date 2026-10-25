@@ -33,6 +33,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Debug builds use the local dev server (emulator -> host machine). Pass -PprodApi to hit production instead.
+            if (!project.hasProperty("prodApi")) buildConfigField("String", "API_URL", "\"http://10.0.2.2:5050/api\"")
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
@@ -70,6 +74,8 @@ dependencies {
     implementation("androidx.camera:camera-view:1.4.1")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("com.razorpay:checkout:1.6.40")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

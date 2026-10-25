@@ -14,6 +14,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         Cart.init(applicationContext)
+        Notifier.init(applicationContext)
         setContent { DxbTheme { DxbApp() } }
     }
 

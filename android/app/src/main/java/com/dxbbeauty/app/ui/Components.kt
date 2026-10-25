@@ -31,6 +31,7 @@ fun PrimaryButton(
     text: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
@@ -40,6 +41,7 @@ fun PrimaryButton(
             .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 22.dp),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
+        leading?.let { it(); Spacer(Modifier.width(8.dp)) }
         Text(text, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         trailing?.let { Spacer(Modifier.width(8.dp)); it() }
     }

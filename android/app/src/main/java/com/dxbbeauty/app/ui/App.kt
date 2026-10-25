@@ -4,10 +4,11 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import com.dxbbeauty.app.Notifier
 import com.dxbbeauty.app.Session
 import com.dxbbeauty.app.Store
 
-private enum class Screen { Splash, Onboarding, Login, Register, Verify, Main }
+private enum class Screen { Splash, Onboarding, Login, Register, Verify, Forgot, Main }
 
 @Composable
 fun DxbApp() {
@@ -27,12 +28,14 @@ fun DxbApp() {
             }
             Screen.Onboarding -> OnboardingScreen { store.onboarded = true; screen = Screen.Login }
             Screen.Login -> LoginScreen(
-                onSession = { store.session = it; session = it; screen = Screen.Main },
+                onSession = { store.session = it; session = it; Notifier.schedule(ctx); screen = Screen.Main },
                 onGuest = { screen = Screen.Main },
                 onRegister = { screen = Screen.Register },
+                onForgot = { screen = Screen.Forgot },
             )
+            Screen.Forgot -> ForgotScreen(onBack = { screen = Screen.Login })
             Screen.Register -> RegisterScreen(
-                onSession = { store.session = it; session = it; screen = if (it.verified) Screen.Main else Screen.Verify },
+                onSession = { store.session = it; session = it; Notifier.schedule(ctx); screen = if (it.verified) Screen.Main else Screen.Verify },
                 onBack = { screen = Screen.Login },
             )
             Screen.Verify -> session?.let { cur ->
@@ -40,7 +43,7 @@ fun DxbApp() {
             }
             Screen.Main -> MainShell(
                 session,
-                onLogout = { store.session = null; session = null; screen = Screen.Login },
+                onLogout = { store.session = null; session = null; Notifier.cancel(ctx); screen = Screen.Login },
                 onLogin = { screen = Screen.Login },
             )
         }

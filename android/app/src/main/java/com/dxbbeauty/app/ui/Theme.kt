@@ -15,21 +15,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 object Dxb {
-    val Cream = Color(0xFFFBF4EF)
-    val Blush = Color(0xFFF6DDD6)
-    val BlushSoft = Color(0xFFFBEAE5)
-    val Rose = Color(0xFFB76E79)
-    val RoseDeep = Color(0xFF8E4A56)
-    val Gold = Color(0xFFE3B9A0)
-    val Ink = Color(0xFF2B1B1E)
-    val Plum = Color(0xFF2A1519)
-    val Muted = Color(0xFF8A7478)
-    val Line = Color(0xFFEFDDD6)
-    val Sage = Color(0xFF8FA68E)
+    // Soft lavender → pink → peach, glassy white cards, orchid-to-coral gradient accents.
+    val Cream = Color(0xFFF8F1FC)
+    val Blush = Color(0xFFEBDDF8)
+    val BlushSoft = Color(0xFFF6EEFB)
+    val Rose = Color(0xFFB86CDC)
+    val RoseDeep = Color(0xFF8A45B5)
+    val Coral = Color(0xFFF58BAE)
+    val Gold = Color(0xFFF6B3D0)
+    val Ink = Color(0xFF1E1530)
+    val Plum = Color(0xFF1A0B33)
+    val Muted = Color(0xFF7C7390)
+    val Line = Color(0xFFE6DAF2)
+    val Sage = Color(0xFF4FAE8B)
+    val Cyan = Color(0xFF6FE7FF)
 
-    val RoseGradient = Brush.linearGradient(listOf(Color(0xFFD9A08F), Color(0xFFB76E79)))
-    val NightGradient = Brush.verticalGradient(listOf(Color(0xFF3A1D24), Color(0xFF2A1519), Color(0xFF170A0D)))
-    val Serif = FontFamily.Serif
+    val RoseGradient = Brush.linearGradient(listOf(Color(0xFFC784EA), Color(0xFFF58BAE)))
+    val NightGradient = Brush.verticalGradient(listOf(Color(0xFF2B1650), Color(0xFF1A0B33), Color(0xFF0F0620)))
+    val PageGradient = Brush.verticalGradient(listOf(Color(0xFFEDE0FA), Color(0xFFFBE8F1), Color(0xFFFFF1EA)))
+    val Serif = FontFamily.SansSerif
 }
 
 private val scheme = lightColorScheme(
@@ -44,8 +48,8 @@ private val scheme = lightColorScheme(
 )
 
 private val type = Typography(
-    headlineLarge = TextStyle(fontFamily = Dxb.Serif, fontWeight = FontWeight.Medium, fontSize = 34.sp, lineHeight = 40.sp),
-    headlineMedium = TextStyle(fontFamily = Dxb.Serif, fontWeight = FontWeight.Medium, fontSize = 26.sp, lineHeight = 32.sp),
+    headlineLarge = TextStyle(fontFamily = Dxb.Serif, fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 40.sp),
+    headlineMedium = TextStyle(fontFamily = Dxb.Serif, fontWeight = FontWeight.Bold, fontSize = 26.sp, lineHeight = 32.sp),
     titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
     titleMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 16.sp),
     bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp),

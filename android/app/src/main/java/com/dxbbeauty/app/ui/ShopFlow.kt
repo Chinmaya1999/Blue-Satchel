@@ -60,7 +60,7 @@ fun ScreenHeader(title: String, onBack: () -> Unit, trailing: (@Composable () ->
 fun BagScreen(loader: ImageLoader, signedIn: Boolean, onBack: () -> Unit, onCheckout: () -> Unit, onLogin: () -> Unit) {
     BackHandler(onBack = onBack)
     val lines = Cart.lines
-    Column(Modifier.fillMaxSize().background(Dxb.Cream).statusBarsPadding().navigationBarsPadding().padding(20.dp)) {
+    Column(Modifier.fillMaxSize().background(Dxb.PageGradient).statusBarsPadding().navigationBarsPadding().padding(20.dp)) {
         ScreenHeader("Your bag", onBack)
         if (lines.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -146,7 +146,7 @@ fun CheckoutScreen(session: Session, onBack: () -> Unit, onDone: (PlacedOrder) -
         }
     }
 
-    Column(Modifier.fillMaxSize().background(Dxb.Cream).statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp)) {
+    Column(Modifier.fillMaxSize().background(Dxb.PageGradient).statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp)) {
         ScreenHeader("Checkout", onBack)
         Text("Shipping address", style = MaterialTheme.typography.titleMedium, color = Dxb.Ink)
         Spacer(Modifier.height(10.dp))
@@ -213,7 +213,7 @@ fun FormField(value: String, onChange: (String) -> Unit, label: String, modifier
 @Composable
 fun OrderDoneScreen(order: PlacedOrder, onDone: () -> Unit) {
     BackHandler(onBack = onDone)
-    Column(Modifier.fillMaxSize().background(Dxb.Cream).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(Modifier.fillMaxSize().background(Dxb.PageGradient).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Box(Modifier.size(96.dp).clip(CircleShape).background(Dxb.RoseGradient), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Check, null, tint = Color.White, modifier = Modifier.size(52.dp)) }
         Spacer(Modifier.height(24.dp))
         Text("Order confirmed", style = MaterialTheme.typography.headlineMedium, color = Dxb.Ink)
@@ -231,7 +231,7 @@ fun OrdersScreen(session: Session, onBack: () -> Unit) {
     var orders by remember { mutableStateOf<List<PlacedOrder>?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { Api.orders(session.token).onSuccess { orders = it }.onFailure { err = it.message } }
-    Column(Modifier.fillMaxSize().background(Dxb.Cream).statusBarsPadding().padding(20.dp)) {
+    Column(Modifier.fillMaxSize().background(Dxb.PageGradient).statusBarsPadding().padding(20.dp)) {
         ScreenHeader("My orders", onBack)
         when {
             err != null -> Text(err!!, color = Dxb.Muted)
@@ -281,7 +281,7 @@ fun CreditsScreen(session: Session, onBack: () -> Unit) {
             busyPlan = null
         }
     }
-    Column(Modifier.fillMaxSize().background(Dxb.Cream).statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(20.dp)) {
+    Column(Modifier.fillMaxSize().background(Dxb.PageGradient).statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(20.dp)) {
         ScreenHeader("Scan credits", onBack)
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Dxb.NightGradient).padding(22.dp)) {
             Text("BALANCE", color = Dxb.Gold, style = MaterialTheme.typography.labelSmall)
