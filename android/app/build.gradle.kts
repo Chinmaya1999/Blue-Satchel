@@ -75,6 +75,7 @@ dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.webkit:webkit:1.12.1")
+    implementation("com.google.mlkit:face-detection:16.1.7")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("com.razorpay:checkout:1.6.40")
     debugImplementation("androidx.compose.ui:ui-tooling")

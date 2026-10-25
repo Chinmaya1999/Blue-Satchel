@@ -101,7 +101,7 @@ fun ScanTab(session: Session?, settings: StoreSettings, uploadRequest: Boolean, 
             val files = withContext(Dispatchers.IO) { keys.zip(uris).associate { (k, u) -> k to copyToCache(ctx, u) } }
             if (files.values.any { it == null }) { error = "Could not read that photo."; phase = Phase.Idle; return@launch }
             @Suppress("UNCHECKED_CAST") val ready = files as Map<String, File>
-            val normalized = withContext(Dispatchers.Default) { ready.mapValues { normalize(it.value) } }
+            val normalized = ready.mapValues { (k, v) -> prepareGalleryPhoto(v, tight = mode.key == "detailed" && k == "front") }
             Api.scan(session!!.token, mode.key, normalized)
                 .onSuccess { onResult(it); phase = Phase.Idle }
                 .onFailure { error = it.message; phase = Phase.Idle }
@@ -131,7 +131,7 @@ fun ScanTab(session: Session?, settings: StoreSettings, uploadRequest: Boolean, 
     }
 
     when (phase) {
-        Phase.Camera -> CameraScreen(mode.steps, onCancel = { phase = Phase.Idle }, onCaptured = ::analyze, onError = { error = it; phase = Phase.Idle })
+        Phase.Camera -> AutoCameraScreen(mode.key, mode.steps, onCancel = { phase = Phase.Idle }, onCaptured = ::analyze, onError = { error = it; phase = Phase.Idle })
         Phase.Analyzing -> AnalyzingScreen()
         Phase.Idle -> ScanIntro(
             mode = mode, onMode = { mode = it }, credits = credits, settings = settings, error = error,
@@ -227,83 +227,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.faceFrame(t: Float,
     drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Dxb.Gold, Color.Transparent), c.x - w / 2, c.x + w / 2), Offset(c.x - w / 2, y), Offset(c.x + w / 2, y), 2.5.dp.toPx())
 }
 
-@Composable
-private fun CameraScreen(steps: List<Pair<String, String>>, onCancel: () -> Unit, onCaptured: (Map<String, File>) -> Unit, onError: (String) -> Unit) {
-    val ctx = LocalContext.current
-    val owner = LocalLifecycleOwner.current
-    val scope = rememberCoroutineScope()
-    val capture = remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build() }
-    val t by rememberInfiniteTransition(label = "ring").animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "t")
-    val sweep by rememberInfiniteTransition(label = "sw").animateFloat(0.15f, 0.85f, infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "s")
-    val taken = remember { mutableStateMapOf<String, File>() }
-    var step by remember { mutableIntStateOf(0) }
-    var busy by remember { mutableStateOf(false) }
-    BackHandler { taken.values.forEach { it.delete() }; onCancel() }
-    val pickStep = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { u ->
-        if (u != null) scope.launch {
-            busy = true
-            val f = withContext(Dispatchers.IO) { copyToCache(ctx, u) }
-            if (f == null) { busy = false; return@launch }
-            taken[steps[step].first] = withContext(Dispatchers.Default) { normalize(f) }
-            if (step + 1 < steps.size) { step++; busy = false } else onCaptured(taken.toMap())
-        }
-    }
-
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(
-            { c ->
-                PreviewView(c).apply {
-                    scaleType = PreviewView.ScaleType.FILL_CENTER
-                    val future = ProcessCameraProvider.getInstance(c)
-                    future.addListener({
-                        runCatching {
-                            val provider = future.get()
-                            val preview = Preview.Builder().build().also { it.surfaceProvider = surfaceProvider }
-                            provider.unbindAll()
-                            provider.bindToLifecycle(owner, CameraSelector.DEFAULT_FRONT_CAMERA, preview, capture)
-                        }.onFailure { onError("Could not open the camera.") }
-                    }, ContextCompat.getMainExecutor(c))
-                }
-            },
-            Modifier.fillMaxSize(),
-        )
-        Canvas(Modifier.fillMaxSize()) { faceFrame(t, sweep) }
-        IconButton({ taken.values.forEach { it.delete() }; onCancel() }, Modifier.statusBarsPadding().padding(12.dp).clip(CircleShape).background(Color(0x66000000))) {
-            Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = Color.White)
-        }
-        Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 36.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            if (steps.size > 1) Text("Photo ${step + 1} of ${steps.size}", color = Dxb.Gold, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 8.dp))
-            Text(steps[step].second, color = Color.White, modifier = Modifier.clip(CircleShape).background(Color(0x66000000)).padding(horizontal = 16.dp, vertical = 8.dp))
-            Spacer(Modifier.height(20.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(52.dp).clip(CircleShape).background(Color(0x66000000)).clickable(enabled = !busy) { pickStep.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.PhotoLibrary, "Choose from gallery", tint = Color.White)
-            }
-            Spacer(Modifier.width(36.dp))
-            Box(
-                Modifier.size(78.dp).clip(CircleShape).border(4.dp, Color.White, CircleShape).padding(7.dp).clip(CircleShape).background(if (busy) androidx.compose.ui.graphics.SolidColor(Dxb.Line) else Dxb.RoseGradient)
-                    .clickable(enabled = !busy) {
-                        busy = true
-                        val file = File.createTempFile("scan", ".jpg", ctx.cacheDir)
-                        capture.takePicture(ImageCapture.OutputFileOptions.Builder(file).build(), ContextCompat.getMainExecutor(ctx),
-                            object : ImageCapture.OnImageSavedCallback {
-                                override fun onImageSaved(r: ImageCapture.OutputFileResults) {
-                                    scope.launch {
-                                        taken[steps[step].first] = withContext(Dispatchers.Default) { normalize(file) }
-                                        if (step + 1 < steps.size) { step++; busy = false } else onCaptured(taken.toMap())
-                                    }
-                                }
-                                override fun onError(e: ImageCaptureException) { busy = false; onError("Could not take the photo.") }
-                            })
-                    },
-            )
-            Spacer(Modifier.width(88.dp))
-            }
-        }
-    }
-}
-
-private fun copyToCache(ctx: android.content.Context, uri: Uri): File? = runCatching {
+fun copyToCache(ctx: android.content.Context, uri: Uri): File? = runCatching {
     val f = File.createTempFile("pick", ".jpg", ctx.cacheDir)
     ctx.contentResolver.openInputStream(uri)?.use { i -> f.outputStream().use { o -> i.copyTo(o) } } ?: return null
     f
@@ -349,7 +273,7 @@ private fun AnalyzingScreen() {
 }
 
 @Composable
-fun ResultScreen(scan: Scan, loader: ImageLoader, onBack: () -> Unit, onProduct: (Product) -> Unit, onChat: (String) -> Unit, onDerms: () -> Unit) {
+fun ResultScreen(scan: Scan, userName: String, loader: ImageLoader, onBack: () -> Unit, onProduct: (Product) -> Unit, onChat: (String) -> Unit, onDerms: () -> Unit) {
     BackHandler(onBack = onBack)
     val anim = remember { Animatable(0f) }
     LaunchedEffect(scan.id) { anim.animateTo(1f, tween(1400, easing = FastOutSlowInEasing)) }
@@ -359,7 +283,8 @@ fun ResultScreen(scan: Scan, loader: ImageLoader, onBack: () -> Unit, onProduct:
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onBack, Modifier.clip(CircleShape).background(Color(0x22FFFFFF))) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = Color.White) }
                     Spacer(Modifier.weight(1f))
-                    Text(scan.createdAt, color = Dxb.Gold, fontSize = 13.sp)
+                    Text(scan.createdAt, color = Dxb.Gold, fontSize = 13.sp, modifier = Modifier.padding(end = 10.dp))
+                    DownloadMenu(scan, userName, loader)
                 }
                 Spacer(Modifier.height(8.dp))
                 Box(Modifier.size(190.dp), contentAlignment = Alignment.Center) {
@@ -383,8 +308,23 @@ fun ResultScreen(scan: Scan, loader: ImageLoader, onBack: () -> Unit, onProduct:
                 ResultAction("Derms near me", Icons.Rounded.LocationOn, Modifier.weight(1f), onDerms)
             }
         }
-        item { Text("Your concerns", style = MaterialTheme.typography.titleLarge, color = Dxb.Ink, modifier = Modifier.padding(20.dp, 24.dp, 20.dp, 10.dp)) }
-        items(scan.concerns) { c ->
+        val hasAi = scan.raw?.let { it.has("rupamOutput") || it.has("perfectCorpOutput") } == true
+        if (scan.leftPhoto.isNotBlank() || scan.rightPhoto.isNotBlank()) item {
+            Column(Modifier.padding(top = 22.dp)) {
+                Text("Your photos", style = MaterialTheme.typography.titleLarge, color = Dxb.Ink, modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp))
+                Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    listOf("Front" to scan.photo, "Left" to scan.leftPhoto, "Right" to scan.rightPhoto).filter { it.second.isNotBlank() }.forEach { (n, u) ->
+                        Box(Modifier.weight(1f).aspectRatio(0.8f).clip(RoundedCornerShape(18.dp)).background(Dxb.Blush)) {
+                            AsyncImage(u, n, loader, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                            Text(n, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.BottomStart).padding(8.dp).clip(CircleShape).background(Color(0x99000000)).padding(horizontal = 8.dp, vertical = 3.dp))
+                        }
+                    }
+                }
+            }
+        }
+        fullAnalysis(scan, loader)
+        if (!hasAi) item { Text("Your concerns", style = MaterialTheme.typography.titleLarge, color = Dxb.Ink, modifier = Modifier.padding(20.dp, 24.dp, 20.dp, 10.dp)) }
+        if (!hasAi) items(scan.concerns) { c ->
             Column(Modifier.padding(horizontal = 20.dp, vertical = 6.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color.White).padding(16.dp)) {
                 Row {
                     Text(c.label, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, color = Dxb.Ink)
@@ -463,7 +403,7 @@ fun ProductDetail(p: Product, loader: ImageLoader, shopEnabled: Boolean, onBack:
 }
 
 @Composable
-fun HistoryScreen(session: Session, onBack: () -> Unit, onOpen: (Scan) -> Unit) {
+fun HistoryScreen(session: Session, loader: ImageLoader, onBack: () -> Unit, onOpen: (Scan) -> Unit) {
     BackHandler(onBack = onBack)
     var scans by remember { mutableStateOf<List<Scan>?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
@@ -482,13 +422,59 @@ fun HistoryScreen(session: Session, onBack: () -> Unit, onOpen: (Scan) -> Unit) 
             else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(scans!!) { s ->
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White).clickable { onOpen(s) }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(56.dp).clip(CircleShape).background(Dxb.RoseGradient), contentAlignment = Alignment.Center) { Text("${s.score}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp) }
+                        ScanThumb(s, loader, 64)
                         Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) { Text(s.label, fontWeight = FontWeight.SemiBold, color = Dxb.Ink); Text(s.createdAt, color = Dxb.Muted, fontSize = 13.sp) }
+                        Column(Modifier.weight(1f)) { Text("${s.score}/100 · ${s.label}", fontWeight = FontWeight.SemiBold, color = Dxb.Ink); Text(s.createdAt + " · " + s.mode.replaceFirstChar { it.uppercase() } + " scan", color = Dxb.Muted, fontSize = 13.sp) }
                         Icon(Icons.Rounded.ChevronRight, null, tint = Dxb.Muted)
                     }
                 }
             }
+        }
+    }
+}
+
+/** A scan's photo as a round thumbnail with its score badge; falls back to the score alone when there is no photo. */
+@Composable
+fun ScanThumb(s: Scan, loader: ImageLoader, size: Int) {
+    Box(Modifier.size(size.dp)) {
+        if (s.photo.isNotBlank()) AsyncImage(s.photo, "Scan photo", loader, Modifier.fillMaxSize().clip(CircleShape).background(Dxb.Blush), contentScale = ContentScale.Crop)
+        else Box(Modifier.fillMaxSize().clip(CircleShape).background(Dxb.RoseGradient), contentAlignment = Alignment.Center) { Text("${s.score}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = (size * 0.35f).sp) }
+        if (s.photo.isNotBlank()) Text("${s.score}", color = Color.White, fontSize = (size * 0.2f).sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.BottomEnd).clip(CircleShape).background(Dxb.Rose).padding(horizontal = 6.dp, vertical = 2.dp))
+    }
+}
+
+/** "Download" on a result: a PDF report or the raw API data (JSON), saved to Downloads and offered to share. */
+@Composable
+private fun DownloadMenu(scan: Scan, userName: String, loader: ImageLoader) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var open by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    fun done(uri: Uri?, mime: String, what: String) {
+        busy = false
+        if (uri == null) android.widget.Toast.makeText(ctx, "Couldn't save the $what.", android.widget.Toast.LENGTH_LONG).show()
+        else { android.widget.Toast.makeText(ctx, "$what saved to Downloads", android.widget.Toast.LENGTH_SHORT).show(); shareFile(ctx, uri, mime) }
+    }
+    Box {
+        Row(
+            Modifier.clip(CircleShape).background(Color(0x26FFFFFF)).clickable(enabled = !busy) { open = true }.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (busy) CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp) else Icon(Icons.Rounded.FileDownload, null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp)); Text(if (busy) "Preparing…" else "Download", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        }
+        DropdownMenu(open, { open = false }, containerColor = Color.White) {
+            DropdownMenuItem(
+                leadingIcon = { Icon(Icons.Rounded.PictureAsPdf, null, tint = Dxb.Rose) },
+                text = { Column { Text("PDF report", fontWeight = FontWeight.SemiBold); Text("Photo, scores and suggestions", fontSize = 11.sp, color = Dxb.Muted) } },
+                onClick = { open = false; busy = true; scope.launch { done(exportPdf(ctx, scan, userName, loader), "application/pdf", "PDF report") } },
+            )
+            DropdownMenuItem(
+                leadingIcon = { Icon(Icons.Rounded.DataObject, null, tint = Dxb.Rose) },
+                text = { Column { Text("API data (JSON)", fontWeight = FontWeight.SemiBold); Text("Everything the AI returned", fontSize = 11.sp, color = Dxb.Muted) } },
+                onClick = { open = false; done(exportJson(ctx, scan), "application/json", "JSON data") },
+            )
         }
     }
 }

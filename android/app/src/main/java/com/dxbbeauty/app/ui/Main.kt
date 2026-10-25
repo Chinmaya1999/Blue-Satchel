@@ -112,11 +112,11 @@ fun MainShell(session: Session?, onLogout: () -> Unit, onLogin: () -> Unit) {
     when (val top = stack.lastOrNull()) {
         is Overlay.Detail -> { ProductDetail(top.product, loader, settings.shopEnabled, ::pop, { push(Overlay.Bag) }) { push(Overlay.Web(top.product.name, it)) }; return }
         is Overlay.Result -> {
-            ResultScreen(top.scan, loader, ::pop, onProduct = { push(Overlay.Detail(it)) }, onChat = { kind -> push(Overlay.Chat(top.scan, kind)) }, onDerms = { push(Overlay.Derms) })
+            ResultScreen(top.scan, me?.name ?: session?.name.orEmpty(), loader, ::pop, onProduct = { push(Overlay.Detail(it)) }, onChat = { kind -> push(Overlay.Chat(top.scan, kind)) }, onDerms = { push(Overlay.Derms) })
             return
         }
         is Overlay.Chat -> { if (session != null) ChatScreen(session, top.scan, top.kind, loader, ::pop) { push(Overlay.Detail(it)) }; return }
-        Overlay.History -> { if (session != null) HistoryScreen(session, ::pop) { push(Overlay.Result(it)) }; return }
+        Overlay.History -> { if (session != null) HistoryScreen(session, loader, ::pop) { push(Overlay.Result(it)) }; return }
         Overlay.Bag -> { BagScreen(loader, session != null, ::pop, { push(Overlay.Checkout) }, onLogin); return }
         Overlay.Checkout -> { if (session != null) CheckoutScreen(session, ::pop) { stack.clear(); refreshTick++; push(Overlay.Done(it)) }; return }
         is Overlay.Done -> { OrderDoneScreen(top.order) { stack.clear(); tab = Tab.Products }; return }
@@ -135,7 +135,7 @@ fun MainShell(session: Session?, onLogout: () -> Unit, onLogin: () -> Unit) {
         Box(Modifier.fillMaxSize()) {
             when (tab) {
                 Tab.Home -> HomeTab(
-                    session, me, unread, scans?.firstOrNull(), settings,
+                    loader, session, me, unread, scans?.firstOrNull(), settings,
                     onBell = { if (session != null) push(Overlay.Notifications) else onLogin() },
                     onScan = { tab = Tab.Scan }, onUpload = { uploadRequest = true; tab = Tab.Scan },
                     onAdvisor = { s -> if (s != null) push(Overlay.Chat(s, "advisor")) else tab = Tab.Scan },
@@ -143,7 +143,7 @@ fun MainShell(session: Session?, onLogout: () -> Unit, onLogin: () -> Unit) {
                     onSalons = { push(Overlay.Salons) }, onCredits = { if (session != null) push(Overlay.Credits) else onLogin() },
                     onOpenScan = { push(Overlay.Result(it)) }, onLogin = onLogin,
                 )
-                Tab.Analytic -> AnalyticTab(session, scans, onLogin, onUpload = { uploadRequest = true; tab = Tab.Scan }, onOpen = { push(Overlay.Result(it)) }, onHistory = { push(Overlay.History) })
+                Tab.Analytic -> AnalyticTab(session, scans, loader, onLogin, onUpload = { uploadRequest = true; tab = Tab.Scan }, onOpen = { push(Overlay.Result(it)) }, onHistory = { push(Overlay.History) })
                 Tab.Scan -> ScanTab(session, settings, uploadRequest, { uploadRequest = false }, { fullscreen = it }, onLogin, { push(Overlay.Credits) }) { refreshTick++; push(Overlay.Result(it)) }
                 Tab.Products -> ProductsTab(loader, settings.shopEnabled, onBag = { push(Overlay.Bag) }) { push(Overlay.Detail(it)) }
                 Tab.Profile -> ProfileTab(
@@ -209,7 +209,7 @@ fun BellButton(unread: Int, onClick: () -> Unit) = BadgedBox({ if (unread > 0) B
 
 @Composable
 private fun HomeTab(
-    session: Session?, me: Me?, unread: Int, latest: Scan?, settings: StoreSettings,
+    loader: ImageLoader, session: Session?, me: Me?, unread: Int, latest: Scan?, settings: StoreSettings,
     onBell: () -> Unit, onScan: () -> Unit, onUpload: () -> Unit, onAdvisor: (Scan?) -> Unit, onDerms: () -> Unit,
     onSalons: () -> Unit, onCredits: () -> Unit, onOpenScan: (Scan) -> Unit, onLogin: () -> Unit,
 ) {
@@ -250,7 +250,7 @@ private fun HomeTab(
         item {
             if (latest != null) {
                 Row(Modifier.fillMaxWidth().glass(28).clickable { onOpenScan(latest) }.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    ScoreRing(latest.score, 84)
+                    if (latest.photo.isNotBlank()) ScanThumb(latest, loader, 84) else ScoreRing(latest.score, 84)
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
                         Text("Latest skin health", color = Dxb.Muted, fontSize = 12.sp)
@@ -333,7 +333,7 @@ fun ScoreRing(score: Int, size: Int, animate: Boolean = true) {
 }
 
 @Composable
-private fun AnalyticTab(session: Session?, scans: List<Scan>?, onLogin: () -> Unit, onUpload: () -> Unit, onOpen: (Scan) -> Unit, onHistory: () -> Unit) {
+private fun AnalyticTab(session: Session?, scans: List<Scan>?, loader: ImageLoader, onLogin: () -> Unit, onUpload: () -> Unit, onOpen: (Scan) -> Unit, onHistory: () -> Unit) {
     LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         item { Text("Analytic", style = MaterialTheme.typography.headlineMedium, color = Dxb.Ink, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
         item {
@@ -398,7 +398,7 @@ private fun AnalyticTab(session: Session?, scans: List<Scan>?, onLogin: () -> Un
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     scans.take(4).forEach { s ->
                         Row(Modifier.fillMaxWidth().glass(22).clickable { onOpen(s) }.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(46.dp).clip(CircleShape).background(Dxb.RoseGradient), contentAlignment = Alignment.Center) { Text("${s.score}", color = Color.White, fontWeight = FontWeight.Bold) }
+                            ScanThumb(s, loader, 52)
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) { Text(s.label, fontWeight = FontWeight.SemiBold, color = Dxb.Ink); Text(s.createdAt, color = Dxb.Muted, fontSize = 12.sp) }
                             Icon(Icons.Rounded.ChevronRight, null, tint = Dxb.Muted)

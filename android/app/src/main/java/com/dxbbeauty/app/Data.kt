@@ -25,7 +25,11 @@ data class Product(
 
 data class Concern(val label: String, val severity: Int, val level: String)
 
-data class Scan(val id: String, val score: Int, val label: String, val createdAt: String, val concerns: List<Concern>, val products: List<Product>)
+data class Scan(
+    val id: String, val score: Int, val label: String, val createdAt: String, val concerns: List<Concern>, val products: List<Product>,
+    val mode: String = "", val provider: String = "", val photo: String = "", val leftPhoto: String = "", val rightPhoto: String = "",
+    val raw: JSONObject? = null, val createdAtIso: String = "", val full: JSONObject? = null,
+)
 
 data class Session(val token: String, val name: String, val email: String, val verified: Boolean = true)
 
@@ -125,7 +129,17 @@ object Api {
                 Concern(c.optString("label"), c.optInt("severity"), c.optString("level"))
             },
             products = List(ps?.length() ?: 0) { i -> ps!!.optJSONObject(i)?.let(::parseProduct) }.filterNotNull(),
+            mode = o.optString("mode"), provider = o.optString("provider"),
+            photo = media(o.optString("imageUrl")), leftPhoto = media(o.optString("leftImageUrl")), rightPhoto = media(o.optString("rightImageUrl")),
+            raw = o.optJSONObject("rawMetrics"), createdAtIso = o.optString("createdAt"), full = o,
         )
+    }
+
+    /** Uploaded photos live on the API host (…/uploads/x.jpg); the app only stores relative paths. */
+    fun media(url: String?): String = when {
+        url.isNullOrBlank() || url == "null" -> ""
+        url.startsWith("http") -> url
+        else -> BuildConfig.API_URL.removeSuffix("/api") + url
     }
 
     suspend fun scans(token: String): Result<List<Scan>> = withContext(Dispatchers.IO) {
