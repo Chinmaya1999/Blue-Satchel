@@ -267,9 +267,9 @@ private fun LazyListScope.perfectCorp(scan: Scan, raw: JSONObject, output: JSONA
     header("Every measurement the AI returned, shown on your photo. Tap a measurement to see the area it detected.")
     item { PerfectCorpViewer(base, standard + hd, overalls, skinAge, loader) }
     if (standard.isNotEmpty()) item { SectionLabel("Standard skin analysis · ${standard.size} measurements") }
-    items(standard.chunked(2)) { pair -> MetricRow(pair) }
+    items(standard.chunked(2)) { pair -> MetricRow(pair, base, loader) }
     if (hd.isNotEmpty()) item { SectionLabel("HD wrinkle analysis · ${hd.size} regions") }
-    items(hd.chunked(2)) { pair -> MetricRow(pair) }
+    items(hd.chunked(2)) { pair -> MetricRow(pair, base, loader) }
     if (suggestions.isNotEmpty()) item { SectionLabel("Suggestions") }
 }
 
@@ -310,17 +310,48 @@ private fun PerfectCorpViewer(base: String, metrics: List<Metric>, overalls: Lis
 }
 
 @Composable
-private fun MetricRow(pair: List<Metric>) {
-    Row(Modifier.padding(horizontal = 20.dp, vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+private fun MetricRow(pair: List<Metric>, base: String, loader: ImageLoader) {
+    var zoom by remember { mutableStateOf<Metric?>(null) }
+    Row(Modifier.padding(horizontal = 20.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         pair.forEach { m ->
             val (label, color) = uiTone(m.ui)
-            Column(Modifier.weight(1f).glass(22).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Dial(m.ui, color, 64)
-                Text(m.label, fontWeight = FontWeight.Bold, color = Dxb.Ink, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp), maxLines = 1)
-                Text(label, color = color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                m.rawScore?.let { Text("raw ${"%.1f".format(it)}", color = Dxb.Muted, fontSize = 10.sp) }
+            Column(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(Color.White).clickable { zoom = m }) {
+                // The analysed photo with this measurement's overlay, exactly like the website's cards.
+                Box(Modifier.fillMaxWidth().aspectRatio(0.9f).background(Color(0xFF1A0B33))) {
+                    AsyncImage(base, m.label, loader, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    m.mask?.let { AsyncImage(it, null, loader, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                    Text("${m.ui}", color = color, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.92f)).padding(horizontal = 9.dp, vertical = 3.dp))
+                }
+                Column(Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(m.label, Modifier.weight(1f), fontWeight = FontWeight.Bold, color = Dxb.Ink, fontSize = 13.sp, maxLines = 1)
+                        Text(label, color = color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Dxb.Line)) { Box(Modifier.fillMaxHeight().fillMaxWidth(m.ui / 100f).clip(CircleShape).background(color)) }
+                    Text("raw ${m.rawScore?.let { "%.1f".format(it) } ?: "—"} · ${m.type}", color = Dxb.Muted, fontSize = 10.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, modifier = Modifier.padding(top = 6.dp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
             }
         }
         if (pair.size == 1) Spacer(Modifier.weight(1f))
+    }
+    zoom?.let { m ->
+        val (label, color) = uiTone(m.ui)
+        androidx.compose.ui.window.Dialog(onDismissRequest = { zoom = null }) {
+            Column(Modifier.clip(RoundedCornerShape(28.dp)).background(Color.White)) {
+                Box(Modifier.fillMaxWidth().aspectRatio(1f).background(Color(0xFF1A0B33))) {
+                    AsyncImage(base, m.label, loader, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    m.mask?.let { AsyncImage(it, null, loader, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                }
+                Column(Modifier.padding(18.dp)) {
+                    Text(m.label, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Dxb.Ink)
+                    Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        StatTile("Score", "${m.ui}", null, Modifier.weight(1f)); StatTile("Raw score", m.rawScore?.let { "%.1f".format(it) } ?: "—", null, Modifier.weight(1f)); StatTile("Rating", label, null, Modifier.weight(1f))
+                    }
+                    Text(m.type, color = color, fontSize = 11.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, modifier = Modifier.padding(top = 10.dp))
+                }
+            }
+        }
     }
 }
