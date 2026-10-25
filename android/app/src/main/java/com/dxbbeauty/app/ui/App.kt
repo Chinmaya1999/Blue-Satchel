@@ -8,7 +8,7 @@ import com.dxbbeauty.app.Notifier
 import com.dxbbeauty.app.Session
 import com.dxbbeauty.app.Store
 
-private enum class Screen { Splash, Onboarding, Login, Register, Verify, Forgot, Main }
+private enum class Screen { Splash, Landing, Login, Register, Verify, Forgot, Main }
 
 @Composable
 fun DxbApp() {
@@ -22,11 +22,14 @@ fun DxbApp() {
             Screen.Splash -> SplashScreen {
                 screen = when {
                     session != null -> Screen.Main
-                    !store.onboarded -> Screen.Onboarding
+                    !store.onboarded -> Screen.Landing
                     else -> Screen.Login
                 }
             }
-            Screen.Onboarding -> OnboardingScreen { store.onboarded = true; screen = Screen.Login }
+            Screen.Landing -> LandingScreen(
+                onGetStarted = { store.onboarded = true; screen = Screen.Register },
+                onSignIn = { store.onboarded = true; screen = Screen.Login },
+            )
             Screen.Login -> LoginScreen(
                 onSession = { store.session = it; session = it; Notifier.schedule(ctx); screen = Screen.Main },
                 onGuest = { screen = Screen.Main },
