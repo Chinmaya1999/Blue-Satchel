@@ -1,0 +1,7 @@
+-keep class com.razorpay.** { *; }
+-dontwarn com.razorpay.**
+-keepattributes JavascriptInterface
+-keepattributes *Annotation*
+-optimizations !method/inlining/*
+-keepclasseswithmembers class * { public void onPayment*(...); }
+-dontwarn proguard.annotation.**
