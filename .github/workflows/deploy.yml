@@ -146,8 +146,8 @@ jobs:
 
       - name: Smoke test the live site
         run: |
-          curl -sf "http://${{ secrets.EC2_HOST }}/api/health"
-          curl -sf "http://${{ secrets.EC2_HOST }}/" > /dev/null
+          curl -sf https://api.dxbbeauty.com/api/health
+          curl -sf https://dxbbeauty.com/ > /dev/null
 
       - name: Clean up SSH key
         if: always()
