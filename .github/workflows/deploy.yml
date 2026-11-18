@@ -75,7 +75,7 @@ jobs:
         with:
           context: client
           build-args: |
-            VITE_API_URL=https://api.dxbbeauty.com/api
+            VITE_API_URL=${{ vars.VITE_API_URL }}
           push: true
           tags: ${{ steps.image.outputs.image }}
           cache-from: type=gha,scope=client
@@ -100,6 +100,39 @@ jobs:
             "mkdir -p /opt/blue-satchel/deploy"
           rsync -az -e "ssh -i /tmp/deploy_key" deploy/ \
             "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/blue-satchel/deploy/"
+
+      - name: Write server.env from GitHub secrets
+        env:
+          PORT: ${{ secrets.PORT }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+          CLIENT_URL: ${{ secrets.CLIENT_URL }}
+          AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
+          PERFECTCORP_API_KEY: ${{ secrets.PERFECTCORP_API_KEY }}
+          PERFECTCORP_API_SECRET: ${{ secrets.PERFECTCORP_API_SECRET }}
+          RUPAM_API_KEY: ${{ secrets.RUPAM_API_KEY }}
+          QUICK_SCAN_PROVIDER: ${{ secrets.QUICK_SCAN_PROVIDER }}
+          RUPAM_COLLECT_IMAGE: ${{ secrets.RUPAM_COLLECT_IMAGE }}
+          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
+          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+          RAZORPAY_CURRENCY: ${{ secrets.RAZORPAY_CURRENCY }}
+          USD_INR_RATE: ${{ secrets.USD_INR_RATE }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          FOCUS_API_BASE: ${{ secrets.FOCUS_API_BASE }}
+          FOCUS_API_KEY: ${{ secrets.FOCUS_API_KEY }}
+        run: |
+          umask 077
+          for k in PORT MONGO_URI JWT_SECRET JWT_EXPIRES_IN CLIENT_URL AI_PROVIDER PERFECTCORP_API_KEY PERFECTCORP_API_SECRET RUPAM_API_KEY QUICK_SCAN_PROVIDER RUPAM_COLLECT_IMAGE RAZORPAY_KEY_ID RAZORPAY_KEY_SECRET RAZORPAY_CURRENCY USD_INR_RATE SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS MAIL_FROM FOCUS_API_BASE FOCUS_API_KEY; do
+            printf '%s=%s\n' "$k" "${!k}"
+          done > /tmp/server.env
+          scp -i /tmp/deploy_key /tmp/server.env \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/blue-satchel/server.env"
+          rm -f /tmp/server.env
 
       - name: Log in to GHCR on the server
         run: |
